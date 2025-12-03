@@ -73,6 +73,13 @@ app.include_router(report.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 logger.debug("所有API路由包含完成")
 
+# 健康检查端点
+@app.get("/api/health")
+def health_check():
+    """健康检查端点，用于Docker健康检查"""
+    logger.debug("健康检查请求")
+    return {"status": "healthy", "timestamp": time.time()}
+
 # 获取当前文件的绝对路径，然后构建静态文件目录的绝对路径
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 FRONTEND_DIST_DIR = os.path.join(BASE_DIR, "frontend", "dist")
