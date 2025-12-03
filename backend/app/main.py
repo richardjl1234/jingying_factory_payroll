@@ -1,27 +1,38 @@
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from dotenv import load_dotenv
+import time
+import os
+
+logger = logging.getLogger(__name__)
 
 from . import models
 from .database import engine
 from .api import auth, user, worker, process, quota, salary, report, stats
 
 # 加载环境变量
+logger.debug("加载环境变量...")
 load_dotenv()
 
 # 创建数据库表
+logger.debug("开始创建数据库表...")
 models.Base.metadata.create_all(bind=engine)
+logger.debug("数据库表创建完成")
 
 # 创建FastAPI应用
+logger.debug("创建FastAPI应用...")
 app = FastAPI(
     title="工厂定额和计件工资管理系统",
     description="用于工厂定额和计件工资管理的API服务",
     version="1.0.0"
 )
+logger.debug("FastAPI应用创建完成")
 
 # 配置CORS
+logger.debug("配置CORS中间件...")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 在生产环境中应该设置具体的前端域名
@@ -29,8 +40,29 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logger.debug("CORS中间件配置完成")
+
+# 请求日志中间件
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    logger.debug(f"收到请求: {request.method} {request.url.path}")
+    logger.debug(f"请求头: {dict(request.headers)}")
+    if request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            body = await request.body()
+            logger.debug(f"请求体: {body.decode()}")
+        except:
+            logger.debug("无法读取请求体")
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    logger.debug(f"请求处理完成: {request.method} {request.url.path} 状态码: {response.status_code} 耗时: {process_time:.3f}s")
+    return response
 
 # 包含路由
+logger.debug("包含API路由...")
 app.include_router(auth.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
 app.include_router(worker.router, prefix="/api")
@@ -39,8 +71,7 @@ app.include_router(quota.router, prefix="/api")
 app.include_router(salary.router, prefix="/api")
 app.include_router(report.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
-
-import os
+logger.debug("所有API路由包含完成")
 
 # 获取当前文件的绝对路径，然后构建静态文件目录的绝对路径
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -48,21 +79,33 @@ FRONTEND_DIST_DIR = os.path.join(BASE_DIR, "frontend", "dist")
 ASSETS_DIR = os.path.join(FRONTEND_DIST_DIR, "assets")
 INDEX_HTML_PATH = os.path.join(FRONTEND_DIST_DIR, "index.html")
 
+logger.debug(f"BASE_DIR: {BASE_DIR}")
+logger.debug(f"FRONTEND_DIST_DIR: {FRONTEND_DIST_DIR}")
+logger.debug(f"ASSETS_DIR: {ASSETS_DIR}")
+logger.debug(f"INDEX_HTML_PATH: {INDEX_HTML_PATH}")
+
 # 挂载前端静态文件
+logger.debug("挂载前端静态文件...")
 app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+logger.debug("前端静态文件挂载完成")
 
 # 处理所有其他路径，返回前端HTML，支持React Router
 @app.get("/{path:path}")
 def catch_all(path: str):
     """处理所有其他路径，返回前端HTML"""
+    logger.debug(f"捕获路径: {path}")
     # 确保API路由不被通配符路由匹配
     if path.startswith("api/"):
-        from fastapi.responses import JSONResponse
+        logger.debug(f"路径 {path} 以api/开头，返回404")
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    logger.debug(f"返回前端HTML: {INDEX_HTML_PATH}")
     return FileResponse(INDEX_HTML_PATH)
 
 # 根路径返回前端HTML
 @app.get("/")
 def read_root():
     """根路径，返回前端HTML"""
+    logger.debug("根路径请求，返回前端HTML")
     return FileResponse(INDEX_HTML_PATH)
+
+logger.info("应用启动完成")
