@@ -33,28 +33,54 @@ chmod +x build_frontend_cloud.sh
 ./build_frontend_cloud.sh
 ```
 
-### 3. 上传文件到云服务器
+### 3. 获取代码到云服务器
+有两种方式：
+
+#### 方式一：使用HTTPS（推荐，无需SSH密钥）
 ```bash
-# 使用scp上传文件
-scp -r Dockerfile backend frontend/dist .env.cloud user@124.220.108.154:/path/to/app/
+# 克隆代码
+git clone https://gitee.com/richardjl/payroll-system.git
+cd payroll-system
 ```
 
-### 4. 在云服务器上部署
+#### 方式二：使用SSH（需要配置SSH密钥）
+如果已配置SSH密钥，可以使用：
 ```bash
-# 登录服务器
-ssh user@124.220.108.154
+git clone git@gitee.com:richardjl/payroll-system.git
+cd payroll-system
+```
 
-# 进入应用目录
-cd /path/to/app
+如果未配置SSH密钥，可以生成并添加到Gitee：
+```bash
+# 生成SSH密钥
+ssh-keygen -t ed25519 -C "your-email@example.com"
 
+# 查看公钥
+cat ~/.ssh/id_ed25519.pub
+
+# 将公钥添加到Gitee: https://gitee.com/profile/sshkeys
+```
+
+### 4. 构建前端（云环境）
+```bash
+# 使用云环境配置
+cp frontend/.env.cloud frontend/.env
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+### 5. 部署应用
+```bash
 # 重命名环境文件
-mv .env.cloud .env
+cp .env.cloud .env
 
 # 构建Docker镜像
 docker build -t payroll-system:latest .
 
-# 运行容器
-docker run -d -p 80:8000 -v /path/to/data/payroll.db:/app/payroll.db --name payroll-system payroll-system:latest
+# 运行容器（使用80端口）
+docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-system payroll-system:latest
 ```
 
 ### 5. 使用Docker Compose (推荐)
