@@ -23,6 +23,19 @@ else
     USE_COMPOSE=true
 fi
 
+# 检查Docker权限
+echo "检查Docker权限..."
+if ! docker info > /dev/null 2>&1; then
+    echo "⚠️  当前用户无Docker权限，尝试使用sudo或添加用户到docker组"
+    echo "可以运行: sudo usermod -aG docker $USER && newgrp docker"
+    echo "或使用sudo运行此脚本"
+    DOCKER_CMD="sudo docker"
+    COMPOSE_CMD="sudo docker-compose"
+else
+    DOCKER_CMD="docker"
+    COMPOSE_CMD="docker-compose"
+fi
+
 echo ""
 
 # 克隆代码
@@ -67,15 +80,15 @@ echo ""
 echo "4. 部署应用..."
 if [ "$USE_COMPOSE" = true ]; then
     echo "使用Docker Compose部署..."
-    docker-compose down 2>/dev/null || true
-    docker-compose build
-    docker-compose up -d
+    $COMPOSE_CMD down 2>/dev/null || true
+    $COMPOSE_CMD build
+    $COMPOSE_CMD up -d
 else
     echo "使用Docker部署..."
-    docker stop payroll-system 2>/dev/null || true
-    docker rm payroll-system 2>/dev/null || true
-    docker build -t payroll-system:latest .
-    docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-system payroll-system:latest
+    $DOCKER_CMD stop payroll-system 2>/dev/null || true
+    $DOCKER_CMD rm payroll-system 2>/dev/null || true
+    $DOCKER_CMD build -t payroll-system:latest .
+    $DOCKER_CMD run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-system payroll-system:latest
 fi
 
 echo "✅ 应用部署完成"
@@ -90,7 +103,7 @@ echo "6. 测试部署..."
 if curl -f http://localhost/api/health > /dev/null 2>&1; then
     echo "✅ 健康检查通过"
 else
-    echo "❌ 健康检查失败，请查看日志: docker logs payroll-system"
+    echo "❌ 健康检查失败，请查看日志: $DOCKER_CMD logs payroll-system"
     exit 1
 fi
 
