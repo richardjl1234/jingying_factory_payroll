@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # 主应用服务
+  payroll:
+    build: .
+    container_name: payroll-system
+    ports:
+      - "8000:8000"  # 内部端口，不直接暴露
+    volumes:
+      - ./data:/app/data
+      - ./payroll.db:/app/payroll.db
+    environment:
+      - DATABASE_URL=sqlite:///./payroll.db
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+      - ALGORITHM=${ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-30}
+      - APP_NAME=${APP_NAME:-Factory Payroll System}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - FORWARDED_ALLOW_IPS=*
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - payroll-network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: payroll-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - payroll
+    restart: unless-stopped
+    networks:
+      - payroll-network
+
+networks:
+  payroll-network:
+    driver: bridge
