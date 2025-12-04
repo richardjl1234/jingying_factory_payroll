@@ -42,7 +42,9 @@ new_payroll/
 │   │   └── main.py         # 应用入口
 │   ├── requirements.txt     # 依赖列表
 │   ├── run.py              # 运行脚本
-│   └── payroll.db          # SQLite数据库
+│   ├── init_db.py          # 数据库初始化脚本
+│   ├── generate_test_data.py # 测试数据生成脚本
+│   └── payroll.db          # SQLite数据库（自动生成）
 ├── frontend/               # 前端代码
 │   ├── src/               # 源代码
 │   │   ├── components/    # React组件
@@ -52,7 +54,32 @@ new_payroll/
 │   │   └── main.jsx       # 应用入口
 │   ├── package.json       # 依赖配置
 │   └── vite.config.js     # Vite配置
-└── Dockerfile             # Docker配置
+├── test/                  # 测试脚本和资源
+│   ├── test_api.py        # API测试脚本
+│   ├── test_local_api.py  # 本地API测试
+│   ├── user_management_test.js  # 用户管理测试
+│   └── *.png              # 测试截图
+├── docs/                  # 文档（可选）
+│   └── 用户手册.md        # 用户手册
+├── Dockerfile             # Docker配置
+├── docker-compose.yml     # Docker Compose配置
+├── docker-compose-https.yml # HTTPS Docker Compose配置
+├── nginx.conf             # Nginx配置
+├── CLOUD_DEPLOYMENT.md    # 云服务器部署指南
+├── HTTPS_DEPLOYMENT_GUIDE.md # HTTPS部署指南
+├── SSH_Password_Less_Login_Guide.md # SSH免密登录指南
+├── deploy_on_cloud.sh     # 云服务器一键部署脚本
+├── deploy_https_on_cloud.sh # HTTPS部署脚本
+├── generate_ssl_cert.sh   # SSL证书生成脚本
+├── generate_ssl_cert_windows.ps1 # Windows SSL证书生成脚本
+├── update_cloud_server.sh # 云服务器更新脚本
+├── stop_existing_container.sh # 停止现有容器脚本
+├── fix_docker_permissions.sh # Docker权限修复脚本
+├── test_cloud_deployment.sh # 云服务器部署测试脚本
+├── build_frontend_cloud.sh # 前端构建脚本
+├── .env.cloud             # 云服务器环境变量模板
+├── .env.cloud.https       # HTTPS环境变量模板
+└── README.md              # 项目说明
 ```
 
 ## 功能模块
@@ -224,6 +251,8 @@ npm run build
    - 分析生产效率
    - 导出数据
 
+详细使用说明请参考 [用户手册.md](用户手册.md)
+
 ## 开发说明
 
 ### 后端开发
@@ -267,8 +296,8 @@ docker build -t payroll-system .
 docker run -d -p 8000:8000 payroll-system
 ```
 
-### 云服务器部署（今日新增）
-系统已配置支持云服务器部署，服务器IP: 124.220.108.154
+### 云服务器部署
+系统已配置支持云服务器部署，提供一键部署脚本。
 
 #### 一键部署脚本
 ```bash
@@ -284,75 +313,20 @@ chmod +x deploy_on_cloud.sh
 #### 详细部署指南
 参考 [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md) 文件
 
-## 今日更新总结 (2025年12月4日)
+#### HTTPS部署
+参考 [HTTPS_DEPLOYMENT_GUIDE.md](HTTPS_DEPLOYMENT_GUIDE.md) 文件
 
-### 新增功能
-1. **云服务器部署支持**
-   - 前端环境变量配置，支持本地和云服务器环境
-   - 健康检查端点 `/api/health` 用于Docker健康检查
-   - Docker Compose配置优化
+## 测试
 
-2. **部署脚本集**
-   - `deploy_on_cloud.sh` - 一键部署脚本
-   - `fix_docker_permissions.sh` - Docker权限修复脚本
-   - `stop_existing_container.sh` - 停止现有容器脚本
-   - `update_cloud_server.sh` - 云服务器更新脚本
-   - `test_cloud_deployment.sh` - 云服务器测试脚本
+项目包含测试脚本，位于 `test/` 目录下。运行测试以确保功能正常：
 
-3. **环境配置**
-   - 前端环境变量: `frontend/.env` 和 `frontend/.env.cloud`
-   - 云服务器环境模板: `.env.cloud`
-   - API服务支持环境变量配置
-
-### 遇到的问题及解决方案
-
-#### 1. Docker权限问题
-**问题**: `permission denied while trying to connect to the Docker daemon socket`
-**解决方案**:
-- 添加用户到docker组: `sudo usermod -aG docker $USER`
-- 使用sudo运行部署脚本
-- 创建权限修复脚本自动处理
-
-#### 2. Git合并冲突
-**问题**: 本地修改导致无法拉取最新代码
-**解决方案**:
-- 创建更新脚本自动备份和重置本地修改
-- 提供git stash和git checkout选项
-
-#### 3. docker-compose版本警告
-**问题**: `version is obsolete` 警告
-**解决方案**: 移除docker-compose.yml中的version字段
-
-#### 4. 前端API地址硬编码
-**问题**: 前端硬编码`localhost:8000`，无法适应云服务器环境
-**解决方案**: 使用环境变量`VITE_API_BASE_URL`配置API地址
-
-#### 5. 健康检查缺失
-**问题**: Docker容器健康检查失败
-**解决方案**: 添加`/api/health`健康检查端点
-
-### 部署流程优化
-1. **环境自适应**: 前端根据环境变量自动切换API地址
-2. **权限自动检测**: 部署脚本自动检测Docker权限并使用sudo
-3. **容器清理**: 提供脚本停止和清理现有容器
-4. **一键部署**: 简化部署流程，减少手动操作
-
-### 测试验证
-- 本地Docker部署测试通过
-- 健康检查端点测试通过
-- API功能测试通过
-- 前端页面访问测试通过
-
-### Git提交记录
-今日所有更改已提交到Git仓库，提交信息如下:
-1. "准备云服务器部署" - 添加健康检查端点和环境配置
-2. "添加云服务器部署测试脚本" - 创建测试脚本
-3. "更新云服务器部署指南，添加HTTPS克隆选项" - 更新部署文档
-4. "添加云服务器一键部署脚本" - 创建一键部署脚本
-5. "修复Docker权限问题和docker-compose版本警告" - 修复权限和版本问题
-6. "添加Docker权限修复脚本" - 创建权限修复工具
-7. "添加云服务器更新脚本" - 创建代码更新工具
-8. "添加停止现有Docker容器脚本" - 创建容器管理工具
+```bash
+cd test
+# 运行API测试
+python test_api.py
+# 运行本地API测试
+python test_local_api.py
+```
 
 ## 快速开始
 
