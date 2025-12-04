@@ -49,47 +49,47 @@ export const authAPI = {
 // 用户管理API
 export const userAPI = {
   getUsers: (params) => api.get('/users/', { params }),
-  getUser: (id) => api.get(`/users/${id}/`),
+  getUser: (id) => api.get(`/users/${id}`),
   createUser: (data) => api.post('/users/', data),
-  updateUser: (id, data) => api.put(`/users/${id}/`, data),
-  deleteUser: (id) => api.delete(`/users/${id}/`)
+  updateUser: (id, data) => api.put(`/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/users/${id}`)
 };
 
 // 工人管理API
 export const workerAPI = {
   getWorkers: (params) => api.get('/workers/', { params }),
-  getWorker: (code) => api.get(`/workers/${code}/`),
+  getWorker: (code) => api.get(`/workers/${code}`),
   createWorker: (data) => api.post('/workers/', data),
-  updateWorker: (code, data) => api.put(`/workers/${code}/`, data),
-  deleteWorker: (code) => api.delete(`/workers/${code}/`)
+  updateWorker: (code, data) => api.put(`/workers/${code}`, data),
+  deleteWorker: (code) => api.delete(`/workers/${code}`)
 };
 
 // 工序管理API
 export const processAPI = {
   getProcesses: (params) => api.get('/processes/', { params }),
-  getProcess: (code) => api.get(`/processes/${code}/`),
+  getProcess: (code) => api.get(`/processes/${code}`),
   createProcess: (data) => api.post('/processes/', data),
-  updateProcess: (code, data) => api.put(`/processes/${code}/`, data),
-  deleteProcess: (code) => api.delete(`/processes/${code}/`)
+  updateProcess: (code, data) => api.put(`/processes/${code}`, data),
+  deleteProcess: (code) => api.delete(`/processes/${code}`)
 };
 
 // 定额管理API
 export const quotaAPI = {
   getQuotas: (params) => api.get('/quotas/', { params }),
-  getQuota: (id) => api.get(`/quotas/${id}/`),
-  getLatestQuota: (processCode) => api.get(`/quotas/latest/${processCode}/`),
+  getQuota: (id) => api.get(`/quotas/${id}`),
+  getLatestQuota: (processCode) => api.get(`/quotas/latest/${processCode}`),
   createQuota: (data) => api.post('/quotas/', data),
-  updateQuota: (id, data) => api.put(`/quotas/${id}/`, data),
-  deleteQuota: (id) => api.delete(`/quotas/${id}/`)
+  updateQuota: (id, data) => api.put(`/quotas/${id}`, data),
+  deleteQuota: (id) => api.delete(`/quotas/${id}`)
 };
 
 // 工资记录管理API
 export const salaryAPI = {
   getSalaryRecords: (params) => api.get('/salary-records/', { params }),
-  getSalaryRecord: (id) => api.get(`/salary-records/${id}/`),
+  getSalaryRecord: (id) => api.get(`/salary-records/${id}`),
   createSalaryRecord: (data) => api.post('/salary-records/', data),
-  updateSalaryRecord: (id, data) => api.put(`/salary-records/${id}/`, data),
-  deleteSalaryRecord: (id) => api.delete(`/salary-records/${id}/`)
+  updateSalaryRecord: (id, data) => api.put(`/salary-records/${id}`, data),
+  deleteSalaryRecord: (id) => api.delete(`/salary-records/${id}`)
 };
 
 // 报表API

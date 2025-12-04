@@ -18,8 +18,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-import os
-
 @router.post("/login", response_model=schemas.Token)
 def login_for_access_token(
     login_data: schemas.LoginRequest,
@@ -30,28 +28,32 @@ def login_for_access_token(
     logger.debug(f"登录请求: username={login_data.username}, password=[REDACTED]")
     logger.debug(f"数据库会话: {db}")
     
-    # 直接返回成功，用于测试
-    logger.info(f"简化登录处理: username={login_data.username}")
+    # 1. 从数据库获取用户
+    user = crud.get_user_by_username(db, username=login_data.username)
+    if not user:
+        logger.warning(f"用户不存在: username={login_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
-    # 1. 创建一个简单的用户对象
-    mock_user = {
-        "id": 1,
-        "username": login_data.username,
-        "name": "测试用户",
-        "role": "admin",
-        "wechat_openid": None,
-        "created_at": datetime.now(),
-        "updated_at": None,
-        "need_change_password": False
-    }
+    # 2. 验证密码
+    if not verify_password(login_data.password, user.password):
+        logger.warning(f"密码验证失败: username={login_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
-    logger.debug(f"创建模拟用户: {mock_user}")
+    logger.info(f"登录成功: username={login_data.username}")
     
-    # 2. 转换为UserInDB对象
-    user_in_db = schemas.UserInDB(**mock_user)
+    # 3. 转换为UserInDB对象
+    user_in_db = schemas.UserInDB.from_orm(user)
     logger.debug(f"转换为UserInDB对象: {user_in_db}")
     
-    # 3. 创建访问令牌
+    # 4. 创建访问令牌
     logger.debug("创建访问令牌...")
     access_token = create_access_token(
         data={"sub": login_data.username},
@@ -59,9 +61,7 @@ def login_for_access_token(
     )
     logger.debug(f"访问令牌创建完成: {access_token[:50]}...")
     
-    logger.info(f"登录成功: username={login_data.username}, token生成成功")
-    
-    # 4. 返回登录结果
+    # 5. 返回登录结果
     response_data = {
         "access_token": access_token, 
         "token_type": "bearer",
@@ -83,9 +83,18 @@ def change_password(
     logger.debug(f"当前用户: {current_user.username}")
     logger.debug(f"请求数据: old_password=[REDACTED], new_password=[REDACTED], confirm_password=[REDACTED]")
     
+    # 从数据库获取完整用户信息（包含密码哈希）
+    db_user = crud.get_user_by_id(db, user_id=current_user.id)
+    if not db_user:
+        logger.warning(f"用户不存在: user_id={current_user.id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
     # 验证旧密码
     logger.debug("验证旧密码...")
-    if not verify_password(change_password_data.old_password, current_user.password):
+    if not verify_password(change_password_data.old_password, db_user.password):
         logger.warning(f"旧密码验证失败: username={current_user.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

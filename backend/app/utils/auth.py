@@ -17,7 +17,16 @@ pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.debug(f"verify_password: plain_password={plain_password!r}, hashed_password={hashed_password!r}")
+    try:
+        result = pwd_context.verify(plain_password, hashed_password)
+        logger.debug(f"verify_password result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"verify_password error: {e}")
+        raise
 
 def get_password_hash(password: str) -> str:
     """获取密码哈希值"""

@@ -35,49 +35,81 @@ const AppLayout = ({ children }) => {
     window.location.href = '/login';
   };
 
-  // 菜单配置
-  const menuItems = [
-    {
-      key: 'home',
-      icon: <HomeOutlined />,
-      label: <Link to="/">首页</Link>
-    },
-    {
-      key: 'workers',
-      icon: <TeamOutlined />,
-      label: <Link to="/workers">工人管理</Link>
-    },
-    {
-      key: 'processes',
-      icon: <AppstoreOutlined />,
-      label: <Link to="/processes">工序管理</Link>
-    },
-    {
-      key: 'quotas',
-      icon: <DollarOutlined />,
-      label: <Link to="/quotas">定额管理</Link>
-    },
-    {
-      key: 'salary-records',
-      icon: <FileTextOutlined />,
-      label: <Link to="/salary-records">工资记录</Link>
-    },
-    {
-      key: 'reports',
-      icon: <FileTextOutlined />,
-      label: <Link to="/reports">报表统计</Link>
+  // 根据用户角色生成菜单项
+  const getMenuItems = () => {
+    const baseItems = [
+      {
+        key: 'home',
+        icon: <HomeOutlined />,
+        label: <Link to="/">首页</Link>
+      }
+    ];
+    
+    if (!user) {
+      return baseItems;
     }
-  ];
+    
+    const role = user.role;
+    
+    // 报表用户只能看到报表统计
+    if (role === 'report') {
+      return [
+        ...baseItems,
+        {
+          key: 'reports',
+          icon: <FileTextOutlined />,
+          label: <Link to="/reports">报表统计</Link>
+        }
+      ];
+    }
+    
+    // 管理员和统计员可以看到更多菜单
+    const commonItems = [
+      {
+        key: 'workers',
+        icon: <TeamOutlined />,
+        label: <Link to="/workers">工人管理</Link>
+      },
+      {
+        key: 'processes',
+        icon: <AppstoreOutlined />,
+        label: <Link to="/processes">工序管理</Link>
+      },
+      {
+        key: 'quotas',
+        icon: <DollarOutlined />,
+        label: <Link to="/quotas">定额管理</Link>
+      },
+      {
+        key: 'salary-records',
+        icon: <FileTextOutlined />,
+        label: <Link to="/salary-records">工资记录</Link>
+      },
+      {
+        key: 'reports',
+        icon: <FileTextOutlined />,
+        label: <Link to="/reports">报表统计</Link>
+      }
+    ];
+    
+    // 管理员额外添加用户管理菜单
+    if (role === 'admin') {
+      const adminItems = [
+        {
+          key: 'users',
+          icon: <UserOutlined />,
+          label: <Link to="/users">用户管理</Link>
+        },
+        ...commonItems
+      ];
+      return [...baseItems, ...adminItems];
+    }
+    
+    // 统计员（statistician）或其他角色
+    return [...baseItems, ...commonItems];
+  };
 
-  // 管理员菜单
-  if (user && user.role === 'admin') {
-    menuItems.splice(1, 0, {
-      key: 'users',
-      icon: <UserOutlined />,
-      label: <Link to="/users">用户管理</Link>
-    });
-    console.log('用户管理菜单已添加');
-  }
+  const menuItems = getMenuItems();
 
   
 
