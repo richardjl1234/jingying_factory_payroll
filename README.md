@@ -4,9 +4,31 @@
 
 工厂定额和计件工资管理系统是一个用于工厂管理工序定额和工人计件工资的Web应用。该系统支持工序管理、定额设置、工人信息管理、工资记录以及报表统计等功能，帮助工厂实现自动化的工资计算和管理。
 
-## 最近更新 (2025-12-04)
+## 最近更新 (2025-12-05)
 
-### 密码重置与系统优化
+### HTTPS部署与云服务器配置
+1. **HTTPS部署完成**：成功在云服务器 `124.220.108.154` 上完成HTTPS部署
+   - 生成自签名SSL证书
+   - 配置Nginx反向代理支持HTTPS
+   - 实现HTTP到HTTPS自动重定向
+   - 新增 `nginx-https-production.conf` 配置文件
+
+2. **SSH免密登录配置**：为云服务器配置SSH密钥，实现Git免密操作
+   - 生成SSH密钥对
+   - 配置SSH免密登录到Gitee
+   - 支持云服务器自动拉取代码更新
+
+3. **部署流程优化**：
+   - 创建标准化HTTPS部署流程文档 (`HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md`)
+   - 优化Docker容器部署脚本
+   - 添加自动化测试脚本 (`test_https_puppeteer.js`)
+
+4. **系统验证**：
+   - 通过Puppeteer自动化测试验证HTTPS登录功能
+   - 测试API接口在HTTPS环境下的正常工作
+   - 验证前端资源正确加载
+
+### 密码重置与系统优化 (2025-12-04)
 1. **密码重置**：重置了三个关键用户的密码，确保系统安全：
    - `root` → `root123`
    - `test` → `test123`
@@ -30,8 +52,9 @@
    - 测试了Docker容器运行状态和API健康检查。
 
 ### 使用说明更新
+- 系统现在可通过HTTPS访问：`https://124.220.108.154`
+- HTTP请求自动重定向到HTTPS
 - 登录时如遇问题，请尝试浏览器硬刷新 (Ctrl+F5) 以清除缓存。
-- 确保通过 `http://localhost` 访问系统（Docker容器映射到端口80）。
 
 ## 技术栈
 
@@ -94,8 +117,10 @@ new_payroll/
 ├── docker-compose.yml     # Docker Compose配置
 ├── docker-compose-https.yml # HTTPS Docker Compose配置
 ├── nginx.conf             # Nginx配置
+├── nginx-https-production.conf # 生产环境HTTPS Nginx配置
 ├── CLOUD_DEPLOYMENT.md    # 云服务器部署指南
 ├── HTTPS_DEPLOYMENT_GUIDE.md # HTTPS部署指南
+├── HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md # HTTPS部署分析与流程文档
 ├── SSH_Password_Less_Login_Guide.md # SSH免密登录指南
 ├── deploy_on_cloud.sh     # 云服务器一键部署脚本
 ├── deploy_https_on_cloud.sh # HTTPS部署脚本
