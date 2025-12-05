@@ -372,6 +372,60 @@ chmod +x deploy_on_cloud.sh
 #### HTTPS部署
 参考 [HTTPS_DEPLOYMENT_GUIDE.md](HTTPS_DEPLOYMENT_GUIDE.md) 文件
 
+### Docker部署架构说明
+系统采用双容器架构，分别运行后端应用和Nginx反向代理：
+
+#### 1. 后端容器 (payroll-backend)
+- **镜像构建**：使用项目根目录的 `Dockerfile` 构建
+- **基础镜像**：`python:3.10`
+- **包含内容**：
+  - Python后端应用代码
+  - 前端构建的静态文件 (`frontend/dist/`)
+  - 系统依赖和Python包
+- **运行命令**：
+  ```bash
+  docker build -t payroll-backend -f Dockerfile .
+  docker run -d --name payroll-backend -p 8000:8000 -v /path/to/payroll.db:/app/payroll.db payroll-backend
+  ```
+
+#### 2. Nginx容器 (payroll-nginx)
+- **镜像来源**：直接使用官方 `nginx:alpine` 镜像，**无需自定义Dockerfile**
+- **配置方式**：运行时挂载配置文件
+- **创建命令**：
+  ```bash
+  docker run -d --name payroll-nginx \
+    -p 80:80 -p 443:443 \
+    -v /path/to/nginx-https-production.conf:/etc/nginx/conf.d/default.conf:ro \
+    -v /path/to/ssl:/app/ssl:ro \
+    -v /path/to/frontend-dist:/app/frontend/dist:ro \
+    nginx:alpine
+  ```
+
+#### 架构优势
+1. **分离关注点**：后端和Nginx独立容器，便于维护和扩展
+2. **配置灵活**：Nginx配置可随时修改，无需重新构建镜像
+3. **轻量级**：使用Alpine镜像，资源占用少
+4. **官方维护**：Nginx镜像由Docker官方维护，安全更新及时
+
+#### 容器间通信
+```
+用户请求 → Nginx容器 (80/443) → 后端容器 (8000) → 数据库
+         ↑                    ↑
+     SSL终止             反向代理
+```
+
+#### 配置文件说明
+- `nginx-https-production.conf`：生产环境HTTPS配置
+  - HTTP自动重定向到HTTPS
+  - 静态文件服务 (`/app/frontend/dist`)
+  - API反向代理 (`/api/` → `http://172.17.0.1:8000`)
+  - SSL证书配置
+
+#### 数据持久化
+- **数据库**：通过卷挂载 `payroll.db` 文件
+- **配置文件**：Nginx配置、SSL证书、前端文件均通过卷挂载
+- **优势**：数据在容器重启后不会丢失，配置可随时更新
+
 ## 测试
 
 项目包含测试脚本，位于 `test/` 目录下。运行测试以确保功能正常：
