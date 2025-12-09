@@ -95,13 +95,33 @@ const UserManagement = () => {
 
   // 删除用户
   const handleDelete = async (userId) => {
-    try {
-      await userAPI.deleteUser(userId);
-      message.success('用户删除成功');
-      fetchUsers();
-    } catch (error) {
-      message.error('用户删除失败');
-    }
+    Modal.confirm({
+      title: '确认删除用户',
+      content: (
+        <div>
+          <p>删除用户将同时删除以下相关数据：</p>
+          <ul>
+            <li>用户创建的所有定额记录</li>
+            <li>用户创建的所有工资记录</li>
+          </ul>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+      ),
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await userAPI.deleteUser(userId);
+          message.success('用户删除成功');
+          fetchUsers();
+        } catch (error) {
+          message.error('用户删除失败');
+        }
+      },
+    });
   };
 
   // 表格列配置

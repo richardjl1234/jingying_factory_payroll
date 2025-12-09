@@ -104,13 +104,13 @@ def get_workers(db: Session, skip: int = 0, limit: int = 100):
 
 def create_worker(db: Session, worker: schemas.WorkerCreate):
     """创建工人"""
-    logger.debug(f"创建工人: worker_code={worker.worker_code}, name={worker.name}, department={worker.department}")
+    logger.debug(f"创建工人: worker_code={worker.worker_code}, name={worker.name}")
     db_worker = models.Worker(**worker.dict())
     logger.debug(f"创建工人对象: {db_worker}")
     db.add(db_worker)
     db.commit()
     db.refresh(db_worker)
-    logger.info(f"工人创建成功: worker_code={worker.worker_code}, id={db_worker.id}")
+    logger.info(f"工人创建成功: worker_code={worker.worker_code}")
     return db_worker
 
 def update_worker(db: Session, worker_code: str, worker_update: schemas.WorkerUpdate):
@@ -138,6 +138,17 @@ def delete_worker(db: Session, worker_code: str):
     if not db_worker:
         logger.warning(f"工人不存在: worker_code={worker_code}")
         return None
+    
+    # 先删除相关的工资记录
+    logger.debug(f"查找工人相关的工资记录: worker_code={worker_code}")
+    salary_records = db.query(models.SalaryRecord).filter(
+        models.SalaryRecord.worker_code == worker_code
+    ).all()
+    
+    if salary_records:
+        logger.debug(f"删除{len(salary_records)}条相关的工资记录")
+        for record in salary_records:
+            db.delete(record)
     
     logger.debug(f"删除工人对象: {db_worker}")
     db.delete(db_worker)
@@ -169,7 +180,7 @@ def create_process(db: Session, process: schemas.ProcessCreate):
     db.add(db_process)
     db.commit()
     db.refresh(db_process)
-    logger.info(f"工序创建成功: process_code={process.process_code}, id={db_process.id}")
+    logger.info(f"工序创建成功: process_code={process.process_code}")
     return db_process
 
 def update_process(db: Session, process_code: str, process_update: schemas.ProcessUpdate):
@@ -197,6 +208,27 @@ def delete_process(db: Session, process_code: str):
     if not db_process:
         logger.warning(f"工序不存在: process_code={process_code}")
         return None
+    
+    # 先删除相关的定额和工资记录
+    logger.debug(f"查找工序相关的定额: process_code={process_code}")
+    quotas = db.query(models.Quota).filter(
+        models.Quota.process_code == process_code
+    ).all()
+    
+    if quotas:
+        logger.debug(f"删除{len(quotas)}个相关的定额及其工资记录")
+        for quota in quotas:
+            # 删除定额相关的工资记录
+            salary_records = db.query(models.SalaryRecord).filter(
+                models.SalaryRecord.quota_id == quota.id
+            ).all()
+            if salary_records:
+                logger.debug(f"删除定额ID={quota.id}的{len(salary_records)}条工资记录")
+                for record in salary_records:
+                    db.delete(record)
+            
+            # 删除定额
+            db.delete(quota)
     
     logger.debug(f"删除工序对象: {db_process}")
     db.delete(db_process)
@@ -275,6 +307,17 @@ def delete_quota(db: Session, quota_id: int):
     if not db_quota:
         logger.warning(f"定额不存在: quota_id={quota_id}")
         return None
+    
+    # 先删除相关的工资记录
+    logger.debug(f"查找定额相关的工资记录: quota_id={quota_id}")
+    salary_records = db.query(models.SalaryRecord).filter(
+        models.SalaryRecord.quota_id == quota_id
+    ).all()
+    
+    if salary_records:
+        logger.debug(f"删除{len(salary_records)}条相关的工资记录")
+        for record in salary_records:
+            db.delete(record)
     
     logger.debug(f"删除定额对象: {db_quota}")
     db.delete(db_quota)
@@ -380,20 +423,4 @@ def get_worker_salary_summary(db: Session, worker_code: str, record_date: str):
     
     total = result.total_amount or Decimal("0.00")
     logger.debug(f"工人月度工资汇总结果: worker_code={worker_code}, total_amount={total}")
-    return total
-
-def get_department_salary_summary(db: Session, department: str, record_date: str):
-    """获取部门月度工资汇总"""
-    logger.debug(f"获取部门月度工资汇总: department={department}, record_date={record_date}")
-    result = db.query(
-        func.sum(models.SalaryRecord.amount).label("total_amount")
-    ).join(
-        models.Worker, models.SalaryRecord.worker_code == models.Worker.worker_code
-    ).filter(
-        models.Worker.department == department,
-        models.SalaryRecord.record_date == record_date
-    ).first()
-    
-    total = result.total_amount or Decimal("0.00")
-    logger.debug(f"部门月度工资汇总结果: department={department}, total_amount={total}")
     return total

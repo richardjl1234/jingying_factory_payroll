@@ -77,13 +77,33 @@ const ProcessManagement = () => {
 
   // 删除工序
   const handleDelete = async (processCode) => {
-    try {
-      await processAPI.deleteProcess(processCode);
-      message.success('工序删除成功');
-      fetchProcesses();
-    } catch (error) {
-      message.error('工序删除失败');
-    }
+    Modal.confirm({
+      title: '确认删除工序',
+      content: (
+        <div>
+          <p>删除工序将同时删除以下相关数据：</p>
+          <ul>
+            <li>所有相关的定额记录</li>
+            <li>所有相关的工资记录</li>
+          </ul>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+      ),
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await processAPI.deleteProcess(processCode);
+          message.success('工序删除成功');
+          fetchProcesses();
+        } catch (error) {
+          message.error('工序删除失败');
+        }
+      },
+    });
   };
 
   // 表格列配置

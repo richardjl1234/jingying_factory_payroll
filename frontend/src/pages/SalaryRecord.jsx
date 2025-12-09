@@ -137,13 +137,29 @@ const SalaryRecord = () => {
 
   // 删除记录
   const handleDelete = async (recordId) => {
-    try {
-      await salaryAPI.deleteSalaryRecord(recordId);
-      message.success('工资记录删除成功');
-      fetchSalaryRecords();
-    } catch (error) {
-      message.error('工资记录删除失败');
-    }
+    Modal.confirm({
+      title: '确认删除工资记录',
+      content: (
+        <div>
+          <p>确定要删除这条工资记录吗？</p>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+      ),
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await salaryAPI.deleteSalaryRecord(recordId);
+          message.success('工资记录删除成功');
+          fetchSalaryRecords();
+        } catch (error) {
+          message.error('工资记录删除失败');
+        }
+      },
+    });
   };
 
   // 表格列配置

@@ -99,13 +99,32 @@ const QuotaManagement = () => {
 
   // 删除定额
   const handleDelete = async (quotaId) => {
-    try {
-      await quotaAPI.deleteQuota(quotaId);
-      message.success('定额删除成功');
-      fetchQuotas();
-    } catch (error) {
-      message.error('定额删除失败');
-    }
+    Modal.confirm({
+      title: '确认删除定额',
+      content: (
+        <div>
+          <p>删除定额将同时删除以下相关数据：</p>
+          <ul>
+            <li>所有相关的工资记录</li>
+          </ul>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+      ),
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await quotaAPI.deleteQuota(quotaId);
+          message.success('定额删除成功');
+          fetchQuotas();
+        } catch (error) {
+          message.error('定额删除失败');
+        }
+      },
+    });
   };
 
   // 表格列配置

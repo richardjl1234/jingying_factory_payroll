@@ -48,12 +48,6 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
     logger.debug(f"收到请求: {request.method} {request.url.path}")
     logger.debug(f"请求头: {dict(request.headers)}")
-    if request.method in ["POST", "PUT", "PATCH"]:
-        try:
-            body = await request.body()
-            logger.debug(f"请求体: {body.decode()}")
-        except:
-            logger.debug("无法读取请求体")
     
     response = await call_next(request)
     

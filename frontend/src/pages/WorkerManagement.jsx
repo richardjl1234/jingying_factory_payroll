@@ -75,13 +75,32 @@ const WorkerManagement = () => {
 
   // 删除工人
   const handleDelete = async (workerCode) => {
-    try {
-      await workerAPI.deleteWorker(workerCode);
-      message.success('工人删除成功');
-      fetchWorkers();
-    } catch (error) {
-      message.error('工人删除失败');
-    }
+    Modal.confirm({
+      title: '确认删除工人',
+      content: (
+        <div>
+          <p>删除工人将同时删除以下相关数据：</p>
+          <ul>
+            <li>所有相关的工资记录</li>
+          </ul>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+      ),
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await workerAPI.deleteWorker(workerCode);
+          message.success('工人删除成功');
+          fetchWorkers();
+        } catch (error) {
+          message.error('工人删除失败');
+        }
+      },
+    });
   };
 
   // 表格列配置
