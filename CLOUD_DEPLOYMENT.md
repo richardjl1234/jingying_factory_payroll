@@ -6,152 +6,122 @@
 
 ## 环境要求
 - Docker
-- Docker Compose (可选)
+- 支持HTTPS部署（使用Nginx反向代理）
 
-## 部署步骤
+## 部署概述
+当前系统采用双容器架构：
+1. **后端容器** (payroll-backend): 运行FastAPI应用，端口8000
+2. **Nginx容器** (payroll-nginx): 提供HTTPS反向代理，端口80/443
 
-### 1. 准备部署文件
-将以下文件上传到云服务器：
-- `Dockerfile`
-- `backend/` 目录
-- `frontend/dist/` 目录 (使用云环境构建)
-- `.env.cloud` (重命名为 `.env`)
-- `docker-compose.yml` (如果使用)
+## 推荐部署流程
+完整的HTTPS部署流程请参考最新文档：[HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md)
 
-### 2. 构建前端 (云环境)
-在本地构建前端用于云环境：
-```bash
-# 使用云环境配置
-cp frontend/.env.cloud frontend/.env
-cd frontend
-npm run build
-```
+### 简要步骤
 
-或者使用提供的脚本：
-```bash
-chmod +x build_frontend_cloud.sh
-./build_frontend_cloud.sh
-```
-
-### 3. 获取代码到云服务器
-有两种方式：
-
-#### 方式一：使用HTTPS（推荐，无需SSH密钥）
+#### 1. 准备环境
 ```bash
 # 克隆代码
 git clone https://gitee.com/richardjl/payroll-system.git
 cd payroll-system
-```
 
-#### 方式二：使用SSH（需要配置SSH密钥）
-如果已配置SSH密钥，可以使用：
-```bash
-git clone git@gitee.com:richardjl/payroll-system.git
-cd payroll-system
-```
+# 生成SSL证书
+./generate_ssl_cert.sh  # 创建ssl/cert.pem和ssl/key.pem
 
-如果未配置SSH密钥，可以生成并添加到Gitee：
-```bash
-# 生成SSH密钥
-ssh-keygen -t ed25519 -C "your-email@example.com"
+# 准备前端环境
+cat > frontend/.env << 'EOF'
+VITE_API_BASE_URL=/api
+VITE_APP_ENV=production
+VITE_ENABLE_HTTPS=true
+EOF
 
-# 查看公钥
-cat ~/.ssh/id_ed25519.pub
-
-# 将公钥添加到Gitee: https://gitee.com/profile/sshkeys
-```
-
-### 4. 构建前端（云环境）
-```bash
-# 使用云环境配置
-cp frontend/.env.cloud frontend/.env
+# 构建前端
 cd frontend
 npm install
 npm run build
 cd ..
 ```
 
-### 5. 部署应用
+#### 2. 数据库准备
 ```bash
-# 重命名环境文件
-cp .env.cloud .env
+# 确保数据库有正确的密码哈希格式（如遇登录问题）
+python3 fix_password_hash.py
 
-# 构建Docker镜像
-docker build -t payroll-system:latest .
-
-# 运行容器（使用80端口）
-docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-system payroll-system:latest
+# 验证测试用户
+sqlite3 payroll.db "SELECT username, role FROM users WHERE username='test';"
+# 应返回: test|admin
 ```
 
-### 5. 使用Docker Compose (推荐)
-创建 `docker-compose.yml`:
-```yaml
-version: '3.8'
-
-services:
-  payroll:
-    build: .
-    container_name: payroll-system
-    ports:
-      - "80:8000"
-    volumes:
-      - ./data:/app/data
-      - ./payroll.db:/app/payroll.db
-    environment:
-      - DATABASE_URL=sqlite:///./payroll.db
-    restart: unless-stopped
-```
-
-运行:
+#### 3. Docker部署
 ```bash
-docker-compose up -d
+# 构建后端镜像
+docker build -t payroll-backend -f Dockerfile .
+
+# 运行后端容器
+docker run -d --name payroll-backend \
+  -p 8000:8000 \
+  -v $(pwd)/payroll.db:/app/payroll.db \
+  payroll-backend
+
+# 运行Nginx容器
+docker run -d --name payroll-nginx \
+  -p 80:80 -p 443:443 \
+  -v $(pwd)/nginx-https-production.conf:/etc/nginx/conf.d/default.conf:ro \
+  -v $(pwd)/ssl:/app/ssl:ro \
+  -v $(pwd)/frontend/dist:/app/frontend/dist:ro \
+  nginx:alpine
 ```
 
 ## 环境配置
 
-### 本地开发环境
-- 前端API基础URL: `http://localhost:8000/api`
-- 数据库: SQLite本地文件
-- 日志级别: DEBUG
+### 前端环境变量
+- 开发环境 (`frontend/.env`): `VITE_API_BASE_URL=/api`
+- 生产环境 (`frontend/.env`): `VITE_API_BASE_URL=/api` (相对路径，由Nginx代理)
 
-### 云生产环境
-- 前端API基础URL: `http://124.220.108.154/api`
-- 数据库: SQLite持久化存储
-- 日志级别: INFO (可在.env中调整)
+### 后端环境变量
+- 数据库: SQLite (`payroll.db`)
+- JWT密钥: 通过环境变量 `SECRET_KEY` 设置
 
 ## 测试验证
 
-### 1. API测试
+### 1. 健康检查
 ```bash
-# 测试登录API
-curl -X POST http://124.220.108.154/api/auth/login \
+# HTTPS健康检查（跳过证书验证）
+curl -k https://124.220.108.154/api/health
+# 预期: {"status":"healthy","timestamp":...}
+```
+
+### 2. 登录测试
+```bash
+curl -k -X POST https://124.220.108.154/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "test", "password": "test123"}'
+  -d '{"username":"test","password":"test123"}'
+# 预期: JWT令牌响应
 ```
 
-### 2. 前端测试
-访问: `http://124.220.108.154`
+### 3. 前端访问测试
+访问: `https://124.220.108.154`
 
-### 3. 使用测试脚本
+### 4. 自动化测试
 ```bash
-# 修改测试脚本使用云服务器IP
-export TEST_BASE_URL=http://124.220.108.154
-python test/test_local_api.py
-```
-
-## 日志查看
-```bash
-# 查看容器日志
-docker logs payroll-system
-
-# 查看实时日志
-docker logs -f payroll-system
-
-# 查看特定时间段的日志
-docker logs --since 1h payroll-system
+cd test
+npm install puppeteer
+node test_https_puppeteer.js
+# 预期: ✅ HTTPS登录测试成功
 ```
 
 ## 维护操作
+
+### 查看日志
+```bash
+# Nginx日志
+docker logs payroll-nginx
+
+# 后端日志
+docker logs payroll-backend
+
+# 实时日志
+docker logs -f payroll-backend
+```
 
 ### 更新应用
 ```bash
@@ -159,14 +129,14 @@ docker logs --since 1h payroll-system
 git pull
 
 # 重新构建前端
-cd frontend && npm run build
+cd frontend && npm run build && cd ..
 
-# 重新构建Docker镜像
-docker build -t payroll-system:latest .
+# 重新构建后端镜像
+docker build -t payroll-backend -f Dockerfile .
 
 # 重启容器
-docker-compose down
-docker-compose up -d
+docker restart payroll-backend
+docker restart payroll-nginx
 ```
 
 ### 备份数据库
@@ -174,39 +144,102 @@ docker-compose up -d
 # 备份SQLite数据库
 cp payroll.db payroll.db.backup.$(date +%Y%m%d)
 
-# 或使用Docker卷备份
-docker cp payroll-system:/app/payroll.db ./backup/
+# 从容器中备份
+docker cp payroll-backend:/app/payroll.db ./backup/
 ```
 
 ### 监控
 ```bash
-# 查看容器状态
+# 容器状态
 docker ps
 
-# 查看资源使用
+# 资源使用
 docker stats
 
-# 查看日志文件
-docker exec payroll-system tail -f /app/backend_debug_*.log
+# 进程检查
+docker exec payroll-backend ps aux
 ```
 
 ## 故障排除
 
 ### 常见问题
-1. **端口冲突**: 确保80端口未被占用
-2. **数据库权限**: 确保数据库文件可写
-3. **前端API连接失败**: 检查VITE_API_BASE_URL配置
-4. **容器启动失败**: 查看Docker日志 `docker logs payroll-system`
 
-### 日志级别调整
-修改 `.env` 文件中的日志配置，或通过环境变量覆盖：
+1. **Nginx容器启动失败**
+   ```bash
+   # 检查配置语法
+   docker exec payroll-nginx nginx -t
+   
+   # 查看错误日志
+   docker logs payroll-nginx
+   ```
+
+2. **后端连接失败**
+   ```bash
+   # 检查后端是否运行
+   docker ps | grep payroll-backend
+   
+   # 检查后端日志
+   docker logs payroll-backend
+   
+   # 测试内部连接
+   curl http://localhost:8000/api/health
+   ```
+
+3. **密码哈希问题**
+   ```bash
+   # 运行密码哈希修复脚本
+   python3 fix_password_hash.py
+   
+   # 重启后端容器
+   docker restart payroll-backend
+   ```
+
+4. **SSL证书问题**
+   ```bash
+   # 重新生成证书
+   ./generate_ssl_cert.sh
+   
+   # 重启Nginx
+   docker restart payroll-nginx
+   ```
+
+5. **前端API连接失败**
+   - 检查前端构建配置 `frontend/.env`
+   - 确保 `VITE_API_BASE_URL=/api`
+   - 重新构建前端 `cd frontend && npm run build`
+
+### 日志分析
 ```bash
-docker run -e LOG_LEVEL=INFO ...
+# 查看最近错误
+docker logs payroll-nginx --tail 100 | grep error
+docker logs payroll-backend --tail 100 | grep error
+
+# 访问日志
+docker exec payroll-nginx tail -f /var/log/nginx/access.log
 ```
 
 ## 安全建议
-1. 修改默认JWT密钥
-2. 使用HTTPS (配置反向代理)
-3. 定期备份数据库
-4. 监控容器资源使用
-5. 设置适当的防火墙规则
+
+1. **HTTPS配置**
+   - 生产环境建议使用Let's Encrypt证书替换自签名证书
+   - 配置HTTP到HTTPS自动重定向
+
+2. **访问控制**
+   - 配置防火墙，仅开放必要端口 (80, 443, 22)
+   - 使用强密码和定期更换JWT密钥
+
+3. **数据安全**
+   - 定期备份数据库
+   - 监控容器资源使用，防止资源耗尽
+
+4. **更新维护**
+   - 定期更新Docker基础镜像
+   - 监控SSL证书过期时间
+
+## 扩展阅读
+- [HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md) - 详细的HTTPS部署分析与流程
+- [HTTPS_DEPLOYMENT_GUIDE.md](HTTPS_DEPLOYMENT_GUIDE.md) - HTTPS部署指南（部分内容已更新）
+- [SSH_Password_Less_Login_Guide.md](SSH_Password_Less_Login_Guide.md) - SSH免密登录配置指南
+
+## 联系方式
+如有部署问题，请参考最新文档或联系系统管理员。

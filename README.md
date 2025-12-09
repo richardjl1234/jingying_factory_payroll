@@ -111,28 +111,15 @@ new_payroll/
 │   ├── test_local_api.py  # 本地API测试
 │   ├── user_management_test.js  # 用户管理测试
 │   └── *.png              # 测试截图
-├── docs/                  # 文档（可选）
-│   └── 用户手册.md        # 用户手册
 ├── Dockerfile             # Docker配置
-├── docker-compose.yml     # Docker Compose配置
-├── docker-compose-https.yml # HTTPS Docker Compose配置
-├── nginx.conf             # Nginx配置
 ├── nginx-https-production.conf # 生产环境HTTPS Nginx配置
 ├── CLOUD_DEPLOYMENT.md    # 云服务器部署指南
 ├── HTTPS_DEPLOYMENT_GUIDE.md # HTTPS部署指南
-├── HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md # HTTPS部署分析与流程文档
+├── HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md # HTTPS部署分析与流程文档（最新）
 ├── SSH_Password_Less_Login_Guide.md # SSH免密登录指南
-├── deploy_on_cloud.sh     # 云服务器一键部署脚本
-├── deploy_https_on_cloud.sh # HTTPS部署脚本
 ├── generate_ssl_cert.sh   # SSL证书生成脚本
-├── generate_ssl_cert_windows.ps1 # Windows SSL证书生成脚本
-├── update_cloud_server.sh # 云服务器更新脚本
-├── stop_existing_container.sh # 停止现有容器脚本
-├── fix_docker_permissions.sh # Docker权限修复脚本
-├── test_cloud_deployment.sh # 云服务器部署测试脚本
-├── build_frontend_cloud.sh # 前端构建脚本
-├── .env.cloud             # 云服务器环境变量模板
-├── .env.cloud.https       # HTTPS环境变量模板
+├── fix_password_hash.py   # 密码哈希修复脚本
+├── test_https_puppeteer.js # HTTPS自动化测试脚本
 └── README.md              # 项目说明
 ```
 
@@ -353,24 +340,21 @@ docker run -d -p 8000:8000 payroll-system
 ```
 
 ### 云服务器部署
-系统已配置支持云服务器部署，提供一键部署脚本。
+系统已配置支持云服务器HTTPS部署，请参考最新的部署文档。
 
-#### 一键部署脚本
-```bash
-# 克隆代码
-git clone https://gitee.com/richardjl/payroll-system.git
-cd payroll-system
-
-# 运行部署脚本
-chmod +x deploy_on_cloud.sh
-./deploy_on_cloud.sh
-```
+#### 推荐部署流程
+参考 [HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md) 文件中的"Robust HTTPS Deployment Procedure"章节，包含完整的准备、数据库准备、Docker部署、验证和回滚步骤。
 
 #### 详细部署指南
-参考 [CLOUD_DEPLOYMENT.md](CLOUD_DEPLOYMENT.md) 文件
+- **CLOUD_DEPLOYMENT.md**: 基础云服务器部署指南（已更新）
+- **HTTPS_DEPLOYMENT_GUIDE.md**: HTTPS部署指南（已更新）
+- **HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md**: 详细的HTTPS部署分析与流程文档（最新）
 
-#### HTTPS部署
-参考 [HTTPS_DEPLOYMENT_GUIDE.md](HTTPS_DEPLOYMENT_GUIDE.md) 文件
+#### 关键文件
+- `nginx-https-production.conf`: 生产环境Nginx HTTPS配置
+- `generate_ssl_cert.sh`: SSL证书生成脚本
+- `fix_password_hash.py`: 密码哈希修复脚本（如遇登录问题）
+- `test_https_puppeteer.js`: HTTPS自动化测试脚本（部署验证）
 
 ### Docker部署架构说明
 系统采用双容器架构，分别运行后端应用和Nginx反向代理：
@@ -460,15 +444,34 @@ npm run dev
 ```
 
 ### 云服务器部署
+请参考最新的HTTPS部署文档 [HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md) 中的完整步骤。
+
+简要步骤：
 ```bash
 # 登录云服务器
 ssh ubuntu@124.220.108.154
 
-# 一键部署
+# 克隆代码
 git clone https://gitee.com/richardjl/payroll-system.git
 cd payroll-system
-chmod +x deploy_on_cloud.sh
-./deploy_on_cloud.sh
+
+# 生成SSL证书
+./generate_ssl_cert.sh
+
+# 准备前端环境
+cat > frontend/.env << 'EOF'
+VITE_API_BASE_URL=/api
+VITE_APP_ENV=production
+VITE_ENABLE_HTTPS=true
+EOF
+
+# 构建前端
+cd frontend
+npm install
+npm run build
+cd ..
+
+# 部署（详细命令请参考文档）
 ```
 
 ## 注意事项
