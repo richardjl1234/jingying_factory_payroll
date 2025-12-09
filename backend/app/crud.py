@@ -80,11 +80,19 @@ def delete_user(db: Session, user_id: int):
         logger.warning(f"用户不存在: user_id={user_id}")
         return None
     
+    # 保存用户信息用于返回
+    user_info = {
+        "id": db_user.id,
+        "username": db_user.username,
+        "name": db_user.name,
+        "role": db_user.role
+    }
+    
     logger.debug(f"删除用户对象: {db_user}")
     db.delete(db_user)
     db.commit()
     logger.info(f"用户删除成功: user_id={user_id}, username={db_user.username}")
-    return db_user
+    return user_info
 
 # 工人相关CRUD
 
@@ -139,6 +147,13 @@ def delete_worker(db: Session, worker_code: str):
         logger.warning(f"工人不存在: worker_code={worker_code}")
         return None
     
+    # 保存工人信息用于返回
+    worker_info = {
+        "worker_code": db_worker.worker_code,
+        "name": db_worker.name,
+        "department": db_worker.department
+    }
+    
     # 先删除相关的工资记录
     logger.debug(f"查找工人相关的工资记录: worker_code={worker_code}")
     salary_records = db.query(models.SalaryRecord).filter(
@@ -154,7 +169,7 @@ def delete_worker(db: Session, worker_code: str):
     db.delete(db_worker)
     db.commit()
     logger.info(f"工人删除成功: worker_code={worker_code}")
-    return db_worker
+    return worker_info
 
 # 工序相关CRUD
 
@@ -209,6 +224,13 @@ def delete_process(db: Session, process_code: str):
         logger.warning(f"工序不存在: process_code={process_code}")
         return None
     
+    # 保存工序信息用于返回
+    process_info = {
+        "process_code": db_process.process_code,
+        "name": db_process.name,
+        "category": db_process.category
+    }
+    
     # 先删除相关的定额和工资记录
     logger.debug(f"查找工序相关的定额: process_code={process_code}")
     quotas = db.query(models.Quota).filter(
@@ -234,7 +256,7 @@ def delete_process(db: Session, process_code: str):
     db.delete(db_process)
     db.commit()
     logger.info(f"工序删除成功: process_code={process_code}")
-    return db_process
+    return process_info
 
 # 定额相关CRUD
 
@@ -308,6 +330,14 @@ def delete_quota(db: Session, quota_id: int):
         logger.warning(f"定额不存在: quota_id={quota_id}")
         return None
     
+    # 保存定额信息用于返回
+    quota_info = {
+        "id": db_quota.id,
+        "process_code": db_quota.process_code,
+        "unit_price": str(db_quota.unit_price),
+        "effective_date": str(db_quota.effective_date)
+    }
+    
     # 先删除相关的工资记录
     logger.debug(f"查找定额相关的工资记录: quota_id={quota_id}")
     salary_records = db.query(models.SalaryRecord).filter(
@@ -323,7 +353,7 @@ def delete_quota(db: Session, quota_id: int):
     db.delete(db_quota)
     db.commit()
     logger.info(f"定额删除成功: quota_id={quota_id}")
-    return db_quota
+    return quota_info
 
 # 工资记录相关CRUD
 
@@ -405,11 +435,22 @@ def delete_salary_record(db: Session, record_id: int):
         logger.warning(f"工资记录不存在: record_id={record_id}")
         return None
     
+    # 保存记录信息用于返回
+    record_info = {
+        "id": db_record.id,
+        "worker_code": db_record.worker_code,
+        "quota_id": db_record.quota_id,
+        "quantity": str(db_record.quantity),
+        "record_date": db_record.record_date,
+        "unit_price": str(db_record.unit_price),
+        "amount": str(db_record.amount)
+    }
+    
     logger.debug(f"删除工资记录对象: {db_record}")
     db.delete(db_record)
     db.commit()
     logger.info(f"工资记录删除成功: record_id={record_id}")
-    return db_record
+    return record_info
 
 def get_worker_salary_summary(db: Session, worker_code: str, record_date: str):
     """获取工人月度工资汇总"""

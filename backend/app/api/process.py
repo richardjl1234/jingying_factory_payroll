@@ -74,7 +74,7 @@ def update_process(
     
     return db_process
 
-@router.delete("/{process_code}", response_model=schemas.Process)
+@router.delete("/{process_code}")
 def delete_process(
     process_code: str,
     db: Session = Depends(get_db),
@@ -84,4 +84,4 @@ def delete_process(
     db_process = crud.delete_process(db, process_code=process_code)
     if db_process is None:
         raise HTTPException(status_code=404, detail="Process not found")
-    return db_process
+    return {"message": "工序删除成功", "process_code": process_code}

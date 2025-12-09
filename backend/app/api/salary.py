@@ -75,7 +75,7 @@ def update_salary_record(
         raise HTTPException(status_code=404, detail="Salary record not found")
     return db_record
 
-@router.delete("/{record_id}", response_model=schemas.SalaryRecord)
+@router.delete("/{record_id}")
 def delete_salary_record(
     record_id: int,
     db: Session = Depends(get_db),
@@ -85,4 +85,4 @@ def delete_salary_record(
     db_record = crud.delete_salary_record(db, record_id=record_id)
     if db_record is None:
         raise HTTPException(status_code=404, detail="Salary record not found")
-    return db_record
+    return {"message": "工资记录删除成功", "record_id": record_id}

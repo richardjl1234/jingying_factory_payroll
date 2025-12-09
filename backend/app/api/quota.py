@@ -63,7 +63,7 @@ def update_quota(
         raise HTTPException(status_code=404, detail="Quota not found")
     return db_quota
 
-@router.delete("/{quota_id}", response_model=schemas.Quota)
+@router.delete("/{quota_id}")
 def delete_quota(
     quota_id: int,
     db: Session = Depends(get_db),
@@ -73,7 +73,7 @@ def delete_quota(
     db_quota = crud.delete_quota(db, quota_id=quota_id)
     if db_quota is None:
         raise HTTPException(status_code=404, detail="Quota not found")
-    return db_quota
+    return {"message": "定额删除成功", "quota_id": quota_id}
 
 @router.get("/latest/{process_code}", response_model=schemas.Quota)
 def get_latest_quota(

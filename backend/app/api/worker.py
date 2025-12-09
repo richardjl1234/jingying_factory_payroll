@@ -60,7 +60,7 @@ def update_worker(
         raise HTTPException(status_code=404, detail="Worker not found")
     return db_worker
 
-@router.delete("/{worker_code}", response_model=schemas.Worker)
+@router.delete("/{worker_code}")
 def delete_worker(
     worker_code: str,
     db: Session = Depends(get_db),
@@ -70,4 +70,4 @@ def delete_worker(
     db_worker = crud.delete_worker(db, worker_code=worker_code)
     if db_worker is None:
         raise HTTPException(status_code=404, detail="Worker not found")
-    return db_worker
+    return {"message": "工人删除成功", "worker_code": worker_code}

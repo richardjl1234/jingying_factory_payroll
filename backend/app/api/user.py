@@ -60,7 +60,7 @@ def update_user(
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
 
-@router.delete("/{user_id}", response_model=schemas.User)
+@router.delete("/{user_id}")
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
@@ -70,4 +70,4 @@ def delete_user(
     db_user = crud.delete_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+    return {"message": "用户删除成功", "user_id": user_id}
