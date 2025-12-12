@@ -5,7 +5,7 @@ echo "Payroll System - Complete Test Suite"
 echo "============================================"
 echo ""
 
-echo "[1/5] Checking Docker installation..."
+echo "[1/6] Checking Docker installation..."
 docker --version > /dev/null 2>&1
 if [ $? -ne 0 ]; then
     echo "ERROR: Docker is not installed or not in PATH"
@@ -14,7 +14,21 @@ fi
 echo "✓ Docker is available"
 
 echo ""
-echo "[2/5] Rebuilding Docker image..."
+echo "[2/6] Rebuilding frontend..."
+echo "Building frontend with npm..."
+cd frontend
+npm install
+npm run build
+cd ..
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Frontend build failed"
+    exit 1
+fi
+echo "✓ Frontend built successfully"
+
+echo ""
+echo "[3/6] Rebuilding Docker image..."
 echo "Building payroll-system:latest..."
 docker build -t payroll-system:latest .
 
@@ -25,13 +39,13 @@ fi
 echo "✓ Docker image built successfully"
 
 echo ""
-echo "[3/5] Stopping and removing existing container..."
+echo "[4/6] Stopping and removing existing container..."
 docker stop payroll-system > /dev/null 2>&1
 docker rm payroll-system > /dev/null 2>&1
 echo "✓ Cleaned up existing container"
 
 echo ""
-echo "[4/5] Starting new Docker container..."
+echo "[5/6] Starting new Docker container..."
 docker run -d -p 8000:8000 --name payroll-system payroll-system:latest
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to start Docker container"
@@ -50,7 +64,7 @@ fi
 echo "✓ Docker container is running on port 8000"
 
 echo ""
-echo "[5/5] Initializing database and generating test data..."
+echo "[6/6] Initializing database and generating test data..."
 echo "Initializing database tables..."
 docker exec payroll-system python backend/init_db.py
 if [ $? -ne 0 ]; then
@@ -74,13 +88,14 @@ echo "============================================"
 echo ""
 echo "Found the following test cases in the test/ folder:"
 echo ""
-echo "1. test_confirmation_dialogs.js      - Tests confirmation dialogs for delete operations"
-echo "2. test_deletion_operations.js       - Tests basic delete operations"
-echo "3. test_deletion_with_creation.js    - Tests delete operations with data creation"
-echo "4. test_worker_process_operations.js - Tests worker and process management operations"
-echo "5. test_worker_process_operations_local.js - Local version of worker/process tests"
-echo "6. user_management_test_local.js     - Tests user management operations"
-echo "7. test_quota_salary_deletion.js     - Tests quota and salary record deletion"
+echo "1. test_login_basic.js               - Tests basic login functionality"
+echo "2. test_confirmation_dialogs.js      - Tests confirmation dialogs for delete operations"
+echo "3. test_deletion_operations.js       - Tests basic delete operations"
+echo "4. test_deletion_with_creation.js    - Tests delete operations with data creation"
+echo "5. test_worker_process_operations.js - Tests worker and process management operations"
+echo "6. test_worker_process_operations_local.js - Local version of worker/process tests"
+echo "7. user_management_test_local.js     - Tests user management operations"
+echo "8. test_quota_salary_deletion.js     - Tests quota and salary record deletion"
 echo ""
 echo "Note: test_https_puppeteer.js is for HTTPS testing and requires external server"
 echo ""
@@ -130,6 +145,7 @@ run_test() {
 }
 
 # Run all test cases
+run_test "test_login_basic.js" "Basic Login Test"
 run_test "test_deletion_with_creation.js" "Deletion with Creation Test"
 run_test "test_deletion_operations.js" "Deletion Operations Test"
 run_test "test_worker_process_operations_local.js" "Worker/Process Operations Test"

@@ -33,7 +33,19 @@ const Login = () => {
         window.location.href = '/';
       }
     } catch (error) {
-      message.error(error.response?.data?.detail || '登录失败，请检查用户名和密码');
+      console.error('登录错误详情:', error);
+      console.error('响应数据:', error.response?.data);
+      console.error('响应状态:', error.response?.status);
+      console.error('响应头:', error.response?.headers);
+      
+      let errorMessage = '登录失败，请检查用户名和密码';
+      if (error.response?.data?.detail) {
+        errorMessage = `登录失败: ${error.response.data.detail}`;
+      } else if (error.message) {
+        errorMessage = `登录失败: ${error.message}`;
+      }
+      
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }

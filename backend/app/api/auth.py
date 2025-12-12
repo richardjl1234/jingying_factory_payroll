@@ -32,15 +32,25 @@ def login_for_access_token(
     user = crud.get_user_by_username(db, username=login_data.username)
     if not user:
         logger.warning(f"用户不存在: username={login_data.username}")
+        logger.debug(f"数据库查询返回: None")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    logger.debug(f"找到用户: id={user.id}, username={user.username}")
+    logger.debug(f"用户密码哈希: {user.password[:50]}...")
+    
     # 2. 验证密码
-    if not verify_password(login_data.password, user.password):
+    logger.debug(f"开始验证密码...")
+    password_match = verify_password(login_data.password, user.password)
+    logger.debug(f"密码验证结果: {password_match}")
+    
+    if not password_match:
         logger.warning(f"密码验证失败: username={login_data.username}")
+        logger.debug(f"提供的密码: [REDACTED], 存储的哈希: {user.password[:50]}...")
+        logger.debug(f"哈希格式检查: {'以$pbkdf2-sha256$开头' if user.password.startswith('$pbkdf2-sha256$') else '非标准格式'}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
