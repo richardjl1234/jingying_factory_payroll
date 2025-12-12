@@ -26,7 +26,7 @@ class Worker(Base):
     __tablename__ = "workers"
     
     worker_code = Column(String(20), primary_key=True, index=True, comment="工号")
-    name = Column(String(50), nullable=False)
+    name = Column(String(50), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -38,8 +38,8 @@ class Process(Base):
     __tablename__ = "processes"
     
     process_code = Column(String(20), primary_key=True, index=True, comment="工序编码")
-    name = Column(String(100), unique=True, nullable=False)
-    category = Column(String(20), nullable=False, comment="工序类别：精加工/装配喷漆/绕嵌排")
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    category = Column(String(20), nullable=False, comment="工序类别：精加工/装配喷漆/绕嵌排", index=True)
     description = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -57,9 +57,9 @@ class Quota(Base):
     __tablename__ = "quotas"
     
     id = Column(Integer, primary_key=True, index=True)
-    process_code = Column(String(20), ForeignKey("processes.process_code"), nullable=False)
+    process_code = Column(String(20), ForeignKey("processes.process_code"), nullable=False, index=True)
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
-    effective_date = Column(Date, nullable=False, comment="生效日期")
+    effective_date = Column(Date, nullable=False, comment="生效日期", index=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -78,12 +78,12 @@ class SalaryRecord(Base):
     __tablename__ = "salary_records"
     
     id = Column(Integer, primary_key=True, index=True)
-    worker_code = Column(String(20), ForeignKey("workers.worker_code"), nullable=False)
-    quota_id = Column(Integer, ForeignKey("quotas.id"), nullable=False)
+    worker_code = Column(String(20), ForeignKey("workers.worker_code"), nullable=False, index=True)
+    quota_id = Column(Integer, ForeignKey("quotas.id"), nullable=False, index=True)
     quantity = Column(Numeric(10, 2), nullable=False, comment="数量，保留两位小数")
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     amount = Column(Numeric(10, 2), nullable=False, comment="金额，保留两位小数")
-    record_date = Column(String(7), nullable=False, comment="记录日期，格式：YYYY-MM")
+    record_date = Column(String(7), nullable=False, comment="记录日期，格式：YYYY-MM", index=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

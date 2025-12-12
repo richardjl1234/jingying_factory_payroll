@@ -20,8 +20,7 @@ def read_workers(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """获取工人列表"""
-    workers = crud.get_workers(db, skip=skip, limit=limit)
-    return workers
+    return crud.get_workers(db, skip=skip, limit=limit)
 
 @router.get("/{worker_code}", response_model=schemas.Worker)
 def read_worker(
@@ -30,10 +29,10 @@ def read_worker(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """根据工号获取工人信息"""
-    db_worker = crud.get_worker_by_code(db, worker_code=worker_code)
-    if db_worker is None:
+    worker = crud.get_worker_by_code(db, worker_code=worker_code)
+    if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
-    return db_worker
+    return worker
 
 @router.post("/", response_model=schemas.Worker, status_code=status.HTTP_201_CREATED)
 def create_worker(
@@ -42,8 +41,7 @@ def create_worker(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """创建新工人"""
-    db_worker = crud.get_worker_by_code(db, worker_code=worker.worker_code)
-    if db_worker:
+    if crud.get_worker_by_code(db, worker_code=worker.worker_code):
         raise HTTPException(status_code=400, detail="Worker code already exists")
     return crud.create_worker(db=db, worker=worker)
 
@@ -55,10 +53,10 @@ def update_worker(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """更新工人信息"""
-    db_worker = crud.update_worker(db, worker_code=worker_code, worker_update=worker_update)
-    if db_worker is None:
+    worker = crud.update_worker(db, worker_code=worker_code, worker_update=worker_update)
+    if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
-    return db_worker
+    return worker
 
 @router.delete("/{worker_code}")
 def delete_worker(
@@ -67,7 +65,7 @@ def delete_worker(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """删除工人"""
-    db_worker = crud.delete_worker(db, worker_code=worker_code)
-    if db_worker is None:
+    worker = crud.delete_worker(db, worker_code=worker_code)
+    if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
     return {"message": "工人删除成功", "worker_code": worker_code}

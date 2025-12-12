@@ -1,14 +1,21 @@
 import os
 import logging
 from datetime import datetime
+from logging.handlers import RotatingFileHandler
 
 # 配置日志
+log_file = f'backend_debug_{datetime.now().strftime("%Y%m%d")}.log'
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(f'backend_debug_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+        RotatingFileHandler(
+            log_file,
+            maxBytes=10*1024*1024,  # 10MB
+            backupCount=5,          # 保留5个备份文件
+            encoding='utf-8'
+        )
     ]
 )
 logger = logging.getLogger(__name__)

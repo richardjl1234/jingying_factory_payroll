@@ -1,11 +1,13 @@
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from dotenv import load_dotenv
 import time
 import os
+from jose import jwt
+from sqlalchemy.exc import SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +56,38 @@ async def log_requests(request: Request, call_next):
     process_time = time.time() - start_time
     logger.debug(f"请求处理完成: {request.method} {request.url.path} 状态码: {response.status_code} 耗时: {process_time:.3f}s")
     return response
+
+# 全局异常处理器
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全局异常处理器，统一处理所有未捕获的异常"""
+    status_code = getattr(exc, "status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+    detail = getattr(exc, "detail", "服务器内部错误")
+    
+    if isinstance(exc, HTTPException):
+        logger.warning(f"HTTP异常: {exc.status_code} - {exc.detail}, 请求: {request.method} {request.url}")
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail, "error_type": "HTTPException"}
+        )
+    elif isinstance(exc, jwt.JWTError):
+        logger.warning(f"JWT令牌错误: {str(exc)}, 请求: {request.method} {request.url}")
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "无效的认证令牌", "error_type": "JWTError"}
+        )
+    elif isinstance(exc, SQLAlchemyError):
+        logger.error(f"数据库错误: {str(exc)}, 请求: {request.method} {request.url}", exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "数据库操作失败", "error_type": "DatabaseError"}
+        )
+    else:
+        logger.error(f"未处理的异常: {type(exc).__name__} - {str(exc)}, 请求: {request.method} {request.url}", exc_info=True)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "服务器内部错误", "error_type": "ServerError"}
+        )
 
 # 包含路由
 logger.debug("包含API路由...")

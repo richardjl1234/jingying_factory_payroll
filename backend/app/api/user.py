@@ -20,8 +20,7 @@ def read_users(
     current_user: schemas.User = Depends(get_admin_user)
 ):
     """获取用户列表，仅管理员可访问"""
-    users = crud.get_users(db, skip=skip, limit=limit)
-    return users
+    return crud.get_users(db, skip=skip, limit=limit)
 
 @router.get("/{user_id}", response_model=schemas.User)
 def read_user(
@@ -30,10 +29,10 @@ def read_user(
     current_user: schemas.User = Depends(get_admin_user)
 ):
     """根据ID获取用户信息，仅管理员可访问"""
-    db_user = crud.get_user_by_id(db, user_id=user_id)
-    if db_user is None:
+    user = crud.get_user_by_id(db, user_id=user_id)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+    return user
 
 @router.post("/", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 def create_user(
@@ -42,8 +41,7 @@ def create_user(
     current_user: schemas.User = Depends(get_admin_user)
 ):
     """创建新用户，仅管理员可访问"""
-    db_user = crud.get_user_by_username(db, username=user.username)
-    if db_user:
+    if crud.get_user_by_username(db, username=user.username):
         raise HTTPException(status_code=400, detail="Username already registered")
     return crud.create_user(db=db, user=user)
 
@@ -55,10 +53,10 @@ def update_user(
     current_user: schemas.User = Depends(get_admin_user)
 ):
     """更新用户信息，仅管理员可访问"""
-    db_user = crud.update_user(db, user_id=user_id, user_update=user_update)
-    if db_user is None:
+    user = crud.update_user(db, user_id=user_id, user_update=user_update)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+    return user
 
 @router.delete("/{user_id}")
 def delete_user(
@@ -67,7 +65,7 @@ def delete_user(
     current_user: schemas.User = Depends(get_admin_user)
 ):
     """删除用户，仅管理员可访问"""
-    db_user = crud.delete_user(db, user_id=user_id)
-    if db_user is None:
+    user = crud.delete_user(db, user_id=user_id)
+    if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return {"message": "用户删除成功", "user_id": user_id}

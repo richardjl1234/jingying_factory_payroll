@@ -1,14 +1,12 @@
-# 使用Python 3.10作为基础镜像
+# 使用Python 3.10作为基础镜像（已缓存本地）
 FROM python:3.10
 
 # 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖（使用--allow-releaseinfo-change选项处理源变化）
-RUN apt-get update --allow-releaseinfo-change && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# 注意：由于网络问题，无法安装sqlite3包
+# 如果需要sqlite3命令行工具，请在网络恢复后取消注释以下行：
+RUN apt-get update -y && apt-get install -y --no-install-recommends sqlite3 && rm -rf /var/lib/apt/lists/*
 
 # 复制后端依赖文件
 COPY backend/requirements.txt /app/

@@ -1,4 +1,5 @@
 import logging
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from datetime import date
@@ -11,19 +12,15 @@ logger = logging.getLogger(__name__)
 
 # 用户相关CRUD
 
-def get_user_by_username(db: Session, username: str):
+def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
     """根据用户名获取用户"""
     logger.debug(f"根据用户名获取用户: username={username}")
-    user = db.query(models.User).filter(models.User.username == username).first()
-    logger.debug(f"查询结果: {user}")
-    return user
+    return db.query(models.User).filter(models.User.username == username).first()
 
-def get_user_by_id(db: Session, user_id: int):
+def get_user_by_id(db: Session, user_id: int) -> Optional[models.User]:
     """根据ID获取用户"""
     logger.debug(f"根据ID获取用户: user_id={user_id}")
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    logger.debug(f"查询结果: {user}")
-    return user
+    return db.query(models.User).filter(models.User.id == user_id).first()
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     """获取用户列表"""
@@ -96,24 +93,20 @@ def delete_user(db: Session, user_id: int):
 
 # 工人相关CRUD
 
-def get_worker_by_code(db: Session, worker_code: str):
+def get_worker_by_code(db: Session, worker_code: str) -> Optional[models.Worker]:
     """根据工号获取工人"""
     logger.debug(f"根据工号获取工人: worker_code={worker_code}")
-    worker = db.query(models.Worker).filter(models.Worker.worker_code == worker_code).first()
-    logger.debug(f"查询结果: {worker}")
-    return worker
+    return db.query(models.Worker).filter(models.Worker.worker_code == worker_code).first()
 
-def get_workers(db: Session, skip: int = 0, limit: int = 100):
+def get_workers(db: Session, skip: int = 0, limit: int = 100) -> List[models.Worker]:
     """获取工人列表"""
     logger.debug(f"获取工人列表: skip={skip}, limit={limit}")
-    workers = db.query(models.Worker).offset(skip).limit(limit).all()
-    logger.debug(f"查询结果: 共{len(workers)}个工人")
-    return workers
+    return db.query(models.Worker).offset(skip).limit(limit).all()
 
-def create_worker(db: Session, worker: schemas.WorkerCreate):
+def create_worker(db: Session, worker: schemas.WorkerCreate) -> models.Worker:
     """创建工人"""
     logger.debug(f"创建工人: worker_code={worker.worker_code}, name={worker.name}")
-    db_worker = models.Worker(**worker.dict())
+    db_worker = models.Worker(**worker.model_dump())
     logger.debug(f"创建工人对象: {db_worker}")
     db.add(db_worker)
     db.commit()
@@ -121,15 +114,15 @@ def create_worker(db: Session, worker: schemas.WorkerCreate):
     logger.info(f"工人创建成功: worker_code={worker.worker_code}")
     return db_worker
 
-def update_worker(db: Session, worker_code: str, worker_update: schemas.WorkerUpdate):
+def update_worker(db: Session, worker_code: str, worker_update: schemas.WorkerUpdate) -> Optional[models.Worker]:
     """更新工人"""
-    logger.debug(f"更新工人: worker_code={worker_code}, update_data={worker_update.dict(exclude_unset=True)}")
+    logger.debug(f"更新工人: worker_code={worker_code}, update_data={worker_update.model_dump(exclude_unset=True)}")
     db_worker = get_worker_by_code(db, worker_code)
     if not db_worker:
         logger.warning(f"工人不存在: worker_code={worker_code}")
         return None
     
-    update_data = worker_update.dict(exclude_unset=True)
+    update_data = worker_update.model_dump(exclude_unset=True)
     logger.debug(f"更新字段: {update_data}")
     for field, value in update_data.items():
         setattr(db_worker, field, value)
@@ -139,7 +132,7 @@ def update_worker(db: Session, worker_code: str, worker_update: schemas.WorkerUp
     logger.info(f"工人更新成功: worker_code={worker_code}")
     return db_worker
 
-def delete_worker(db: Session, worker_code: str):
+def delete_worker(db: Session, worker_code: str) -> Optional[dict]:
     """删除工人"""
     logger.debug(f"删除工人: worker_code={worker_code}")
     db_worker = get_worker_by_code(db, worker_code)
@@ -173,24 +166,25 @@ def delete_worker(db: Session, worker_code: str):
 
 # 工序相关CRUD
 
-def get_process_by_code(db: Session, process_code: str):
+def get_process_by_code(db: Session, process_code: str) -> Optional[models.Process]:
     """根据工序编码获取工序"""
     logger.debug(f"根据工序编码获取工序: process_code={process_code}")
-    process = db.query(models.Process).filter(models.Process.process_code == process_code).first()
-    logger.debug(f"查询结果: {process}")
-    return process
+    return db.query(models.Process).filter(models.Process.process_code == process_code).first()
 
-def get_processes(db: Session, skip: int = 0, limit: int = 100):
+def get_process_by_name(db: Session, process_name: str) -> Optional[models.Process]:
+    """根据工序名称获取工序"""
+    logger.debug(f"根据工序名称获取工序: process_name={process_name}")
+    return db.query(models.Process).filter(models.Process.name == process_name).first()
+
+def get_processes(db: Session, skip: int = 0, limit: int = 100) -> List[models.Process]:
     """获取工序列表"""
     logger.debug(f"获取工序列表: skip={skip}, limit={limit}")
-    processes = db.query(models.Process).offset(skip).limit(limit).all()
-    logger.debug(f"查询结果: 共{len(processes)}个工序")
-    return processes
+    return db.query(models.Process).offset(skip).limit(limit).all()
 
-def create_process(db: Session, process: schemas.ProcessCreate):
+def create_process(db: Session, process: schemas.ProcessCreate) -> models.Process:
     """创建工序"""
     logger.debug(f"创建工序: process_code={process.process_code}, name={process.name}")
-    db_process = models.Process(**process.dict())
+    db_process = models.Process(**process.model_dump())
     logger.debug(f"创建工序对象: {db_process}")
     db.add(db_process)
     db.commit()
@@ -198,15 +192,15 @@ def create_process(db: Session, process: schemas.ProcessCreate):
     logger.info(f"工序创建成功: process_code={process.process_code}")
     return db_process
 
-def update_process(db: Session, process_code: str, process_update: schemas.ProcessUpdate):
+def update_process(db: Session, process_code: str, process_update: schemas.ProcessUpdate) -> Optional[models.Process]:
     """更新工序"""
-    logger.debug(f"更新工序: process_code={process_code}, update_data={process_update.dict(exclude_unset=True)}")
+    logger.debug(f"更新工序: process_code={process_code}, update_data={process_update.model_dump(exclude_unset=True)}")
     db_process = get_process_by_code(db, process_code)
     if not db_process:
         logger.warning(f"工序不存在: process_code={process_code}")
         return None
     
-    update_data = process_update.dict(exclude_unset=True)
+    update_data = process_update.model_dump(exclude_unset=True)
     logger.debug(f"更新字段: {update_data}")
     for field, value in update_data.items():
         setattr(db_process, field, value)
@@ -216,7 +210,7 @@ def update_process(db: Session, process_code: str, process_update: schemas.Proce
     logger.info(f"工序更新成功: process_code={process_code}")
     return db_process
 
-def delete_process(db: Session, process_code: str):
+def delete_process(db: Session, process_code: str) -> Optional[dict]:
     """删除工序"""
     logger.debug(f"删除工序: process_code={process_code}")
     db_process = get_process_by_code(db, process_code)
@@ -260,41 +254,35 @@ def delete_process(db: Session, process_code: str):
 
 # 定额相关CRUD
 
-def get_quota_by_id(db: Session, quota_id: int):
+def get_quota_by_id(db: Session, quota_id: int) -> Optional[models.Quota]:
     """根据ID获取定额"""
     logger.debug(f"根据ID获取定额: quota_id={quota_id}")
-    quota = db.query(models.Quota).filter(models.Quota.id == quota_id).first()
-    logger.debug(f"查询结果: {quota}")
-    return quota
+    return db.query(models.Quota).filter(models.Quota.id == quota_id).first()
 
-def get_quotas(db: Session, process_code: str = None, skip: int = 0, limit: int = 100):
+def get_quotas(db: Session, process_code: str = None, skip: int = 0, limit: int = 100) -> List[models.Quota]:
     """获取定额列表"""
     logger.debug(f"获取定额列表: process_code={process_code}, skip={skip}, limit={limit}")
     query = db.query(models.Quota)
     if process_code:
         query = query.filter(models.Quota.process_code == process_code)
-    quotas = query.order_by(desc(models.Quota.effective_date)).offset(skip).limit(limit).all()
-    logger.debug(f"查询结果: 共{len(quotas)}个定额")
-    return quotas
+    return query.order_by(desc(models.Quota.effective_date)).offset(skip).limit(limit).all()
 
-def get_latest_quota(db: Session, process_code: str, effective_date: date = None):
+def get_latest_quota(db: Session, process_code: str, effective_date: date = None) -> Optional[models.Quota]:
     """获取指定日期前的最新定额"""
     if not effective_date:
         effective_date = date.today()
     logger.debug(f"获取最新定额: process_code={process_code}, effective_date={effective_date}")
     
-    quota = db.query(models.Quota).filter(
+    return db.query(models.Quota).filter(
         models.Quota.process_code == process_code,
         models.Quota.effective_date <= effective_date
     ).order_by(desc(models.Quota.effective_date)).first()
-    logger.debug(f"查询结果: {quota}")
-    return quota
 
-def create_quota(db: Session, quota: schemas.QuotaCreate, created_by: int):
+def create_quota(db: Session, quota: schemas.QuotaCreate, created_by: int) -> models.Quota:
     """创建定额"""
     logger.debug(f"创建定额: process_code={quota.process_code}, unit_price={quota.unit_price}, effective_date={quota.effective_date}, created_by={created_by}")
     db_quota = models.Quota(
-        **quota.dict(),
+        **quota.model_dump(),
         created_by=created_by
     )
     logger.debug(f"创建定额对象: {db_quota}")
@@ -304,15 +292,15 @@ def create_quota(db: Session, quota: schemas.QuotaCreate, created_by: int):
     logger.info(f"定额创建成功: id={db_quota.id}, process_code={quota.process_code}")
     return db_quota
 
-def update_quota(db: Session, quota_id: int, quota_update: schemas.QuotaUpdate):
+def update_quota(db: Session, quota_id: int, quota_update: schemas.QuotaUpdate) -> Optional[models.Quota]:
     """更新定额"""
-    logger.debug(f"更新定额: quota_id={quota_id}, update_data={quota_update.dict(exclude_unset=True)}")
+    logger.debug(f"更新定额: quota_id={quota_id}, update_data={quota_update.model_dump(exclude_unset=True)}")
     db_quota = get_quota_by_id(db, quota_id)
     if not db_quota:
         logger.warning(f"定额不存在: quota_id={quota_id}")
         return None
     
-    update_data = quota_update.dict(exclude_unset=True)
+    update_data = quota_update.model_dump(exclude_unset=True)
     logger.debug(f"更新字段: {update_data}")
     for field, value in update_data.items():
         setattr(db_quota, field, value)
@@ -322,7 +310,7 @@ def update_quota(db: Session, quota_id: int, quota_update: schemas.QuotaUpdate):
     logger.info(f"定额更新成功: quota_id={quota_id}")
     return db_quota
 
-def delete_quota(db: Session, quota_id: int):
+def delete_quota(db: Session, quota_id: int) -> Optional[dict]:
     """删除定额"""
     logger.debug(f"删除定额: quota_id={quota_id}")
     db_quota = get_quota_by_id(db, quota_id)
@@ -357,14 +345,12 @@ def delete_quota(db: Session, quota_id: int):
 
 # 工资记录相关CRUD
 
-def get_salary_record_by_id(db: Session, record_id: int):
+def get_salary_record_by_id(db: Session, record_id: int) -> Optional[models.SalaryRecord]:
     """根据ID获取工资记录"""
     logger.debug(f"根据ID获取工资记录: record_id={record_id}")
-    record = db.query(models.SalaryRecord).filter(models.SalaryRecord.id == record_id).first()
-    logger.debug(f"查询结果: {record}")
-    return record
+    return db.query(models.SalaryRecord).filter(models.SalaryRecord.id == record_id).first()
 
-def get_salary_records(db: Session, worker_code: str = None, record_date: str = None, skip: int = 0, limit: int = 100):
+def get_salary_records(db: Session, worker_code: str = None, record_date: str = None, skip: int = 0, limit: int = 100) -> List[models.SalaryRecord]:
     """获取工资记录列表"""
     logger.debug(f"获取工资记录列表: worker_code={worker_code}, record_date={record_date}, skip={skip}, limit={limit}")
     query = db.query(models.SalaryRecord)
@@ -372,11 +358,9 @@ def get_salary_records(db: Session, worker_code: str = None, record_date: str = 
         query = query.filter(models.SalaryRecord.worker_code == worker_code)
     if record_date:
         query = query.filter(models.SalaryRecord.record_date == record_date)
-    records = query.order_by(desc(models.SalaryRecord.created_at)).offset(skip).limit(limit).all()
-    logger.debug(f"查询结果: 共{len(records)}个工资记录")
-    return records
+    return query.order_by(desc(models.SalaryRecord.created_at)).offset(skip).limit(limit).all()
 
-def create_salary_record(db: Session, record: schemas.SalaryRecordCreate, created_by: int):
+def create_salary_record(db: Session, record: schemas.SalaryRecordCreate, created_by: int) -> Optional[models.SalaryRecord]:
     """创建工资记录"""
     logger.debug(f"创建工资记录: worker_code={record.worker_code}, quota_id={record.quota_id}, quantity={record.quantity}, record_date={record.record_date}, created_by={created_by}")
     
@@ -392,7 +376,7 @@ def create_salary_record(db: Session, record: schemas.SalaryRecordCreate, create
     logger.debug(f"计算金额: quantity={record.quantity}, unit_price={quota.unit_price}, amount={amount}")
     
     db_record = models.SalaryRecord(
-        **record.dict(),
+        **record.model_dump(),
         unit_price=quota.unit_price,
         amount=amount,
         created_by=created_by
@@ -404,15 +388,15 @@ def create_salary_record(db: Session, record: schemas.SalaryRecordCreate, create
     logger.info(f"工资记录创建成功: id={db_record.id}, worker_code={record.worker_code}, amount={amount}")
     return db_record
 
-def update_salary_record(db: Session, record_id: int, record_update: schemas.SalaryRecordUpdate):
+def update_salary_record(db: Session, record_id: int, record_update: schemas.SalaryRecordUpdate) -> Optional[models.SalaryRecord]:
     """更新工资记录"""
-    logger.debug(f"更新工资记录: record_id={record_id}, update_data={record_update.dict(exclude_unset=True)}")
+    logger.debug(f"更新工资记录: record_id={record_id}, update_data={record_update.model_dump(exclude_unset=True)}")
     db_record = get_salary_record_by_id(db, record_id)
     if not db_record:
         logger.warning(f"工资记录不存在: record_id={record_id}")
         return None
     
-    update_data = record_update.dict(exclude_unset=True)
+    update_data = record_update.model_dump(exclude_unset=True)
     logger.debug(f"更新字段: {update_data}")
     for field, value in update_data.items():
         setattr(db_record, field, value)
@@ -427,7 +411,7 @@ def update_salary_record(db: Session, record_id: int, record_update: schemas.Sal
     logger.info(f"工资记录更新成功: record_id={record_id}")
     return db_record
 
-def delete_salary_record(db: Session, record_id: int):
+def delete_salary_record(db: Session, record_id: int) -> Optional[dict]:
     """删除工资记录"""
     logger.debug(f"删除工资记录: record_id={record_id}")
     db_record = get_salary_record_by_id(db, record_id)
@@ -452,7 +436,7 @@ def delete_salary_record(db: Session, record_id: int):
     logger.info(f"工资记录删除成功: record_id={record_id}")
     return record_info
 
-def get_worker_salary_summary(db: Session, worker_code: str, record_date: str):
+def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -> Decimal:
     """获取工人月度工资汇总"""
     logger.debug(f"获取工人月度工资汇总: worker_code={worker_code}, record_date={record_date}")
     result = db.query(

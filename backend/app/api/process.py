@@ -20,8 +20,7 @@ def read_processes(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """获取工序列表"""
-    processes = crud.get_processes(db, skip=skip, limit=limit)
-    return processes
+    return crud.get_processes(db, skip=skip, limit=limit)
 
 @router.get("/{process_code}", response_model=schemas.Process)
 def read_process(
@@ -30,10 +29,10 @@ def read_process(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """根据工序编码获取工序信息"""
-    db_process = crud.get_process_by_code(db, process_code=process_code)
-    if db_process is None:
+    process = crud.get_process_by_code(db, process_code=process_code)
+    if not process:
         raise HTTPException(status_code=404, detail="Process not found")
-    return db_process
+    return process
 
 @router.post("/", response_model=schemas.Process, status_code=status.HTTP_201_CREATED)
 def create_process(
@@ -43,13 +42,11 @@ def create_process(
 ):
     """创建新工序"""
     # 检查工序编码是否已存在
-    db_process = crud.get_process_by_code(db, process_code=process.process_code)
-    if db_process:
+    if crud.get_process_by_code(db, process_code=process.process_code):
         raise HTTPException(status_code=400, detail="Process code already exists")
     
     # 检查工序名称是否已存在
-    existing_processes = crud.get_processes(db)
-    if any(p.name == process.name for p in existing_processes):
+    if crud.get_process_by_name(db, process_name=process.name):
         raise HTTPException(status_code=400, detail="Process name already exists")
     
     return crud.create_process(db=db, process=process)
@@ -62,17 +59,17 @@ def update_process(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """更新工序信息"""
-    db_process = crud.update_process(db, process_code=process_code, process_update=process_update)
-    if db_process is None:
-        raise HTTPException(status_code=404, detail="Process not found")
-    
     # 检查工序名称是否已存在（如果更新了名称）
     if process_update.name:
-        existing_processes = crud.get_processes(db)
-        if any(p.name == process_update.name and p.process_code != process_code for p in existing_processes):
+        existing_process = crud.get_process_by_name(db, process_name=process_update.name)
+        if existing_process and existing_process.process_code != process_code:
             raise HTTPException(status_code=400, detail="Process name already exists")
     
-    return db_process
+    process = crud.update_process(db, process_code=process_code, process_update=process_update)
+    if not process:
+        raise HTTPException(status_code=404, detail="Process not found")
+    
+    return process
 
 @router.delete("/{process_code}")
 def delete_process(
@@ -81,7 +78,7 @@ def delete_process(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """删除工序"""
-    db_process = crud.delete_process(db, process_code=process_code)
-    if db_process is None:
+    process = crud.delete_process(db, process_code=process_code)
+    if not process:
         raise HTTPException(status_code=404, detail="Process not found")
     return {"message": "工序删除成功", "process_code": process_code}
