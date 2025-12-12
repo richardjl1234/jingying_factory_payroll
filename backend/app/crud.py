@@ -143,8 +143,7 @@ def delete_worker(db: Session, worker_code: str) -> Optional[dict]:
     # 保存工人信息用于返回
     worker_info = {
         "worker_code": db_worker.worker_code,
-        "name": db_worker.name,
-        "department": db_worker.department
+        "name": db_worker.name
     }
     
     # 先删除相关的工资记录

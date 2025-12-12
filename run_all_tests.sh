@@ -96,6 +96,7 @@ echo "5. test_worker_process_operations.js - Tests worker and process management
 echo "6. test_worker_process_operations_local.js - Local version of worker/process tests"
 echo "7. user_management_test_local.js     - Tests user management operations"
 echo "8. test_quota_salary_deletion.js     - Tests quota and salary record deletion"
+echo "9. test_worker_deletion_ui.js        - Tests worker deletion through UI"
 echo ""
 echo "Note: test_https_puppeteer.js is for HTTPS testing and requires external server"
 echo ""
@@ -152,6 +153,7 @@ run_test "test_worker_process_operations_local.js" "Worker/Process Operations Te
 run_test "user_management_test_local.js" "User Management Test"
 run_test "test_confirmation_dialogs.js" "Confirmation Dialogs Test"
 run_test "test_quota_salary_deletion.js" "Quota/Salary Deletion Test"
+run_test "test_worker_deletion_ui.js" "Worker Deletion UI Test"
 
 echo "============================================"
 echo "Test Report"
