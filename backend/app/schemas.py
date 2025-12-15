@@ -197,6 +197,93 @@ class ProcessWorkloadReport(BaseModel):
 
 class SalarySummaryReport(BaseModel):
     """工资汇总报表模型"""
+
+
+# 工序类别一相关模型
+class ProcessCat1Base(BaseModel):
+    """工序类别一基础模型"""
+    cat1_code: str = Field(..., min_length=1, max_length=4)
+    name: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat1Create(ProcessCat1Base):
+    """创建工序类别一模型"""
+    pass
+
+class ProcessCat1Update(BaseModel):
+    """更新工序类别一模型"""
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat1InDB(ProcessCat1Base):
+    """数据库中的工序类别一模型"""
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class ProcessCat1(ProcessCat1InDB):
+    """返回给客户端的工序类别一模型"""
+    pass
+
+
+# 工序类别二相关模型
+class ProcessCat2Base(BaseModel):
+    """工序类别二基础模型"""
+    cat2_code: str = Field(..., min_length=1, max_length=4)
+    name: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat2Create(ProcessCat2Base):
+    """创建工序类别二模型"""
+    pass
+
+class ProcessCat2Update(BaseModel):
+    """更新工序类别二模型"""
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat2InDB(ProcessCat2Base):
+    """数据库中的工序类别二模型"""
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class ProcessCat2(ProcessCat2InDB):
+    """返回给客户端的工序类别二模型"""
+    pass
+
+
+# 型号相关模型
+class ModelBase(BaseModel):
+    """型号基础模型"""
+    name: str = Field(..., min_length=1, max_length=20)
+    aliases: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ModelCreate(ModelBase):
+    """创建型号模型"""
+    pass
+
+class ModelUpdate(BaseModel):
+    """更新型号模型"""
+    aliases: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ModelInDB(ModelBase):
+    """数据库中的型号模型"""
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    
+    class Config:
+        from_attributes = True
+
+class Model(ModelInDB):
+    """返回给客户端的型号模型"""
+    pass
     month: str
     total_workers: int
     total_amount: Decimal

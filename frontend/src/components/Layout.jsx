@@ -7,7 +7,10 @@ import {
   DollarOutlined, 
   FileTextOutlined,
   LogoutOutlined,
-  HomeOutlined
+  HomeOutlined,
+  TagsOutlined,
+  CodeOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -74,6 +77,21 @@ const AppLayout = ({ children }) => {
         key: 'processes',
         icon: <AppstoreOutlined />,
         label: <Link to="/processes">工序管理</Link>
+      },
+      {
+        key: 'process-cat1',
+        icon: <TagsOutlined />,
+        label: <Link to="/process-cat1">工序类别一</Link>
+      },
+      {
+        key: 'process-cat2',
+        icon: <TagsOutlined />,
+        label: <Link to="/process-cat2">工序类别二</Link>
+      },
+      {
+        key: 'models',
+        icon: <CodeOutlined />,
+        label: <Link to="/models">型号管理</Link>
       },
       {
         key: 'quotas',

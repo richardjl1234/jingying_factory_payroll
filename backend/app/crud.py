@@ -448,3 +448,204 @@ def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -
     total = result.total_amount or Decimal("0.00")
     logger.debug(f"工人月度工资汇总结果: worker_code={worker_code}, total_amount={total}")
     return total
+
+
+# 工序类别一相关CRUD
+
+def get_process_cat1_by_code(db: Session, cat1_code: str) -> Optional[models.ProcessCat1]:
+    """根据类别一编码获取工序类别一"""
+    logger.debug(f"根据类别一编码获取工序类别一: cat1_code={cat1_code}")
+    return db.query(models.ProcessCat1).filter(models.ProcessCat1.cat1_code == cat1_code).first()
+
+def get_process_cat1_by_name(db: Session, name: str) -> Optional[models.ProcessCat1]:
+    """根据类别一名称获取工序类别一"""
+    logger.debug(f"根据类别一名称获取工序类别一: name={name}")
+    return db.query(models.ProcessCat1).filter(models.ProcessCat1.name == name).first()
+
+def get_process_cat1_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.ProcessCat1]:
+    """获取工序类别一列表"""
+    logger.debug(f"获取工序类别一列表: skip={skip}, limit={limit}")
+    return db.query(models.ProcessCat1).offset(skip).limit(limit).all()
+
+def create_process_cat1(db: Session, process_cat1: schemas.ProcessCat1Create) -> models.ProcessCat1:
+    """创建工序类别一"""
+    logger.debug(f"创建工序类别一: cat1_code={process_cat1.cat1_code}, name={process_cat1.name}")
+    db_process_cat1 = models.ProcessCat1(**process_cat1.model_dump())
+    logger.debug(f"创建工序类别一对象: {db_process_cat1}")
+    db.add(db_process_cat1)
+    db.commit()
+    db.refresh(db_process_cat1)
+    logger.info(f"工序类别一创建成功: cat1_code={process_cat1.cat1_code}")
+    return db_process_cat1
+
+def update_process_cat1(db: Session, cat1_code: str, process_cat1_update: schemas.ProcessCat1Update) -> Optional[models.ProcessCat1]:
+    """更新工序类别一"""
+    logger.debug(f"更新工序类别一: cat1_code={cat1_code}, update_data={process_cat1_update.model_dump(exclude_unset=True)}")
+    db_process_cat1 = get_process_cat1_by_code(db, cat1_code)
+    if not db_process_cat1:
+        logger.warning(f"工序类别一不存在: cat1_code={cat1_code}")
+        return None
+    
+    update_data = process_cat1_update.model_dump(exclude_unset=True)
+    logger.debug(f"更新字段: {update_data}")
+    for field, value in update_data.items():
+        setattr(db_process_cat1, field, value)
+    
+    db.commit()
+    db.refresh(db_process_cat1)
+    logger.info(f"工序类别一更新成功: cat1_code={cat1_code}")
+    return db_process_cat1
+
+def delete_process_cat1(db: Session, cat1_code: str) -> Optional[dict]:
+    """删除工序类别一"""
+    logger.debug(f"删除工序类别一: cat1_code={cat1_code}")
+    db_process_cat1 = get_process_cat1_by_code(db, cat1_code)
+    if not db_process_cat1:
+        logger.warning(f"工序类别一不存在: cat1_code={cat1_code}")
+        return None
+    
+    # 保存类别一信息用于返回
+    process_cat1_info = {
+        "cat1_code": db_process_cat1.cat1_code,
+        "name": db_process_cat1.name
+    }
+    
+    logger.debug(f"删除工序类别一对象: {db_process_cat1}")
+    db.delete(db_process_cat1)
+    db.commit()
+    logger.info(f"工序类别一删除成功: cat1_code={cat1_code}")
+    return process_cat1_info
+
+
+# 工序类别二相关CRUD
+
+def get_process_cat2_by_code(db: Session, cat2_code: str) -> Optional[models.ProcessCat2]:
+    """根据类别二编码获取工序类别二"""
+    logger.debug(f"根据类别二编码获取工序类别二: cat2_code={cat2_code}")
+    return db.query(models.ProcessCat2).filter(models.ProcessCat2.cat2_code == cat2_code).first()
+
+def get_process_cat2_by_name(db: Session, name: str) -> Optional[models.ProcessCat2]:
+    """根据类别二名称获取工序类别二"""
+    logger.debug(f"根据类别二名称获取工序类别二: name={name}")
+    return db.query(models.ProcessCat2).filter(models.ProcessCat2.name == name).first()
+
+def get_process_cat2_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.ProcessCat2]:
+    """获取工序类别二列表"""
+    logger.debug(f"获取工序类别二列表: skip={skip}, limit={limit}")
+    return db.query(models.ProcessCat2).offset(skip).limit(limit).all()
+
+def create_process_cat2(db: Session, process_cat2: schemas.ProcessCat2Create) -> models.ProcessCat2:
+    """创建工序类别二"""
+    logger.debug(f"创建工序类别二: cat2_code={process_cat2.cat2_code}, name={process_cat2.name}")
+    db_process_cat2 = models.ProcessCat2(**process_cat2.model_dump())
+    logger.debug(f"创建工序类别二对象: {db_process_cat2}")
+    db.add(db_process_cat2)
+    db.commit()
+    db.refresh(db_process_cat2)
+    logger.info(f"工序类别二创建成功: cat2_code={process_cat2.cat2_code}")
+    return db_process_cat2
+
+def update_process_cat2(db: Session, cat2_code: str, process_cat2_update: schemas.ProcessCat2Update) -> Optional[models.ProcessCat2]:
+    """更新工序类别二"""
+    logger.debug(f"更新工序类别二: cat2_code={cat2_code}, update_data={process_cat2_update.model_dump(exclude_unset=True)}")
+    db_process_cat2 = get_process_cat2_by_code(db, cat2_code)
+    if not db_process_cat2:
+        logger.warning(f"工序类别二不存在: cat2_code={cat2_code}")
+        return None
+    
+    update_data = process_cat2_update.model_dump(exclude_unset=True)
+    logger.debug(f"更新字段: {update_data}")
+    for field, value in update_data.items():
+        setattr(db_process_cat2, field, value)
+    
+    db.commit()
+    db.refresh(db_process_cat2)
+    logger.info(f"工序类别二更新成功: cat2_code={cat2_code}")
+    return db_process_cat2
+
+def delete_process_cat2(db: Session, cat2_code: str) -> Optional[dict]:
+    """删除工序类别二"""
+    logger.debug(f"删除工序类别二: cat2_code={cat2_code}")
+    db_process_cat2 = get_process_cat2_by_code(db, cat2_code)
+    if not db_process_cat2:
+        logger.warning(f"工序类别二不存在: cat2_code={cat2_code}")
+        return None
+    
+    # 保存类别二信息用于返回
+    process_cat2_info = {
+        "cat2_code": db_process_cat2.cat2_code,
+        "name": db_process_cat2.name
+    }
+    
+    logger.debug(f"删除工序类别二对象: {db_process_cat2}")
+    db.delete(db_process_cat2)
+    db.commit()
+    logger.info(f"工序类别二删除成功: cat2_code={cat2_code}")
+    return process_cat2_info
+
+
+# 型号相关CRUD
+
+def get_model_by_name(db: Session, name: str) -> Optional[models.Model]:
+    """根据型号名称获取型号"""
+    logger.debug(f"根据型号名称获取型号: name={name}")
+    return db.query(models.Model).filter(models.Model.name == name).first()
+
+def get_model_by_alias(db: Session, alias: str) -> Optional[models.Model]:
+    """根据型号别名获取型号"""
+    logger.debug(f"根据型号别名获取型号: alias={alias}")
+    return db.query(models.Model).filter(models.Model.aliases.contains(alias)).first()
+
+def get_model_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.Model]:
+    """获取型号列表"""
+    logger.debug(f"获取型号列表: skip={skip}, limit={limit}")
+    return db.query(models.Model).offset(skip).limit(limit).all()
+
+def create_model(db: Session, model: schemas.ModelCreate) -> models.Model:
+    """创建型号"""
+    logger.debug(f"创建型号: name={model.name}, aliases={model.aliases}")
+    db_model = models.Model(**model.model_dump())
+    logger.debug(f"创建型号对象: {db_model}")
+    db.add(db_model)
+    db.commit()
+    db.refresh(db_model)
+    logger.info(f"型号创建成功: name={model.name}")
+    return db_model
+
+def update_model(db: Session, name: str, model_update: schemas.ModelUpdate) -> Optional[models.Model]:
+    """更新型号"""
+    logger.debug(f"更新型号: name={name}, update_data={model_update.model_dump(exclude_unset=True)}")
+    db_model = get_model_by_name(db, name)
+    if not db_model:
+        logger.warning(f"型号不存在: name={name}")
+        return None
+    
+    update_data = model_update.model_dump(exclude_unset=True)
+    logger.debug(f"更新字段: {update_data}")
+    for field, value in update_data.items():
+        setattr(db_model, field, value)
+    
+    db.commit()
+    db.refresh(db_model)
+    logger.info(f"型号更新成功: name={name}")
+    return db_model
+
+def delete_model(db: Session, name: str) -> Optional[dict]:
+    """删除型号"""
+    logger.debug(f"删除型号: name={name}")
+    db_model = get_model_by_name(db, name)
+    if not db_model:
+        logger.warning(f"型号不存在: name={name}")
+        return None
+    
+    # 保存型号信息用于返回
+    model_info = {
+        "name": db_model.name,
+        "aliases": db_model.aliases
+    }
+    
+    logger.debug(f"删除型号对象: {db_model}")
+    db.delete(db_model)
+    db.commit()
+    logger.info(f"型号删除成功: name={name}")
+    return model_info

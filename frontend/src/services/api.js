@@ -104,4 +104,31 @@ export const statsAPI = {
   getStatistics: () => api.get('/stats/')
 };
 
+// 工序类别一管理API
+export const processCat1API = {
+  getProcessCat1List: () => api.get('/process-cat1/'),
+  getProcessCat1: (code) => api.get(`/process-cat1/${code}`),
+  createProcessCat1: (data) => api.post('/process-cat1/', data),
+  updateProcessCat1: (code, data) => api.put(`/process-cat1/${code}`, data),
+  deleteProcessCat1: (code) => api.delete(`/process-cat1/${code}`)
+};
+
+// 工序类别二管理API
+export const processCat2API = {
+  getProcessCat2List: () => api.get('/process-cat2/'),
+  getProcessCat2: (code) => api.get(`/process-cat2/${code}`),
+  createProcessCat2: (data) => api.post('/process-cat2/', data),
+  updateProcessCat2: (code, data) => api.put(`/process-cat2/${code}`, data),
+  deleteProcessCat2: (code) => api.delete(`/process-cat2/${code}`)
+};
+
+// 型号管理API
+export const modelAPI = {
+  getModelList: () => api.get('/models/'),
+  getModel: (name) => api.get(`/models/${name}`),
+  createModel: (data) => api.post('/models/', data),
+  updateModel: (name, data) => api.put(`/models/${name}`, data),
+  deleteModel: (name) => api.delete(`/models/${name}`)
+};
+
 export default api;

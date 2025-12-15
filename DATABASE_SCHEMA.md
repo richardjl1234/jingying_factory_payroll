@@ -9,8 +9,11 @@
 1. **users** - 用户表
 2. **workers** - 工人表  
 3. **processes** - 工序表
-4. **quotas** - 定额表
-5. **salary_records** - 工资记录表
+4. **process_cat1** - 工序类别一表
+5. **process_cat2** - 工序类别二表
+6. **models** - 型号表
+7. **quotas** - 定额表
+8. **salary_records** - 工资记录表
 
 ## 表结构详情
 
@@ -123,7 +126,102 @@ CREATE TABLE processes (
 **关系**：
 - 一对多关系：一个工序可以有多个定额（quotas）
 
-### 4. quotas - 定额表
+### 4. process_cat1 - 工序类别一表
+
+**描述**：存储工序的一级分类信息。
+
+**表结构**：
+```sql
+CREATE TABLE process_cat1 (
+    cat1_code VARCHAR(4) NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    description VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    PRIMARY KEY (cat1_code)
+);
+```
+
+**字段说明**：
+| 字段名 | 数据类型 | 约束 | 说明 |
+|--------|----------|------|------|
+| cat1_code | VARCHAR(4) | PRIMARY KEY | 类别一编码，主键 |
+| name | VARCHAR(50) | NOT NULL | 类别一名称 |
+| description | VARCHAR(100) | NULLABLE | 类别一描述 |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | NULLABLE | 更新时间 |
+
+**索引**：
+- `ix_process_cat1_cat1_code` (cat1_code)
+- `ix_process_cat1_name` (name)
+
+**关系**：
+- 一对多关系：一个工序类别一可以有多个工序类别二（process_cat2）
+
+### 5. process_cat2 - 工序类别二表
+
+**描述**：存储工序的二级分类信息。
+
+**表结构**：
+```sql
+CREATE TABLE process_cat2 (
+    cat2_code VARCHAR(4) NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    description VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    PRIMARY KEY (cat2_code)
+);
+```
+
+**字段说明**：
+| 字段名 | 数据类型 | 约束 | 说明 |
+|--------|----------|------|------|
+| cat2_code | VARCHAR(4) | PRIMARY KEY | 类别二编码，主键 |
+| name | VARCHAR(50) | NOT NULL | 类别二名称 |
+| description | VARCHAR(100) | NULLABLE | 类别二描述 |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | NULLABLE | 更新时间 |
+
+**索引**：
+- `ix_process_cat2_cat2_code` (cat2_code)
+- `ix_process_cat2_name` (name)
+
+**关系**：
+- 多对一关系：工序类别二属于工序类别一（process_cat1）
+
+### 6. models - 型号表
+
+**描述**：存储产品型号信息。
+
+**表结构**：
+```sql
+CREATE TABLE models (
+    name VARCHAR(20) NOT NULL,
+    aliases VARCHAR(100),
+    description VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    PRIMARY KEY (name)
+);
+```
+
+**字段说明**：
+| 字段名 | 数据类型 | 约束 | 说明 |
+|--------|----------|------|------|
+| name | VARCHAR(20) | PRIMARY KEY | 型号名称，主键 |
+| aliases | VARCHAR(100) | NULLABLE | 型号别名 |
+| description | VARCHAR(100) | NULLABLE | 型号描述 |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | NULLABLE | 更新时间 |
+
+**索引**：
+- `ix_models_name` (name)
+
+**关系**：
+- 一对多关系：一个型号可以有多个工序（processes）
+
+### 7. quotas - 定额表
 
 **描述**：存储工序的单价定额信息，包括生效日期。
 

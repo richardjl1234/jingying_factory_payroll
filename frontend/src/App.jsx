@@ -7,6 +7,9 @@ import Home from './pages/Home';
 import UserManagement from './pages/UserManagement';
 import WorkerManagement from './pages/WorkerManagement';
 import ProcessManagement from './pages/ProcessManagement';
+import ProcessCat1Management from './pages/ProcessCat1Management';
+import ProcessCat2Management from './pages/ProcessCat2Management';
+import ModelManagement from './pages/ModelManagement';
 import QuotaManagement from './pages/QuotaManagement';
 import SalaryRecord from './pages/SalaryRecord';
 import Report from './pages/Report';
@@ -59,6 +62,33 @@ function App() {
             <PrivateRoute>
               <AppLayout>
                 <ProcessManagement />
+              </AppLayout>
+            </PrivateRoute>
+          } />
+          
+          {/* 工序类别一管理页面 */}
+          <Route path="/process-cat1" element={
+            <PrivateRoute>
+              <AppLayout>
+                <ProcessCat1Management />
+              </AppLayout>
+            </PrivateRoute>
+          } />
+          
+          {/* 工序类别二管理页面 */}
+          <Route path="/process-cat2" element={
+            <PrivateRoute>
+              <AppLayout>
+                <ProcessCat2Management />
+              </AppLayout>
+            </PrivateRoute>
+          } />
+          
+          {/* 型号管理页面 */}
+          <Route path="/models" element={
+            <PrivateRoute>
+              <AppLayout>
+                <ModelManagement />
               </AppLayout>
             </PrivateRoute>
           } />

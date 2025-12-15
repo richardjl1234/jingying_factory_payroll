@@ -141,3 +141,32 @@ export const statsAPI = {
     salary_record_count: number;
   }> => api.get('/stats/')
 };
+
+// 工序类别一管理API
+export const processCat1API = {
+  getProcessCat1List: (): Promise<any[]> => api.get('/process-cat1/'),
+  getProcessCat1: (code: string): Promise<any> => api.get(`/process-cat1/${code}`),
+  createProcessCat1: (data: any): Promise<any> => api.post('/process-cat1/', data),
+  updateProcessCat1: (code: string, data: any): Promise<any> => api.put(`/process-cat1/${code}`, data),
+  deleteProcessCat1: (code: string): Promise<void> => api.delete(`/process-cat1/${code}`)
+};
+
+// 工序类别二管理API
+export const processCat2API = {
+  getProcessCat2List: (): Promise<any[]> => api.get('/process-cat2/'),
+  getProcessCat2: (code: string): Promise<any> => api.get(`/process-cat2/${code}`),
+  createProcessCat2: (data: any): Promise<any> => api.post('/process-cat2/', data),
+  updateProcessCat2: (code: string, data: any): Promise<any> => api.put(`/process-cat2/${code}`, data),
+  deleteProcessCat2: (code: string): Promise<void> => api.delete(`/process-cat2/${code}`)
+};
+
+// 型号管理API
+export const modelAPI = {
+  getModelList: (): Promise<any[]> => api.get('/models/'),
+  getModel: (name: string): Promise<any> => api.get(`/models/${name}`),
+  createModel: (data: any): Promise<any> => api.post('/models/', data),
+  updateModel: (name: string, data: any): Promise<any> => api.put(`/models/${name}`, data),
+  deleteModel: (name: string): Promise<void> => api.delete(`/models/${name}`)
+};
+
+export default api;

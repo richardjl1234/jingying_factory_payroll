@@ -91,3 +91,36 @@ class SalaryRecord(Base):
     worker = relationship("Worker", back_populates="salary_records")
     quota = relationship("Quota", back_populates="salary_records")
     creator = relationship("User", back_populates="salary_records")
+
+
+class ProcessCat1(Base):
+    """工序类别一表"""
+    __tablename__ = "process_cat1"
+    
+    cat1_code = Column(String(4), primary_key=True, index=True, comment="类别一编码")
+    name = Column(String(50), nullable=False, index=True, comment="类别一名称")
+    description = Column(String(100), nullable=True, comment="类别一描述")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class ProcessCat2(Base):
+    """工序类别二表"""
+    __tablename__ = "process_cat2"
+    
+    cat2_code = Column(String(4), primary_key=True, index=True, comment="类别二编码")
+    name = Column(String(50), nullable=False, index=True, comment="类别二名称")
+    description = Column(String(100), nullable=True, comment="类别二描述")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class Model(Base):
+    """型号表"""
+    __tablename__ = "models"
+    
+    name = Column(String(20), primary_key=True, index=True, comment="型号名称")
+    aliases = Column(String(100), nullable=True, comment="型号别名")
+    description = Column(String(100), nullable=True, comment="型号描述")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
