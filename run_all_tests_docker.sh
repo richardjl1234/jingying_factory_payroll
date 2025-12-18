@@ -86,7 +86,7 @@ echo "============================================"
 echo "Available Puppeteer Test Cases"
 echo "============================================"
 echo ""
-echo "Found the following test cases in the test/ folder:"
+echo "Found the following test cases in the test/docker_puppeteer/ folder:"
 echo ""
 echo "1. test_login_basic.js               - Tests basic login functionality"
 echo "2. test_confirmation_dialogs.js      - Tests confirmation dialogs for delete operations"
@@ -95,10 +95,11 @@ echo "4. test_deletion_with_creation.js    - Tests delete operations with data c
 echo "5. test_worker_process_operations.js - Tests worker and process management operations"
 echo "6. test_worker_process_operations_local.js - Local version of worker/process tests"
 echo "7. user_management_test_local.js     - Tests user management operations"
-echo "8. test_quota_salary_deletion.js     - Tests quota and salary record deletion"
-echo "9. test_worker_deletion_ui.js        - Tests worker deletion through UI"
+echo "8. test_worker_deletion_ui.js        - Tests worker deletion through UI"
 echo ""
 echo "Note: test_https_puppeteer.js is for HTTPS testing and requires external server"
+echo "Note: test_new_tables.js is currently in development"
+echo "Note: test_quota_salary_deletion.js is in development - see TODO.md"
 echo ""
 
 echo "============================================"
@@ -123,12 +124,12 @@ run_test() {
     echo "[Test $test_count] Running: $test_name"
     echo "--------------------------------------------------------------------"
     
-    cd test
+    cd test/docker_puppeteer
     # Create a safe filename without spaces
     local safe_name=$(echo "$test_name" | tr ' ' '_' | tr '/' '_')
     node "$test_file" > "${safe_name}_output.txt" 2>&1
     local test_exit_code=$?
-    cd ..
+    cd ../..
     
     if [ $test_exit_code -eq 0 ]; then
         echo "✓ PASS: $test_name"
@@ -139,7 +140,7 @@ run_test() {
         ((failed_count++))
         test_results+="$test_count. ✗ $test_name\n"
         echo "Last 5 lines of output:"
-        tail -5 "test/${safe_name}_output.txt" 2>/dev/null || echo "No output file found"
+        tail -5 "test/docker_puppeteer/${safe_name}_output.txt" 2>/dev/null || echo "No output file found"
     fi
     
     echo ""
@@ -152,7 +153,6 @@ run_test "test_deletion_operations.js" "Deletion Operations Test"
 run_test "test_worker_process_operations_local.js" "Worker/Process Operations Test"
 run_test "user_management_test_local.js" "User Management Test"
 run_test "test_confirmation_dialogs.js" "Confirmation Dialogs Test"
-run_test "test_quota_salary_deletion.js" "Quota/Salary Deletion Test"
 run_test "test_worker_deletion_ui.js" "Worker Deletion UI Test"
 
 echo "============================================"
@@ -208,10 +208,10 @@ echo "============================================"
 echo "Test Execution Complete"
 echo "============================================"
 echo ""
-echo "All test output files are saved in the test/ folder with names:"
+echo "All test output files are saved in the test/docker_puppeteer/ folder with names:"
 echo "  - [test_name]_output.txt"
 echo ""
 echo "To view detailed logs for a specific test:"
-echo "  cat test/[test_name]_output.txt"
+echo "  cat test/docker_puppeteer/[test_name]_output.txt"
 echo ""
 read -p "Press Enter to continue..."

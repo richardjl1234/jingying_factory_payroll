@@ -1,0 +1,60 @@
+=== 测试工人删除UI操作 ===
+测试地址: http://localhost:8000
+访问登录页面...
+浏览器控制台: [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o
+访问登录页面成功
+执行登录操作...
+输入用户名和密码完成
+当前URL: http://localhost:8000/
+登录成功，开始测试工人删除UI操作
+导航到工人管理页面...
+等待工人表格加载...
+等待表格加载... (尝试 1/10)
+等待表格加载... (尝试 2/10)
+等待表格加载... (尝试 3/10)
+等待表格加载... (尝试 4/10)
+等待表格加载... (尝试 5/10)
+等待表格加载... (尝试 6/10)
+等待表格加载... (尝试 7/10)
+等待表格加载... (尝试 8/10)
+等待表格加载... (尝试 9/10)
+等待表格加载... (尝试 10/10)
+初始工人数量: 0
+尝试其他表格选择器...
+找到 0 个表格
+页面内容预览: <!DOCTYPE html><html lang="en"><head><style data-rc-order="prepend" rc-util-key="@ant-design-icons">
+.anticon {
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  font-style: normal;
+  line-height: 0;
+  text-align: center;
+  text-transform: none;
+  vertical-align: -0.125em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.anticon > * {
+  line-height: 1;
+}
+
+.anticon svg {
+  display: inline-block;
+  vertical-alig
+❌ 没有工人可删除，测试终止
+
+=== 测试结果 ===
+❌ 工人删除UI测试失败
+📋 错误信息: 没有工人可删除
+
+=== 调试信息 ===
+1. 检查应用是否运行: curl http://localhost:8000/api/health
+2. 查看Docker容器日志: docker logs payroll-system
+3. 查看前端控制台错误: 检查保存的日志文件 worker_deletion_ui_console_logs.txt
+4. 检查截图文件:
+   - worker_deletion_before.png - 删除前页面
+   - worker_deletion_confirmation.png - 确认对话框
+   - worker_deletion_after.png - 删除后页面

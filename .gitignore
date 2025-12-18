@@ -31,7 +31,5 @@ Thumbs.db
 *.db
 payroll.db
 
-# Test directory
-test/
 
 ngrok.exe

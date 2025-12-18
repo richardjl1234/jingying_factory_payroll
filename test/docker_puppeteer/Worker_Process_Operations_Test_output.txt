@@ -1,0 +1,74 @@
+=== 测试工人和工序管理操作 (本地Docker) ===
+测试地址: http://localhost:8000
+访问登录页面...
+浏览器控制台: [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o
+访问登录页面成功
+执行登录操作...
+输入用户名和密码完成
+当前URL: http://localhost:8000/
+登录成功，开始测试工人和工序管理操作
+
+=== 测试直接API调用 ===
+测试工人API...
+工人API测试结果: {
+  "create": {
+    "status": 201,
+    "data": {
+      "worker_code": "TEST_WORKER_LOCAL",
+      "name": "API测试工人本地",
+      "created_at": "2025-12-18T03:07:53",
+      "updated_at": null
+    }
+  },
+  "delete": {
+    "status": 200,
+    "data": {
+      "message": "工人删除成功",
+      "worker_code": "TEST_WORKER_LOCAL"
+    }
+  }
+}
+测试工序API...
+工序API测试结果: {
+  "create": {
+    "status": 201,
+    "data": {
+      "process_code": "TEST_PROCESS_LOCAL",
+      "name": "API测试工序本地",
+      "category": "精加工",
+      "description": "API测试工序描述本地",
+      "created_at": "2025-12-18T03:07:53",
+      "updated_at": null
+    }
+  },
+  "delete": {
+    "status": 200,
+    "data": {
+      "message": "工序删除成功",
+      "process_code": "TEST_PROCESS_LOCAL"
+    }
+  }
+}
+
+=== 测试UI操作 ===
+导航到工人管理页面...
+保存工人管理页面截图
+页面内容长度: 243121
+导航到工序管理页面...
+保存工序管理页面截图
+保存控制台日志
+
+=== 测试结果 ===
+✅ 工人和工序管理操作测试完成
+📋 工人API - 创建: 201, 删除: 200
+✅ 工人API测试成功
+📋 工序API - 创建: 201, 删除: 200
+✅ 工序API测试成功
+
+🎉 所有测试通过！
+
+=== 调试信息 ===
+1. 检查后端API是否正常: curl http://localhost:8000/api/health
+2. 查看Docker容器日志: docker logs payroll-test
+3. 查看前端控制台错误: 检查保存的日志文件 worker_process_console_logs_local.txt
+4. 检查生成的截图: worker_management_page_local.png 和 process_management_page_local.png
