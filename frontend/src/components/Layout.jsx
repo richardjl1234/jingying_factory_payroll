@@ -89,9 +89,9 @@ const AppLayout = ({ children }) => {
         label: <Link to="/process-cat2">工序类别二</Link>
       },
       {
-        key: 'models',
+        key: 'motor-models',
         icon: <CodeOutlined />,
-        label: <Link to="/models">型号管理</Link>
+        label: <Link to="/motor-models">型号管理</Link>
       },
       {
         key: 'quotas',

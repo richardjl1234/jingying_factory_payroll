@@ -60,7 +60,7 @@ def main():
         print(f"删除工人: {worker_count} 个")
         
         # 删除新表数据
-        model_count = db.query(models.Model).delete()
+        model_count = db.query(models.MotorModel).delete()
         print(f"删除型号: {model_count} 个")
         
         process_cat1_count = db.query(models.ProcessCat1).delete()
@@ -240,9 +240,9 @@ def main():
         
         for model_info in model_data:
             # 检查是否已存在该型号
-            existing_model = db.query(models.Model).filter(models.Model.name == model_info["name"]).first()
+            existing_model = db.query(models.MotorModel).filter(models.MotorModel.name == model_info["name"]).first()
             if not existing_model:
-                model = models.Model(
+                model = models.MotorModel(
                     name=model_info["name"],
                     aliases=model_info["aliases"],
                     description=model_info["description"]

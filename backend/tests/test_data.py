@@ -36,7 +36,7 @@ def create_test_data():
         # 检查是否已有数据
         existing_cat1 = db.query(models.ProcessCat1).count()
         existing_cat2 = db.query(models.ProcessCat2).count()
-        existing_models = db.query(models.Model).count()
+        existing_models = db.query(models.MotorModel).count()
         
         if existing_cat1 > 0 or existing_cat2 > 0 or existing_models > 0:
             print("数据库中已存在数据，跳过数据创建")
@@ -148,7 +148,7 @@ def create_test_data():
         ]
         
         for data in model_data:
-            model = models.Model(**data)
+            model = models.MotorModel(**data)
             db.add(model)
         
         # 提交事务

@@ -95,9 +95,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         label: <Link to="/process-cat2">类别二管理</Link>
       },
       {
-        key: 'models',
+        key: 'motor-models',
         icon: <ProductOutlined />,
-        label: <Link to="/models">型号管理</Link>
+        label: <Link to="/motor-models">型号管理</Link>
       },
       {
         key: 'processes',
