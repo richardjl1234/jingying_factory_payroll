@@ -11,7 +11,7 @@
 3. **processes** - 工序表
 4. **process_cat1** - 工序类别一表
 5. **process_cat2** - 工序类别二表
-6. **models** - 型号表
+6. **motor_models** - 电机型号表
 7. **quotas** - 定额表
 8. **salary_records** - 工资记录表
 
@@ -190,13 +190,13 @@ CREATE TABLE process_cat2 (
 **关系**：
 - 多对一关系：工序类别二属于工序类别一（process_cat1）
 
-### 6. models - 型号表
+### 6. motor_models - 电机型号表
 
-**描述**：存储产品型号信息。
+**描述**：存储电机型号信息。
 
 **表结构**：
 ```sql
-CREATE TABLE models (
+CREATE TABLE motor_models (
     name VARCHAR(20) NOT NULL,
     aliases VARCHAR(100),
     description VARCHAR(100),
@@ -209,17 +209,17 @@ CREATE TABLE models (
 **字段说明**：
 | 字段名 | 数据类型 | 约束 | 说明 |
 |--------|----------|------|------|
-| name | VARCHAR(20) | PRIMARY KEY | 型号名称，主键 |
-| aliases | VARCHAR(100) | NULLABLE | 型号别名 |
-| description | VARCHAR(100) | NULLABLE | 型号描述 |
+| name | VARCHAR(20) | PRIMARY KEY | 电机型号名称，主键 |
+| aliases | VARCHAR(100) | NULLABLE | 电机型号别名 |
+| description | VARCHAR(100) | NULLABLE | 电机型号描述 |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | DATETIME | NULLABLE | 更新时间 |
 
 **索引**：
-- `ix_models_name` (name)
+- `ix_motor_models_name` (name)
 
 **关系**：
-- 一对多关系：一个型号可以有多个工序（processes）
+- 一对多关系：一个电机型号可以有多个工序（processes）
 
 ### 7. quotas - 定额表
 

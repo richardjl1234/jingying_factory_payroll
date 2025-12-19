@@ -69,8 +69,9 @@ async function capturePageInfo(page) {
  */
 async function launchBrowser(options = {}) {
   const defaultOptions = {
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized']
+    headless: false, // Run in non-headless mode so user can see the browser
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized'],
+    defaultViewport: null // Use default browser viewport
   };
   
   return puppeteer.launch({ ...defaultOptions, ...options });

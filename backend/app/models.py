@@ -115,12 +115,12 @@ class ProcessCat2(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
-class Model(Base):
-    """型号表"""
-    __tablename__ = "models"
+class MotorModel(Base):
+    """电机型号表"""
+    __tablename__ = "motor_models"
     
-    name = Column(String(20), primary_key=True, index=True, comment="型号名称")
-    aliases = Column(String(100), nullable=True, comment="型号别名")
-    description = Column(String(100), nullable=True, comment="型号描述")
+    name = Column(String(20), primary_key=True, index=True, comment="电机型号名称")
+    aliases = Column(String(100), nullable=True, comment="电机型号别名")
+    description = Column(String(100), nullable=True, comment="电机型号描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -36,115 +36,156 @@ async function testLogin() {
     console.log(`Page title: ${pageInfo.title}`);
     console.log(`Has token in storage: ${pageInfo.localStorage.includes('token') ? 'YES' : 'NO'}`);
     
-    // Step 3: Find login form elements
-    console.log('\n[Step 3] Finding login form elements...');
+    // Step 3: Wait for login form and find elements
+    console.log('\n[Step 3] Waiting for login form elements...');
+    
+    // Wait for the login form to be present
+    try {
+      await page.waitForSelector('form[name="login"]', { timeout: config.TIMEOUTS.short });
+      console.log('✓ Login form found');
+    } catch (e) {
+      console.log('Form not found by name, trying other selectors...');
+      await page.waitForSelector('form', { timeout: config.TIMEOUTS.short });
+      console.log('✓ Found a form element');
+    }
+    
+    // Wait for input fields with multiple possible selectors
+    const inputSelectors = [
+      'input.ant-input',
+      'input[placeholder*="用户"]',
+      'input[placeholder*="name"]',
+      'input[placeholder*="Name"]',
+      'input[type="text"]',
+      'input'
+    ];
     
     let usernameInput = null;
     let passwordInput = null;
-    let loginButton = null;
     
-    // Method 1: Try Ant Design inputs
-    const antInputs = await page.$$('input.ant-input');
-    if (antInputs.length >= 2) {
-      usernameInput = antInputs[0];
-      passwordInput = antInputs[1];
-      console.log('✓ Found Ant Design inputs');
-    }
-    
-    // Method 2: Try by placeholder
-    if (!usernameInput || !passwordInput) {
-      const allInputs = await page.$$('input');
-      for (const input of allInputs) {
-        const placeholder = await page.evaluate(el => el.placeholder, input);
-        const type = await page.evaluate(el => el.type, input);
+    for (const selector of inputSelectors) {
+      const inputs = await page.$$(selector);
+      if (inputs.length >= 2) {
+        // Try to identify which is username and which is password
+        for (const input of inputs) {
+          const type = await page.evaluate(el => el.type, input);
+          const placeholder = await page.evaluate(el => el.placeholder, input);
+          
+          if (type === 'password') {
+            passwordInput = input;
+          } else if (placeholder && (placeholder.includes('用户') || placeholder.toLowerCase().includes('name'))) {
+            usernameInput = input;
+          } else if (!usernameInput && type !== 'password') {
+            usernameInput = input;
+          }
+        }
         
-        if (placeholder && (placeholder.toLowerCase().includes('user') || 
-                           placeholder.toLowerCase().includes('name') ||
-                           placeholder.toLowerCase().includes('用户名'))) {
-          usernameInput = input;
-        } else if (type === 'password') {
-          passwordInput = input;
+        if (usernameInput && passwordInput) {
+          console.log(`✓ Found inputs using selector: ${selector}`);
+          break;
         }
       }
-      if (usernameInput || passwordInput) {
-        console.log('✓ Found inputs by placeholder/type');
-      }
     }
     
-    // Method 3: Try any input
+    // If still not found, try to find by position
     if (!usernameInput || !passwordInput) {
-      const inputs = await page.$$('input');
-      if (inputs.length >= 2) {
-        usernameInput = inputs[0];
-        passwordInput = inputs[1];
+      const allInputs = await page.$$('input');
+      if (allInputs.length >= 2) {
+        usernameInput = allInputs[0];
+        // Find password input by type
+        for (const input of allInputs) {
+          const type = await page.evaluate(el => el.type, input);
+          if (type === 'password') {
+            passwordInput = input;
+            break;
+          }
+        }
+        if (!passwordInput && allInputs.length > 1) {
+          passwordInput = allInputs[1];
+        }
         console.log('✓ Found inputs by position');
       }
     }
     
     if (!usernameInput) {
       console.error('✗ ERROR: Could not find username input');
-      console.error('Available inputs:', await page.$$eval('input', inputs => inputs.map(i => ({
+      // Take screenshot for debugging
+      await captureScreenshot(page, 'debug_no_username_input');
+      const allInputs = await page.$$eval('input', inputs => inputs.map(i => ({
         type: i.type,
         placeholder: i.placeholder,
         className: i.className,
         id: i.id,
-        name: i.name
-      }))));
+        name: i.name,
+        outerHTML: i.outerHTML.substring(0, 200)
+      })));
+      console.error('Available inputs:', JSON.stringify(allInputs, null, 2));
       throw new Error('Username input not found');
     }
     
     if (!passwordInput) {
       console.error('✗ ERROR: Could not find password input');
-      console.error('Available inputs:', await page.$$eval('input', inputs => inputs.map(i => ({
+      await captureScreenshot(page, 'debug_no_password_input');
+      const allInputs = await page.$$eval('input', inputs => inputs.map(i => ({
         type: i.type,
         placeholder: i.placeholder,
         className: i.className
-      }))));
+      })));
+      console.error('Available inputs:', JSON.stringify(allInputs, null, 2));
       throw new Error('Password input not found');
     }
     
     // Find login button
-    // Method 1: Ant Design primary button
-    const primaryButtons = await page.$$('button.ant-btn-primary');
-    if (primaryButtons.length > 0) {
-      loginButton = primaryButtons[0];
-      console.log('✓ Found Ant Design primary button');
-    }
+    let loginButton = null;
+    const buttonSelectors = [
+      'button.ant-btn-primary',
+      'button[type="submit"]',
+      'button:contains("登录")',
+      'button'
+    ];
     
-    // Method 2: Button with login text
-    if (!loginButton) {
-      const loginButtons = await page.$x("//button[contains(text(), '登录')]");
-      if (loginButtons.length > 0) {
-        loginButton = loginButtons[0];
-        console.log('✓ Found button with "登录" text');
-      }
-    }
-    
-    // Method 3: Button with type submit
-    if (!loginButton) {
-      const submitButtons = await page.$$('button[type="submit"]');
-      if (submitButtons.length > 0) {
-        loginButton = submitButtons[0];
-        console.log('✓ Found submit button');
-      }
-    }
-    
-    // Method 4: Any button
-    if (!loginButton) {
-      const buttons = await page.$$('button');
-      if (buttons.length > 0) {
-        loginButton = buttons[buttons.length - 1];
-        console.log('✓ Found any button (last one)');
+    for (const selector of buttonSelectors) {
+      try {
+        if (selector.includes('contains')) {
+          // Handle :contains selector
+          const buttons = await page.$x(`//button[contains(text(), '登录')]`);
+          if (buttons.length > 0) {
+            loginButton = buttons[0];
+            console.log(`✓ Found login button using XPath: ${selector}`);
+            break;
+          }
+        } else {
+          const buttons = await page.$$(selector);
+          if (buttons.length > 0) {
+            // Prefer buttons with text "登录" or primary style
+            for (const button of buttons) {
+              const buttonText = await page.evaluate(el => el.textContent, button);
+              if (buttonText.includes('登录') || selector === 'button.ant-btn-primary') {
+                loginButton = button;
+                console.log(`✓ Found login button using selector: ${selector}`);
+                break;
+              }
+            }
+            if (loginButton) break;
+            // Otherwise take the first button
+            loginButton = buttons[0];
+            console.log(`✓ Found a button using selector: ${selector}`);
+            break;
+          }
+        }
+      } catch (e) {
+        // Continue with next selector
       }
     }
     
     if (!loginButton) {
       console.error('✗ ERROR: Could not find login button');
-      console.error('Available buttons:', await page.$$eval('button', buttons => buttons.map(b => ({
-        text: b.innerText,
+      const allButtons = await page.$$eval('button', buttons => buttons.map(b => ({
+        text: b.textContent,
         type: b.type,
-        className: b.className
-      }))));
+        className: b.className,
+        outerHTML: b.outerHTML.substring(0, 200)
+      })));
+      console.error('Available buttons:', JSON.stringify(allButtons, null, 2));
       throw new Error('Login button not found');
     }
     

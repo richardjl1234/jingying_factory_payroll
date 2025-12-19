@@ -156,6 +156,102 @@ class APITester:
             logger.error(f"请求失败: {e}")
             return False
     
+    def test_get_process_cat1(self):
+        """
+        测试获取工序类别一列表API
+        
+        Returns:
+            bool: 测试是否成功
+        """
+        if not self.token:
+            logger.error("需要先登录获取token")
+            return False
+        
+        url = f"{BASE_URL}/api/process-cat1/"
+        
+        try:
+            logger.info(f"测试获取工序类别一列表API: {url}")
+            response = requests.get(url, headers=self.headers, timeout=10)
+            logger.info(f"状态码: {response.status_code}")
+            
+            if response.status_code == 200:
+                process_cat1_list = response.json()
+                logger.info(f"获取到 {len(process_cat1_list)} 个工序类别一")
+                if process_cat1_list:
+                    logger.info(f"第一个工序类别一: {json.dumps(process_cat1_list[0], ensure_ascii=False)}")
+                else:
+                    logger.info("无工序类别一")
+                return True
+            logger.error(f"获取工序类别一列表失败: {response.text}")
+            return False
+        except Exception as e:
+            logger.error(f"请求失败: {e}")
+            return False
+    
+    def test_get_process_cat2(self):
+        """
+        测试获取工序类别二列表API
+        
+        Returns:
+            bool: 测试是否成功
+        """
+        if not self.token:
+            logger.error("需要先登录获取token")
+            return False
+        
+        url = f"{BASE_URL}/api/process-cat2/"
+        
+        try:
+            logger.info(f"测试获取工序类别二列表API: {url}")
+            response = requests.get(url, headers=self.headers, timeout=10)
+            logger.info(f"状态码: {response.status_code}")
+            
+            if response.status_code == 200:
+                process_cat2_list = response.json()
+                logger.info(f"获取到 {len(process_cat2_list)} 个工序类别二")
+                if process_cat2_list:
+                    logger.info(f"第一个工序类别二: {json.dumps(process_cat2_list[0], ensure_ascii=False)}")
+                else:
+                    logger.info("无工序类别二")
+                return True
+            logger.error(f"获取工序类别二列表失败: {response.text}")
+            return False
+        except Exception as e:
+            logger.error(f"请求失败: {e}")
+            return False
+    
+    def test_get_models(self):
+        """
+        测试获取型号列表API
+        
+        Returns:
+            bool: 测试是否成功
+        """
+        if not self.token:
+            logger.error("需要先登录获取token")
+            return False
+        
+        url = f"{BASE_URL}/api/motor-models/"
+        
+        try:
+            logger.info(f"测试获取型号列表API: {url}")
+            response = requests.get(url, headers=self.headers, timeout=10)
+            logger.info(f"状态码: {response.status_code}")
+            
+            if response.status_code == 200:
+                models = response.json()
+                logger.info(f"获取到 {len(models)} 个型号")
+                if models:
+                    logger.info(f"第一个型号: {json.dumps(models[0], ensure_ascii=False)}")
+                else:
+                    logger.info("无型号")
+                return True
+            logger.error(f"获取型号列表失败: {response.text}")
+            return False
+        except Exception as e:
+            logger.error(f"请求失败: {e}")
+            return False
+    
     def test_health_check(self):
         """
         测试健康检查API（如果可用）
@@ -193,7 +289,10 @@ class APITester:
             ("login", self.login),
             ("get_users", self.test_get_users),
             ("get_workers", self.test_get_workers),
-            ("get_processes", self.test_get_processes)
+            ("get_processes", self.test_get_processes),
+            ("get_process_cat1", self.test_get_process_cat1),
+            ("get_process_cat2", self.test_get_process_cat2),
+            ("get_models", self.test_get_models)
         ]
         
         results = []

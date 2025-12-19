@@ -2,9 +2,13 @@ import os
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.schema import MetaData
 
-# 检查数据库文件是否存在
-db_path = 'e:/jianglei/trae/new_payroll/backend/payroll.db'
+# 获取项目根目录
+PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+
+# 检查数据库文件是否存在 - 使用项目根目录下的payroll.db
+db_path = os.path.join(PROJECT_ROOT, 'payroll.db')
 print(f"Database file exists: {os.path.exists(db_path)}")
+print(f"Database path: {db_path}")
 
 # 创建数据库引擎
 engine = create_engine(f'sqlite:///{db_path}')

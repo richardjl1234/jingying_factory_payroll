@@ -5,7 +5,7 @@
 """
 
 from sqlalchemy.orm import Session
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 import random
 
@@ -58,6 +58,16 @@ def main():
         # 删除工人（被工资记录表引用）
         worker_count = db.query(models.Worker).delete()
         print(f"删除工人: {worker_count} 个")
+        
+        # 删除新表数据
+        model_count = db.query(models.Model).delete()
+        print(f"删除型号: {model_count} 个")
+        
+        process_cat1_count = db.query(models.ProcessCat1).delete()
+        print(f"删除类别一: {process_cat1_count} 个")
+        
+        process_cat2_count = db.query(models.ProcessCat2).delete()
+        print(f"删除类别二: {process_cat2_count} 个")
         
         # 删除用户（保留root用户，只删除其他用户）
         user_count = db.query(models.User).filter(models.User.username != "root").delete()
@@ -164,6 +174,91 @@ def main():
         db.commit()
         print(f"\n工序数据生成完成，共生成 {len(processes)} 个工序")
         
+        # 3.1 生成工序类别一数据
+        print("\n生成工序类别一数据...")
+        cat1_data = [
+            {"code": "C101", "name": "机械加工", "description": "机械加工类别"},
+            {"code": "C102", "name": "装配制造", "description": "装配制造类别"},
+            {"code": "C103", "name": "表面处理", "description": "表面处理类别"},
+            {"code": "C104", "name": "包装物流", "description": "包装物流类别"}
+        ]
+        process_cat1s = []
+        
+        for cat1_info in cat1_data:
+            # 检查是否已存在该类别一
+            existing_cat1 = db.query(models.ProcessCat1).filter(models.ProcessCat1.cat1_code == cat1_info["code"]).first()
+            if not existing_cat1:
+                cat1 = models.ProcessCat1(
+                    cat1_code=cat1_info["code"],
+                    name=cat1_info["name"],
+                    description=cat1_info["description"]
+                )
+                db.add(cat1)
+                process_cat1s.append(cat1)
+                print(f"生成类别一: {cat1_info['code']} - {cat1_info['name']}")
+            else:
+                process_cat1s.append(existing_cat1)
+                print(f"类别一已存在: {cat1_info['code']} - {existing_cat1.name}")
+        
+        # 3.2 生成工序类别二数据
+        print("\n生成工序类别二数据...")
+        cat2_data = [
+            {"code": "C201", "name": "车床加工", "description": "车床加工类别"},
+            {"code": "C202", "name": "铣床加工", "description": "铣床加工类别"},
+            {"code": "C203", "name": "钻床加工", "description": "钻床加工类别"},
+            {"code": "C204", "name": "手工装配", "description": "手工装配类别"},
+            {"code": "C205", "name": "自动装配", "description": "自动装配类别"}
+        ]
+        process_cat2s = []
+        
+        for cat2_info in cat2_data:
+            # 检查是否已存在该类别二
+            existing_cat2 = db.query(models.ProcessCat2).filter(models.ProcessCat2.cat2_code == cat2_info["code"]).first()
+            if not existing_cat2:
+                cat2 = models.ProcessCat2(
+                    cat2_code=cat2_info["code"],
+                    name=cat2_info["name"],
+                    description=cat2_info["description"]
+                )
+                db.add(cat2)
+                process_cat2s.append(cat2)
+                print(f"生成类别二: {cat2_info['code']} - {cat2_info['name']}")
+            else:
+                process_cat2s.append(existing_cat2)
+                print(f"类别二已存在: {cat2_info['code']} - {existing_cat2.name}")
+        
+        # 3.3 生成型号数据
+        print("\n生成型号数据...")
+        model_data = [
+            {"name": "A100", "aliases": "A系列, A-100", "description": "A100型号描述"},
+            {"name": "B200", "aliases": "B系列, B-200", "description": "B200型号描述"},
+            {"name": "C300", "aliases": "C系列, C-300", "description": "C300型号描述"},
+            {"name": "D400", "aliases": "D系列, D-400", "description": "D400型号描述"},
+            {"name": "E500", "aliases": "E系列, E-500", "description": "E500型号描述"}
+        ]
+        models_list = []
+        
+        for model_info in model_data:
+            # 检查是否已存在该型号
+            existing_model = db.query(models.Model).filter(models.Model.name == model_info["name"]).first()
+            if not existing_model:
+                model = models.Model(
+                    name=model_info["name"],
+                    aliases=model_info["aliases"],
+                    description=model_info["description"]
+                )
+                db.add(model)
+                models_list.append(model)
+                print(f"生成型号: {model_info['name']} - {model_info['aliases']}")
+            else:
+                models_list.append(existing_model)
+                print(f"型号已存在: {model_info['name']} - {existing_model.aliases}")
+        
+        db.commit()
+        print(f"\n工序类别一数据生成完成，共生成 {len(process_cat1s)} 个类别一")
+        print(f"工序类别二数据生成完成，共生成 {len(process_cat2s)} 个类别二")
+        print(f"型号数据生成完成，共生成 {len(models_list)} 个型号")
+        
         # 4. 生成定额数据
         print("\n生成定额数据...")
         start_date = date(2023, 1, 1)
@@ -249,6 +344,9 @@ def main():
         print("\n=== 测试数据生成完成 ===")
         print(f"工人数量: {len(workers)}")
         print(f"工序数量: {len(processes)}")
+        print(f"工序类别一数量: {len(process_cat1s)}")
+        print(f"工序类别二数量: {len(process_cat2s)}")
+        print(f"型号数量: {len(models_list)}")
         print(f"定额数量: {len(quotas)}")
         print(f"工资记录数量: {len(salary_records)}")
         print(f"测试用户: test / test123")

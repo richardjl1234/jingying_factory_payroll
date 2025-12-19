@@ -31,5 +31,10 @@ Thumbs.db
 *.db
 payroll.db
 
+# Test files
+/test/development/screenshots/
+/test/development/debug/
+/test/development/node_modules/
+/test/development/test_report_*.txt
 
 ngrok.exe

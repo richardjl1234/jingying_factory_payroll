@@ -20,10 +20,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-logger.debug(f"当前工作目录: {os.getcwd()}")
-logger.debug(f"数据库文件路径: {os.path.abspath('payroll.db')}")
-logger.debug(f"是否存在数据库文件: {os.path.exists('payroll.db')}")
-
+# 从app.database导入配置，不再直接检查当前目录的数据库文件
 from app.main import app
 from app.database import engine
 from app import models

@@ -7,7 +7,10 @@ import {
   DollarOutlined, 
   FileTextOutlined,
   LogoutOutlined,
-  HomeOutlined
+  HomeOutlined,
+  ProductOutlined,
+  TagOutlined,
+  TagsOutlined
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { User } from '../types';
@@ -80,6 +83,21 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         key: 'workers',
         icon: <TeamOutlined />,
         label: <Link to="/workers">工人管理</Link>
+      },
+      {
+        key: 'process-cat1',
+        icon: <TagOutlined />,
+        label: <Link to="/process-cat1">类别一管理</Link>
+      },
+      {
+        key: 'process-cat2',
+        icon: <TagsOutlined />,
+        label: <Link to="/process-cat2">类别二管理</Link>
+      },
+      {
+        key: 'models',
+        icon: <ProductOutlined />,
+        label: <Link to="/models">型号管理</Link>
       },
       {
         key: 'processes',

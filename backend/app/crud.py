@@ -584,68 +584,68 @@ def delete_process_cat2(db: Session, cat2_code: str) -> Optional[dict]:
     return process_cat2_info
 
 
-# 型号相关CRUD
+# 电机型号相关CRUD
 
-def get_model_by_name(db: Session, name: str) -> Optional[models.Model]:
-    """根据型号名称获取型号"""
-    logger.debug(f"根据型号名称获取型号: name={name}")
-    return db.query(models.Model).filter(models.Model.name == name).first()
+def get_motor_model_by_name(db: Session, name: str) -> Optional[models.MotorModel]:
+    """根据电机型号名称获取电机型号"""
+    logger.debug(f"根据电机型号名称获取电机型号: name={name}")
+    return db.query(models.MotorModel).filter(models.MotorModel.name == name).first()
 
-def get_model_by_alias(db: Session, alias: str) -> Optional[models.Model]:
-    """根据型号别名获取型号"""
-    logger.debug(f"根据型号别名获取型号: alias={alias}")
-    return db.query(models.Model).filter(models.Model.aliases.contains(alias)).first()
+def get_motor_model_by_alias(db: Session, alias: str) -> Optional[models.MotorModel]:
+    """根据电机型号别名获取电机型号"""
+    logger.debug(f"根据电机型号别名获取电机型号: alias={alias}")
+    return db.query(models.MotorModel).filter(models.MotorModel.aliases.contains(alias)).first()
 
-def get_model_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.Model]:
-    """获取型号列表"""
-    logger.debug(f"获取型号列表: skip={skip}, limit={limit}")
-    return db.query(models.Model).offset(skip).limit(limit).all()
+def get_motor_model_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.MotorModel]:
+    """获取电机型号列表"""
+    logger.debug(f"获取电机型号列表: skip={skip}, limit={limit}")
+    return db.query(models.MotorModel).offset(skip).limit(limit).all()
 
-def create_model(db: Session, model: schemas.ModelCreate) -> models.Model:
-    """创建型号"""
-    logger.debug(f"创建型号: name={model.name}, aliases={model.aliases}")
-    db_model = models.Model(**model.model_dump())
-    logger.debug(f"创建型号对象: {db_model}")
-    db.add(db_model)
+def create_motor_model(db: Session, motor_model: schemas.MotorModelSchemaCreate) -> models.MotorModel:
+    """创建电机型号"""
+    logger.debug(f"创建电机型号: name={motor_model.name}, aliases={motor_model.aliases}")
+    db_motor_model = models.MotorModel(**motor_model.model_dump())
+    logger.debug(f"创建电机型号对象: {db_motor_model}")
+    db.add(db_motor_model)
     db.commit()
-    db.refresh(db_model)
-    logger.info(f"型号创建成功: name={model.name}")
-    return db_model
+    db.refresh(db_motor_model)
+    logger.info(f"电机型号创建成功: name={motor_model.name}")
+    return db_motor_model
 
-def update_model(db: Session, name: str, model_update: schemas.ModelUpdate) -> Optional[models.Model]:
-    """更新型号"""
-    logger.debug(f"更新型号: name={name}, update_data={model_update.model_dump(exclude_unset=True)}")
-    db_model = get_model_by_name(db, name)
-    if not db_model:
-        logger.warning(f"型号不存在: name={name}")
+def update_motor_model(db: Session, name: str, motor_model_update: schemas.MotorModelSchemaUpdate) -> Optional[models.MotorModel]:
+    """更新电机型号"""
+    logger.debug(f"更新电机型号: name={name}, update_data={motor_model_update.model_dump(exclude_unset=True)}")
+    db_motor_model = get_motor_model_by_name(db, name)
+    if not db_motor_model:
+        logger.warning(f"电机型号不存在: name={name}")
         return None
     
-    update_data = model_update.model_dump(exclude_unset=True)
+    update_data = motor_model_update.model_dump(exclude_unset=True)
     logger.debug(f"更新字段: {update_data}")
     for field, value in update_data.items():
-        setattr(db_model, field, value)
+        setattr(db_motor_model, field, value)
     
     db.commit()
-    db.refresh(db_model)
-    logger.info(f"型号更新成功: name={name}")
-    return db_model
+    db.refresh(db_motor_model)
+    logger.info(f"电机型号更新成功: name={name}")
+    return db_motor_model
 
-def delete_model(db: Session, name: str) -> Optional[dict]:
-    """删除型号"""
-    logger.debug(f"删除型号: name={name}")
-    db_model = get_model_by_name(db, name)
-    if not db_model:
-        logger.warning(f"型号不存在: name={name}")
+def delete_motor_model(db: Session, name: str) -> Optional[dict]:
+    """删除电机型号"""
+    logger.debug(f"删除电机型号: name={name}")
+    db_motor_model = get_motor_model_by_name(db, name)
+    if not db_motor_model:
+        logger.warning(f"电机型号不存在: name={name}")
         return None
     
-    # 保存型号信息用于返回
-    model_info = {
-        "name": db_model.name,
-        "aliases": db_model.aliases
+    # 保存电机型号信息用于返回
+    motor_model_info = {
+        "name": db_motor_model.name,
+        "aliases": db_motor_model.aliases
     }
     
-    logger.debug(f"删除型号对象: {db_model}")
-    db.delete(db_model)
+    logger.debug(f"删除电机型号对象: {db_motor_model}")
+    db.delete(db_motor_model)
     db.commit()
-    logger.info(f"型号删除成功: name={name}")
-    return model_info
+    logger.info(f"电机型号删除成功: name={name}")
+    return motor_model_info

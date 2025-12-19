@@ -3,7 +3,7 @@ import { User, Worker, Process, Quota, SalaryRecord, LoginResponse, PaginatedRes
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8000/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -135,7 +135,11 @@ export const reportAPI = {
 // 统计API
 export const statsAPI = {
   getStatistics: (): Promise<{
+    user_count: number;
     worker_count: number;
+    process_cat1_count: number;
+    process_cat2_count: number;
+    model_count: number;
     process_count: number;
     quota_count: number;
     salary_record_count: number;
@@ -160,13 +164,13 @@ export const processCat2API = {
   deleteProcessCat2: (code: string): Promise<void> => api.delete(`/process-cat2/${code}`)
 };
 
-// 型号管理API
-export const modelAPI = {
-  getModelList: (): Promise<any[]> => api.get('/models/'),
-  getModel: (name: string): Promise<any> => api.get(`/models/${name}`),
-  createModel: (data: any): Promise<any> => api.post('/models/', data),
-  updateModel: (name: string, data: any): Promise<any> => api.put(`/models/${name}`, data),
-  deleteModel: (name: string): Promise<void> => api.delete(`/models/${name}`)
+// 电机型号管理API
+export const motorModelAPI = {
+  getMotorModelList: (): Promise<any[]> => api.get('/motor-models/'),
+  getMotorModel: (name: string): Promise<any> => api.get(`/motor-models/${name}`),
+  createMotorModel: (data: any): Promise<any> => api.post('/motor-models/', data),
+  updateMotorModel: (name: string, data: any): Promise<any> => api.put(`/motor-models/${name}`, data),
+  deleteMotorModel: (name: string): Promise<void> => api.delete(`/motor-models/${name}`)
 };
 
 export default api;

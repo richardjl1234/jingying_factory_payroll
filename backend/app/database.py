@@ -11,8 +11,12 @@ logger = logging.getLogger(__name__)
 logger.debug("加载环境变量...")
 load_dotenv()
 
-# 获取数据库URL
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./payroll.db")
+# 获取项目根目录 - 从当前文件路径向上三级目录 (backend/app/../../.. = project root)
+PROJECT_ROOT = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+logger.debug(f"项目根目录: {PROJECT_ROOT}")
+
+# 获取数据库URL - 使用项目根目录下的payroll.db文件
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(PROJECT_ROOT, 'payroll.db')}")
 logger.debug(f"数据库URL: {DATABASE_URL}")
 
 # 创建数据库引擎

@@ -122,13 +122,13 @@ export const processCat2API = {
   deleteProcessCat2: (code) => api.delete(`/process-cat2/${code}`)
 };
 
-// 型号管理API
-export const modelAPI = {
-  getModelList: () => api.get('/models/'),
-  getModel: (name) => api.get(`/models/${name}`),
-  createModel: (data) => api.post('/models/', data),
-  updateModel: (name, data) => api.put(`/models/${name}`, data),
-  deleteModel: (name) => api.delete(`/models/${name}`)
+// 电机型号管理API
+export const motorModelAPI = {
+  getMotorModelList: () => api.get('/motor-models/'),
+  getMotorModel: (name) => api.get(`/motor-models/${name}`),
+  createMotorModel: (data) => api.post('/motor-models/', data),
+  updateMotorModel: (name, data) => api.put(`/motor-models/${name}`, data),
+  deleteMotorModel: (name) => api.delete(`/motor-models/${name}`)
 };
 
 export default api;

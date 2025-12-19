@@ -2,18 +2,18 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import Login from './pages/Login';
-import Home from './pages/Home';
-import UserManagement from './pages/UserManagement';
-import WorkerManagement from './pages/WorkerManagement';
-import ProcessManagement from './pages/ProcessManagement';
-import ProcessCat1Management from './pages/ProcessCat1Management';
-import ProcessCat2Management from './pages/ProcessCat2Management';
-import ModelManagement from './pages/ModelManagement';
-import QuotaManagement from './pages/QuotaManagement';
-import SalaryRecord from './pages/SalaryRecord';
-import Report from './pages/Report';
-import AppLayout from './components/Layout';
+import Login from './pages/Login.jsx';
+import Home from './pages/Home.jsx';
+import UserManagement from './pages/UserManagement.jsx';
+import WorkerManagement from './pages/WorkerManagement.jsx';
+import ProcessManagement from './pages/ProcessManagement.jsx';
+import ProcessCat1Management from './pages/ProcessCat1Management.jsx';
+import ProcessCat2Management from './pages/ProcessCat2Management.jsx';
+import MotorModelManagement from './pages/MotorModelManagement.jsx';
+import QuotaManagement from './pages/QuotaManagement.jsx';
+import SalaryRecord from './pages/SalaryRecord.jsx';
+import Report from './pages/Report.jsx';
+import AppLayout from './components/Layout.jsx';
 import './App.css';
 
 // 私有路由组件
@@ -84,11 +84,11 @@ function App() {
             </PrivateRoute>
           } />
           
-          {/* 型号管理页面 */}
-          <Route path="/models" element={
+          {/* 电机型号管理页面 */}
+          <Route path="/motor-models" element={
             <PrivateRoute>
               <AppLayout>
-                <ModelManagement />
+                <MotorModelManagement />
               </AppLayout>
             </PrivateRoute>
           } />

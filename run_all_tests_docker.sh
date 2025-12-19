@@ -46,7 +46,7 @@ echo "✓ Cleaned up existing container"
 
 echo ""
 echo "[5/6] Starting new Docker container..."
-docker run -d -p 8000:8000 --name payroll-system payroll-system:latest
+docker run -d -p 8100:8000 --name payroll-system payroll-system:latest
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to start Docker container"
     exit 1
@@ -192,9 +192,9 @@ echo "============================================"
 echo "Application Information"
 echo "============================================"
 echo ""
-echo "Application URL: http://localhost:8000"
-echo "API Documentation: http://localhost:8000/docs"
-echo "Health Check: http://localhost:8000/api/health"
+echo "Application URL: http://localhost:8100"
+echo "API Documentation: http://localhost:8100/docs"
+echo "Health Check: http://localhost:8100/api/health"
 echo ""
 echo "Test Credentials:"
 echo "  - Username: test"

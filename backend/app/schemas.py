@@ -27,7 +27,7 @@ class UserInDB(UserBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     need_change_password: bool = True
-    
+
     class Config:
         from_attributes = True
 
@@ -53,7 +53,7 @@ class WorkerInDB(WorkerBase):
     """数据库中的工人模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -83,7 +83,7 @@ class ProcessInDB(ProcessBase):
     """数据库中的工序模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -112,7 +112,7 @@ class QuotaInDB(QuotaBase):
     id: int
     created_by: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -145,7 +145,7 @@ class SalaryRecordInDB(SalaryRecordBase):
     amount: Decimal
     created_by: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -197,6 +197,10 @@ class ProcessWorkloadReport(BaseModel):
 
 class SalarySummaryReport(BaseModel):
     """工资汇总报表模型"""
+    month: str
+    total_workers: int
+    total_amount: Decimal
+    category_summary: List[dict]
 
 
 # 工序类别一相关模型
@@ -219,7 +223,7 @@ class ProcessCat1InDB(ProcessCat1Base):
     """数据库中的工序类别一模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -248,7 +252,7 @@ class ProcessCat2InDB(ProcessCat2Base):
     """数据库中的工序类别二模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -257,34 +261,30 @@ class ProcessCat2(ProcessCat2InDB):
     pass
 
 
-# 型号相关模型
-class ModelBase(BaseModel):
-    """型号基础模型"""
+# 电机型号相关模型
+class MotorModelSchemaBase(BaseModel):
+    """电机型号基础模型"""
     name: str = Field(..., min_length=1, max_length=20)
     aliases: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=100)
 
-class ModelCreate(ModelBase):
-    """创建型号模型"""
+class MotorModelSchemaCreate(MotorModelSchemaBase):
+    """创建电机型号模型"""
     pass
 
-class ModelUpdate(BaseModel):
-    """更新型号模型"""
+class MotorModelSchemaUpdate(BaseModel):
+    """更新电机型号模型"""
     aliases: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=100)
 
-class ModelInDB(ModelBase):
-    """数据库中的型号模型"""
+class MotorModelSchemaInDB(MotorModelSchemaBase):
+    """数据库中的电机型号模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
-class Model(ModelInDB):
-    """返回给客户端的型号模型"""
+class MotorModelSchema(MotorModelSchemaInDB):
+    """返回给客户端的电机型号模型"""
     pass
-    month: str
-    total_workers: int
-    total_amount: Decimal
-    category_summary: List[dict]

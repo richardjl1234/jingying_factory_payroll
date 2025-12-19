@@ -16,11 +16,11 @@ import {
   EditOutlined, 
   DeleteOutlined 
 } from '@ant-design/icons';
-import { modelAPI } from '../services/api';
+import { motorModelAPI } from '../services/api';
 
 const { Title } = Typography;
 
-const ModelManagement = () => {
+const MotorModelManagement = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -31,10 +31,10 @@ const ModelManagement = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await modelAPI.getModelList();
+      const response = await motorModelAPI.getMotorModelList();
       setData(response);
     } catch (error) {
-      message.error('获取数据失败');
+      message.error('获取电机型号数据失败');
     } finally {
       setLoading(false);
     }
@@ -48,11 +48,11 @@ const ModelManagement = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingRecord) {
-        await modelAPI.updateModel(editingRecord.name, values);
-        message.success('更新成功');
+        await motorModelAPI.updateMotorModel(editingRecord.name, values);
+        message.success('电机型号更新成功');
       } else {
-        await modelAPI.createModel(values);
-        message.success('创建成功');
+        await motorModelAPI.createMotorModel(values);
+        message.success('电机型号创建成功');
       }
       setModalVisible(false);
       form.resetFields();
@@ -74,10 +74,10 @@ const ModelManagement = () => {
   };
 
   // 删除记录
-  const handleDelete = async (modelName) => {
+  const handleDelete = async (motorModelName) => {
     try {
-      await modelAPI.deleteModel(modelName);
-      message.success('删除成功');
+      await motorModelAPI.deleteMotorModel(motorModelName);
+      message.success('电机型号删除成功');
       fetchData();
     } catch (error) {
       message.error('删除失败');
@@ -100,13 +100,13 @@ const ModelManagement = () => {
 
   const columns = [
     {
-      title: '型号名称',
+      title: '电机型号名称',
       dataIndex: 'name',
       key: 'name',
       width: 120,
     },
     {
-      title: '型号别名',
+      title: '电机型号别名',
       dataIndex: 'aliases',
       key: 'aliases',
       ellipsis: true,
@@ -138,7 +138,7 @@ const ModelManagement = () => {
             编辑
           </Button>
           <Popconfirm
-            title="确定删除这个型号吗？"
+            title="确定删除这个电机型号吗？"
             onConfirm={() => handleDelete(record.name)}
             okText="确定"
             cancelText="取消"
@@ -156,9 +156,9 @@ const ModelManagement = () => {
     <div>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Title level={3}>型号管理</Title>
+          <Title level={3}>电机型号管理</Title>
           <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
-            新增型号
+            新增电机型号
           </Button>
         </div>
         
@@ -177,7 +177,7 @@ const ModelManagement = () => {
       </Card>
 
       <Modal
-        title={editingRecord ? '编辑型号' : '新增型号'}
+        title={editingRecord ? '编辑电机型号' : '新增电机型号'}
         open={modalVisible}
         onCancel={handleCancel}
         footer={null}
@@ -190,23 +190,23 @@ const ModelManagement = () => {
         >
           {!editingRecord && (
             <Form.Item
-              label="型号名称"
+              label="电机型号名称"
               name="name"
               rules={[
-                { required: true, message: '请输入型号名称' },
-                { min: 1, max: 20, message: '型号名称长度应为1-20个字符' }
+                { required: true, message: '请输入电机型号名称' },
+                { min: 1, max: 20, message: '电机型号名称长度应为1-20个字符' }
               ]}
             >
-              <Input placeholder="请输入型号名称" />
+              <Input placeholder="请输入电机型号名称" />
             </Form.Item>
           )}
           
           <Form.Item
-            label="型号别名"
+            label="电机型号别名"
             name="aliases"
-            rules={[{ max: 100, message: '型号别名长度不能超过100个字符' }]}
+            rules={[{ max: 100, message: '电机型号别名长度不能超过100个字符' }]}
           >
-            <Input placeholder="请输入型号别名（可选）" />
+            <Input placeholder="请输入电机型号别名（可选）" />
           </Form.Item>
           
           <Form.Item
@@ -234,4 +234,4 @@ const ModelManagement = () => {
   );
 };
 
-export default ModelManagement;
+export default MotorModelManagement;

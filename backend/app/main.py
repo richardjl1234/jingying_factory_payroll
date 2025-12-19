@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from . import models
 from .database import engine
-from .api import auth, user, worker, process, quota, salary, report, stats, process_cat1, process_cat2, model
+from .api import auth, user, worker, process, quota, salary, report, stats, process_cat1, process_cat2, motor_model
 
 # 加载环境变量
 logger.debug("加载环境变量...")
@@ -92,16 +92,27 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 包含路由
 logger.debug("包含API路由...")
 app.include_router(auth.router, prefix="/api")
+logger.debug("包含auth路由完成")
 app.include_router(user.router, prefix="/api")
+logger.debug("包含user路由完成")
 app.include_router(worker.router, prefix="/api")
+logger.debug("包含worker路由完成")
 app.include_router(process.router, prefix="/api")
+logger.debug("包含process路由完成")
 app.include_router(quota.router, prefix="/api")
+logger.debug("包含quota路由完成")
 app.include_router(salary.router, prefix="/api")
+logger.debug("包含salary路由完成")
 app.include_router(report.router, prefix="/api")
+logger.debug("包含report路由完成")
 app.include_router(stats.router, prefix="/api")
+logger.debug("包含stats路由完成")
 app.include_router(process_cat1.router, prefix="/api")
+logger.debug("包含process_cat1路由完成")
 app.include_router(process_cat2.router, prefix="/api")
-app.include_router(model.router, prefix="/api")
+logger.debug("包含process_cat2路由完成")
+app.include_router(motor_model.router, prefix="/api")
+logger.debug("包含motor_model路由完成")
 logger.debug("所有API路由包含完成")
 
 # 健康检查端点
@@ -110,6 +121,13 @@ def health_check():
     """健康检查端点，用于Docker健康检查"""
     logger.debug("健康检查请求")
     return {"status": "healthy", "timestamp": time.time()}
+
+# 测试motor-models路由是否工作
+@app.get("/api/test-motor-models")
+def test_motor_models():
+    """测试motor-models路由是否工作"""
+    logger.debug("测试motor-models路由请求")
+    return {"message": "motor-models路由测试成功", "timestamp": time.time()}
 
 # 获取当前文件的绝对路径，然后构建静态文件目录的绝对路径
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
