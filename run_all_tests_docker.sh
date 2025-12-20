@@ -66,7 +66,7 @@ echo "✓ Docker container is running on port 8000"
 echo ""
 echo "[6/6] Initializing database and generating test data..."
 echo "Initializing database tables..."
-docker exec payroll-system python backend/init_db.py
+docker exec payroll-system python backend/scripts/init_db.py
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to initialize database"
     exit 1
@@ -74,7 +74,7 @@ fi
 echo "✓ Database initialized successfully"
 
 echo "Generating test data..."
-docker exec payroll-system python backend/generate_test_data.py
+docker exec payroll-system python backend/scripts/generate_test_data.py
 if [ $? -ne 0 ]; then
     echo "ERROR: Failed to generate test data"
     exit 1

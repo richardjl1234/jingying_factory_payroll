@@ -37,4 +37,11 @@ payroll.db
 /test/development/node_modules/
 /test/development/test_report_*.txt
 
+# Backup directories
+scripts/backup/
+backend/scripts/backup_tests/
+
+# Debug logs
+backend/backend_debug_*.log
+
 ngrok.exe

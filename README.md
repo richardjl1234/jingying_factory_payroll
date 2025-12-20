@@ -94,8 +94,11 @@ new_payroll/
 │   │   └── main.py         # 应用入口
 │   ├── requirements.txt     # 依赖列表
 │   ├── run.py              # 运行脚本
-│   ├── init_db.py          # 数据库初始化脚本
-│   ├── generate_test_data.py # 测试数据生成脚本
+│   ├── scripts/            # 工具脚本
+│   │   ├── init_db.py          # 数据库初始化脚本
+│   │   ├── generate_test_data.py # 测试数据生成脚本
+│   │   ├── check_routes.py     # 路由检查脚本
+│   │   └── query_quota_records.py # 定额记录查询脚本
 │   └── payroll.db          # SQLite数据库（自动生成）
 ├── frontend/               # 前端代码
 │   ├── src/               # 源代码
@@ -107,9 +110,13 @@ new_payroll/
 │   ├── package.json       # 依赖配置
 │   └── vite.config.js     # Vite配置
 ├── test/                  # 测试脚本和资源
-│   ├── test_api.py        # API测试脚本
-│   ├── test_local_api.py  # 本地API测试
-│   ├── user_management_test.js  # 用户管理测试
+│   ├── development/       # 开发测试脚本
+│   │   ├── test_api.py        # API测试脚本
+│   │   ├── test_login.js      # 前端登录测试
+│   │   ├── test_user_management.js  # 用户管理测试
+│   │   ├── test_worker_process_operations.js  # 工人工序操作测试
+│   │   └── test_new_tables.js  # 新表测试
+│   ├── docker_puppeteer/  # Docker Puppeteer测试
 │   └── *.png              # 测试截图
 ├── Dockerfile             # Docker配置
 ├── nginx-https-production.conf # 生产环境HTTPS Nginx配置
@@ -189,7 +196,7 @@ pip install -r requirements.txt
 
 5. 初始化数据库
 ```bash
-python init_db.py
+python scripts/init_db.py
 ```
 
 6. 运行后端服务
@@ -415,11 +422,11 @@ docker run -d -p 8000:8000 payroll-system
 项目包含测试脚本，位于 `test/` 目录下。运行测试以确保功能正常：
 
 ```bash
-cd test
+cd test/development
 # 运行API测试
 python test_api.py
-# 运行本地API测试
-python test_local_api.py
+# 运行前端测试
+node test_login.js
 ```
 
 ## 快速开始

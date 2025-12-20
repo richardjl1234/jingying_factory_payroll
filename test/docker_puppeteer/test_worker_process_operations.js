@@ -463,7 +463,7 @@ testWorkerProcessOperations().then(result => {
   
   console.log('\n=== 调试信息 ===');
   console.log('1. 检查后端API是否正常: curl -k https://124.220.108.154/api/health');
-  console.log('2. 检查数据库连接: ssh ubuntu@124.220.108.154 "docker exec payroll-backend python backend/init_db.py"');
+console.log('2. 检查数据库连接: ssh ubuntu@124.220.108.154 "docker exec payroll-backend python backend/scripts/init_db.py"');
   console.log('3. 查看后端日志: ssh ubuntu@124.220.108.154 "docker logs payroll-backend"');
   console.log('4. 查看前端控制台错误: 检查保存的日志文件 worker_process_console_logs.txt');
 });
