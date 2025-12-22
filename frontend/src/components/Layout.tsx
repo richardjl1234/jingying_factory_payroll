@@ -85,6 +85,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         label: <Link to="/workers">工人管理</Link>
       },
       {
+        key: 'motor-models',
+        icon: <ProductOutlined />,
+        label: <Link to="/motor-models">型号管理</Link>
+      },
+      {
         key: 'process-cat1',
         icon: <TagOutlined />,
         label: <Link to="/process-cat1">类别一管理</Link>
@@ -93,11 +98,6 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         key: 'process-cat2',
         icon: <TagsOutlined />,
         label: <Link to="/process-cat2">类别二管理</Link>
-      },
-      {
-        key: 'motor-models',
-        icon: <ProductOutlined />,
-        label: <Link to="/motor-models">型号管理</Link>
       },
       {
         key: 'processes',
