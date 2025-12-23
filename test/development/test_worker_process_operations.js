@@ -77,7 +77,7 @@ async function testWorkerProcessOperations() {
     
     // Navigate to worker management page
     console.log('\n[Step 4.1] Navigating to worker management page...');
-    await page.goto(`${config.BASE_URLS.frontend}/worker-management`, {
+    await page.goto(`${config.BASE_URLS.frontend}/workers`, {
       waitUntil: 'networkidle0',
       timeout: config.TIMEOUTS.long
     });
@@ -152,7 +152,7 @@ async function testWorkerProcessOperations() {
     
     // Navigate to process management page
     console.log('\n[Step 5.1] Navigating to process management page...');
-    await page.goto(`${config.BASE_URLS.frontend}/process-management`, {
+    await page.goto(`${config.BASE_URLS.frontend}/processes`, {
       waitUntil: 'networkidle0',
       timeout: config.TIMEOUTS.long
     });
