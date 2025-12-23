@@ -4,9 +4,24 @@
 
 工厂定额和计件工资管理系统是一个用于工厂管理工序定额和工人计件工资的Web应用。该系统支持工序管理、定额设置、工人信息管理、工资记录以及报表统计等功能，帮助工厂实现自动化的工资计算和管理。
 
-## 最近更新 (2025-12-05)
+## 最近更新 (2025-12-24)
 
-### HTTPS部署与云服务器配置
+### TypeScript迁移与前端优化
+1. **TypeScript迁移完成**：前端核心基础设施已迁移到TypeScript
+   - 核心文件迁移：`App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`, `main.tsx`
+   - 删除JavaScript重复文件：`App.jsx`, `Layout.jsx`, `Login.jsx`, `api.js`, `main.jsx`
+   - 菜单结构优化：重新排序侧边栏菜单项，"工序管理"现在位于"工序类别二"之后
+
+2. **前端架构优化**：
+   - 统一使用TypeScript作为入口点 (`main.tsx`)
+   - 保留JavaScript页面组件用于渐进式迁移
+   - 修复TypeScript编译警告（未使用的导入等）
+
+3. **菜单结构调整**：
+   - 工人管理 → 型号管理 → 类别一管理 → 类别二管理 → 工序管理 → 定额管理 → 工资记录 → 报表统计
+   - 符合业务逻辑流程，优化用户体验
+
+### HTTPS部署与云服务器配置 (2025-12-05)
 1. **HTTPS部署完成**：成功在云服务器 `124.220.108.154` 上完成HTTPS部署
    - 生成自签名SSL证书
    - 配置Nginx反向代理支持HTTPS
@@ -56,6 +71,44 @@
 - HTTP请求自动重定向到HTTPS
 - 登录时如遇问题，请尝试浏览器硬刷新 (Ctrl+F5) 以清除缓存。
 
+## 待办事项 (TODO)
+
+### TypeScript迁移 - 第二阶段 (未来计划)
+当前前端采用混合架构（TypeScript核心 + JavaScript页面组件）。以下是未来迁移计划：
+
+#### 已完成迁移 (Phase 1 & 2)
+- ✅ **核心基础设施**: `App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`, `main.tsx`
+- ✅ **菜单优化**: 重新排序侧边栏菜单，"工序管理"位于"工序类别二"之后
+- ✅ **构建验证**: TypeScript编译通过，仅存在预期的类型警告
+
+#### 待迁移页面 (10个JavaScript文件)
+1. `Home.jsx` - 首页/统计面板
+2. `UserManagement.jsx` - 用户管理页面
+3. `WorkerManagement.jsx` - 工人管理页面
+4. `ProcessManagement.jsx` - 工序管理页面
+5. `ProcessCat1Management.jsx` - 工序类别一管理
+6. `ProcessCat2Management.jsx` - 工序类别二管理
+7. `MotorModelManagement.jsx` - 电机型号管理
+8. `QuotaManagement.jsx` - 定额管理页面
+9. `SalaryRecord.jsx` - 工资记录页面
+10. `Report.jsx` - 报表统计页面
+
+#### 迁移风险评估
+- **当前状态**: 稳定，功能正常，混合架构可接受
+- **风险等级**: 低到中等（类型安全缺口，但运行时功能正常）
+- **建议**: 按页面使用频率和复杂度逐步迁移
+
+#### 迁移步骤 (未来执行)
+1. **准备阶段**: 检查`types/index.ts`类型定义完整性
+2. **迁移执行**: 逐个页面转换为`.tsx`，添加类型注解
+3. **测试验证**: 每个页面迁移后手动测试功能
+4. **清理阶段**: 删除原始`.jsx`文件，更新导入
+
+#### 优先级建议
+1. **高优先级**: `UserManagement.jsx`, `WorkerManagement.jsx`（频繁使用）
+2. **中优先级**: `ProcessManagement.jsx`, `QuotaManagement.jsx`（核心业务）
+3. **低优先级**: 其他稳定页面
+
 ## 技术栈
 
 ### 后端
@@ -102,12 +155,14 @@ new_payroll/
 │   └── payroll.db          # SQLite数据库（自动生成）
 ├── frontend/               # 前端代码
 │   ├── src/               # 源代码
-│   │   ├── components/    # React组件
-│   │   ├── pages/         # 页面组件
-│   │   ├── services/      # API服务
-│   │   ├── App.jsx        # 应用组件
-│   │   └── main.jsx       # 应用入口
+│   │   ├── components/    # React组件 (Layout.tsx)
+│   │   ├── pages/         # 页面组件 (混合: .jsx + .tsx)
+│   │   ├── services/      # API服务 (api.ts)
+│   │   ├── types/         # TypeScript类型定义
+│   │   ├── App.tsx        # 应用组件 (TypeScript)
+│   │   └── main.tsx       # 应用入口 (TypeScript)
 │   ├── package.json       # 依赖配置
+│   ├── tsconfig.json      # TypeScript配置
 │   └── vite.config.js     # Vite配置
 ├── test/                  # 测试脚本和资源
 │   ├── development/       # 开发测试脚本
@@ -314,9 +369,12 @@ npm run build
 
 ### 前端开发
 
-- 新增页面：在 `frontend/src/pages/` 目录下创建新的页面组件
-- 新增组件：在 `frontend/src/components/` 目录下创建新的组件
-- API调用：通过 `frontend/src/services/api.js` 封装的API方法调用后端接口
+- **TypeScript架构**：核心基础设施使用TypeScript (`App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`)
+- **混合页面**：页面组件采用渐进式迁移策略（当前为JavaScript，未来迁移到TypeScript）
+- **新增页面**：在 `frontend/src/pages/` 目录下创建新的页面组件（建议使用`.tsx`）
+- **新增组件**：在 `frontend/src/components/` 目录下创建新的组件（建议使用`.tsx`）
+- **API调用**：通过 `frontend/src/services/api.ts` 封装的API方法调用后端接口
+- **类型定义**：在 `frontend/src/types/` 目录下维护TypeScript类型定义
 
 ## 部署
 
