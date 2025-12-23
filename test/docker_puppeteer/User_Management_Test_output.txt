@@ -1,0 +1,31 @@
+=== 测试环境: LOCAL (端口8000) ===
+测试地址: http://localhost:8000
+访问登录页面成功
+浏览器控制台: [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o
+登录表单加载完成
+输入用户名和密码完成
+点击登录按钮
+登录成功，跳转到首页
+登录后等待3秒完成
+当前页面URL: http://localhost:8000/
+页面包含首页元素: true
+保存首页截图
+保存首页稳定截图
+localStorage中的token: 存在
+localStorage中的用户信息: 存在
+导航到用户管理页面
+浏览器控制台: 开始获取用户列表...
+浏览器控制台: 获取到用户列表: JSHandle@array
+浏览器控制台: 设置users状态成功
+保存用户管理页面截图
+页面包含"用户管理": true
+页面包含"添加用户"按钮: true
+用户列表行数: 3
+页面内容长度: 245960
+保存控制台日志到文件
+未发现错误日志
+
+=== 测试结果 ===
+✅ 用户管理页面测试成功
+📋 用户列表行数: 3
+✅ 未发现错误日志

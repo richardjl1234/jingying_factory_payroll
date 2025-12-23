@@ -27,7 +27,7 @@ class UserInDB(UserBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     need_change_password: bool = True
-    
+
     class Config:
         from_attributes = True
 
@@ -53,7 +53,7 @@ class WorkerInDB(WorkerBase):
     """数据库中的工人模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -83,7 +83,7 @@ class ProcessInDB(ProcessBase):
     """数据库中的工序模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -112,7 +112,7 @@ class QuotaInDB(QuotaBase):
     id: int
     created_by: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -145,7 +145,7 @@ class SalaryRecordInDB(SalaryRecordBase):
     amount: Decimal
     created_by: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -201,3 +201,90 @@ class SalarySummaryReport(BaseModel):
     total_workers: int
     total_amount: Decimal
     category_summary: List[dict]
+
+
+# 工序类别一相关模型
+class ProcessCat1Base(BaseModel):
+    """工序类别一基础模型"""
+    cat1_code: str = Field(..., min_length=1, max_length=4)
+    name: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat1Create(ProcessCat1Base):
+    """创建工序类别一模型"""
+    pass
+
+class ProcessCat1Update(BaseModel):
+    """更新工序类别一模型"""
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat1InDB(ProcessCat1Base):
+    """数据库中的工序类别一模型"""
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class ProcessCat1(ProcessCat1InDB):
+    """返回给客户端的工序类别一模型"""
+    pass
+
+
+# 工序类别二相关模型
+class ProcessCat2Base(BaseModel):
+    """工序类别二基础模型"""
+    cat2_code: str = Field(..., min_length=1, max_length=4)
+    name: str = Field(..., min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat2Create(ProcessCat2Base):
+    """创建工序类别二模型"""
+    pass
+
+class ProcessCat2Update(BaseModel):
+    """更新工序类别二模型"""
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    description: Optional[str] = Field(None, max_length=100)
+
+class ProcessCat2InDB(ProcessCat2Base):
+    """数据库中的工序类别二模型"""
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class ProcessCat2(ProcessCat2InDB):
+    """返回给客户端的工序类别二模型"""
+    pass
+
+
+# 电机型号相关模型
+class MotorModelSchemaBase(BaseModel):
+    """电机型号基础模型"""
+    name: str = Field(..., min_length=1, max_length=20)
+    aliases: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=100)
+
+class MotorModelSchemaCreate(MotorModelSchemaBase):
+    """创建电机型号模型"""
+    pass
+
+class MotorModelSchemaUpdate(BaseModel):
+    """更新电机型号模型"""
+    aliases: Optional[str] = Field(None, max_length=100)
+    description: Optional[str] = Field(None, max_length=100)
+
+class MotorModelSchemaInDB(MotorModelSchemaBase):
+    """数据库中的电机型号模型"""
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class MotorModelSchema(MotorModelSchemaInDB):
+    """返回给客户端的电机型号模型"""
+    pass

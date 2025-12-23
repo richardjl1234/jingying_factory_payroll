@@ -1,0 +1,42 @@
+============================================
+Basic Login Test - Enhanced Debugging
+============================================
+=== Starting Basic Login Test ===
+Testing URL: http://localhost:8000/login
+Credentials: test / test123
+
+[Step 1] Navigating to login page...
+Screenshot saved: test/screenshots/login_page_loaded_1766027215660.png
+
+[Step 2] Analyzing page structure...
+Current URL: http://localhost:8000/login
+Page title: frontend
+Has token in storage: NO
+
+[Step 3] Finding login form elements...
+✓ Found Ant Design inputs
+✓ Found Ant Design primary button
+
+[Step 4] Entering credentials...
+✓ Credentials entered
+Screenshot saved: test/screenshots/credentials_entered_1766027216013.png
+
+[Step 5] Clicking login button...
+✓ Login button clicked
+
+[Step 6] Waiting for navigation (15 seconds)...
+Screenshot saved: test/screenshots/after_login_click_1766027231203.png
+
+[Step 7] Checking login result...
+Current URL after login attempt: http://localhost:8000/
+Has token in storage: YES
+
+✅ TEST PASSED: Successfully logged in!
+  - Redirected to: http://localhost:8000/
+  - Token found in storage: YES
+
+============================================
+Test Result:
+============================================
+Status: ✅ PASS
+Message: Login successful

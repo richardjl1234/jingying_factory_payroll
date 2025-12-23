@@ -1,0 +1,30 @@
+============================================
+Quota/Salary Deletion Test
+============================================
+🔑 Starting login process...
+✅ Login completed
+📊 Navigating to Quota/Salary page...
+✅ Navigated to Quota/Salary page
+
+📋 Starting Quota Deletion Tests...
+🗑️ Finding and deleting Quota records...
+
+✗ TEST FAILED: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button:contains("Delete")' is not a valid selector.
+Stack trace: DOMException: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button:contains("Delete")' is not a valid selector.
+    at evaluateHandle (evaluateHandle at CSSQueryHandler.queryAll (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\common\QueryHandler.js:117:73), <anonymous>:1:15)
+    at #evaluate (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:391:56)
+    at async ExecutionContext.evaluateHandle (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:329:16)
+    at async IsolatedWorld.evaluateHandle (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\IsolatedWorld.js:89:16)
+    at async CdpJSHandle.evaluateHandle (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\api\JSHandle.js:157:20)
+    at async CdpElementHandle.evaluateHandle (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\api\ElementHandle.js:354:20)
+    at async CSSQueryHandler.queryAll (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\common\QueryHandler.js:117:59)
+    at async AsyncIterableUtil.collect (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\util\AsyncIterableUtil.js:20:26)
+    at async #$$impl (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\api\ElementHandle.js:451:20)
+    at async #$$ (E:\jianglei\trae\new_payroll\test\docker_puppeteer\node_modules\puppeteer-core\lib\cjs\puppeteer\api\ElementHandle.js:270:28)
+Screenshot saved: test/screenshots/quota_salary_error_1766027345097.png
+
+============================================
+Final Test Result:
+============================================
+Status: ✗ FAIL
+Message: SyntaxError: Failed to execute 'querySelectorAll' on 'Document': 'button:contains("Delete")' is not a valid selector.

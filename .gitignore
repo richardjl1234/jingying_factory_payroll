@@ -31,7 +31,17 @@ Thumbs.db
 *.db
 payroll.db
 
-# Test directory
-test/
+# Test files
+/test/development/screenshots/
+/test/development/debug/
+/test/development/node_modules/
+/test/development/test_report_*.txt
+
+# Backup directories
+scripts/backup/
+backend/scripts/backup_tests/
+
+# Debug logs
+backend/backend_debug_*.log
 
 ngrok.exe

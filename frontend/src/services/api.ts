@@ -3,7 +3,7 @@ import { User, Worker, Process, Quota, SalaryRecord, LoginResponse, PaginatedRes
 
 // 创建axios实例
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  baseURL: (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8000/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -135,9 +135,42 @@ export const reportAPI = {
 // 统计API
 export const statsAPI = {
   getStatistics: (): Promise<{
+    user_count: number;
     worker_count: number;
+    process_cat1_count: number;
+    process_cat2_count: number;
+    model_count: number;
     process_count: number;
     quota_count: number;
     salary_record_count: number;
   }> => api.get('/stats/')
 };
+
+// 工序类别一管理API
+export const processCat1API = {
+  getProcessCat1List: (): Promise<any[]> => api.get('/process-cat1/'),
+  getProcessCat1: (code: string): Promise<any> => api.get(`/process-cat1/${code}`),
+  createProcessCat1: (data: any): Promise<any> => api.post('/process-cat1/', data),
+  updateProcessCat1: (code: string, data: any): Promise<any> => api.put(`/process-cat1/${code}`, data),
+  deleteProcessCat1: (code: string): Promise<void> => api.delete(`/process-cat1/${code}`)
+};
+
+// 工序类别二管理API
+export const processCat2API = {
+  getProcessCat2List: (): Promise<any[]> => api.get('/process-cat2/'),
+  getProcessCat2: (code: string): Promise<any> => api.get(`/process-cat2/${code}`),
+  createProcessCat2: (data: any): Promise<any> => api.post('/process-cat2/', data),
+  updateProcessCat2: (code: string, data: any): Promise<any> => api.put(`/process-cat2/${code}`, data),
+  deleteProcessCat2: (code: string): Promise<void> => api.delete(`/process-cat2/${code}`)
+};
+
+// 电机型号管理API
+export const motorModelAPI = {
+  getMotorModelList: (): Promise<any[]> => api.get('/motor-models/'),
+  getMotorModel: (name: string): Promise<any> => api.get(`/motor-models/${name}`),
+  createMotorModel: (data: any): Promise<any> => api.post('/motor-models/', data),
+  updateMotorModel: (name: string, data: any): Promise<any> => api.put(`/motor-models/${name}`, data),
+  deleteMotorModel: (name: string): Promise<void> => api.delete(`/motor-models/${name}`)
+};
+
+export default api;

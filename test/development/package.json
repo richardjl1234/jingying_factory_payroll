@@ -1,0 +1,15 @@
+{
+  "name": "development-tests",
+  "version": "1.0.0",
+  "description": "Development environment tests",
+  "main": "test_login.js",
+  "scripts": {
+    "test": "node test_login.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^24.31.0"
+  }
+}

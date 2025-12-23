@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import Login from './pages/Login';
@@ -7,6 +7,9 @@ import Home from './pages/Home';
 import UserManagement from './pages/UserManagement';
 import WorkerManagement from './pages/WorkerManagement';
 import ProcessManagement from './pages/ProcessManagement';
+import ProcessCat1Management from './pages/ProcessCat1Management';
+import ProcessCat2Management from './pages/ProcessCat2Management';
+import MotorModelManagement from './pages/MotorModelManagement';
 import QuotaManagement from './pages/QuotaManagement';
 import SalaryRecord from './pages/SalaryRecord';
 import Report from './pages/Report';
@@ -81,6 +84,33 @@ const App: React.FC = () => {
             <PrivateRoute>
               <AppLayout>
                 <QuotaManagement />
+              </AppLayout>
+            </PrivateRoute>
+          } />
+          
+          {/* 电机型号管理页面 */}
+          <Route path="/motor-models" element={
+            <PrivateRoute>
+              <AppLayout>
+                <MotorModelManagement />
+              </AppLayout>
+            </PrivateRoute>
+          } />
+          
+          {/* 类别一管理页面 */}
+          <Route path="/process-cat1" element={
+            <PrivateRoute>
+              <AppLayout>
+                <ProcessCat1Management />
+              </AppLayout>
+            </PrivateRoute>
+          } />
+          
+          {/* 类别二管理页面 */}
+          <Route path="/process-cat2" element={
+            <PrivateRoute>
+              <AppLayout>
+                <ProcessCat2Management />
               </AppLayout>
             </PrivateRoute>
           } />

@@ -1,0 +1,46 @@
+=== 测试确认对话框 ===
+测试地址: http://localhost:8000
+访问登录页面...
+浏览器控制台: [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o
+访问登录页面成功
+执行登录操作...
+输入用户名和密码完成
+当前URL: http://localhost:8000/
+登录成功，开始测试确认对话框
+
+=== 测试工人删除确认对话框 ===
+导航到工人管理页面...
+保存工人管理页面截图
+查找删除按钮...
+通过ant-btn-danger类找到 0 个按钮
+通过文本"删除"找到 0 个按钮
+通过aria-label找到 0 个按钮
+❌ 未找到删除按钮
+
+=== 测试工序删除确认对话框 ===
+导航到工序管理页面...
+保存工序管理页面截图
+查找删除按钮...
+通过ant-btn-danger类找到 0 个按钮
+通过文本"删除"找到 0 个按钮
+通过aria-label找到 0 个按钮
+❌ 未找到删除按钮
+保存控制台日志
+
+=== 测试结果 ===
+✅ 确认对话框测试完成
+
+检查以下截图文件:
+1. worker_management_before_delete.png - 工人管理页面
+2. worker_delete_confirmation_dialog.png - 工人删除确认对话框
+3. process_management_before_delete.png - 工序管理页面
+4. process_delete_confirmation_dialog.png - 工序删除确认对话框
+
+确认对话框应该显示以下警告信息:
+- 工人删除: 警告将同时删除所有相关的工资记录
+- 工序删除: 警告将同时删除所有相关的定额记录和工资记录
+
+=== 调试信息 ===
+1. 检查应用是否运行: curl http://localhost:8000/api/health
+2. 查看Docker容器日志: docker logs payroll-system
+3. 查看前端控制台错误: 检查保存的日志文件 confirmation_dialogs_console_logs.txt
