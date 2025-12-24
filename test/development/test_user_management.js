@@ -33,28 +33,28 @@ async function testUserManagement() {
     // Find username and password inputs
     const antInputs = await page.$$('input.ant-input');
     if (antInputs.length < 2) {
-      throw new Error('无法找到足够的输入框元素');
+      throw new Error('Cannot find enough input elements');
     }
     
     const usernameInput = antInputs[0];
     const passwordInput = antInputs[1];
-    console.log('✓ Found login input fields');
+    console.log('[OK] Found login input fields');
     
     // Find login button
     const loginButton = await page.$('button.ant-btn-primary');
     if (!loginButton) {
-      throw new Error('无法找到登录按钮');
+      throw new Error('Cannot find login button');
     }
-    console.log('✓ Found login button');
+    console.log('[OK] Found login button');
     
     // Step 3: Enter credentials and login
     console.log('\n[Step 3] Logging in...');
     await usernameInput.type(config.TEST_CREDENTIALS.admin.username);
     await passwordInput.type(config.TEST_CREDENTIALS.admin.password);
-    console.log('✓ Credentials entered');
+    console.log('[OK] Credentials entered');
     
     await loginButton.click();
-    console.log('✓ Login button clicked');
+    console.log('[OK] Login button clicked');
     
     // Step 4: Wait for navigation to home page
     console.log('\n[Step 4] Waiting for navigation to home page...');
@@ -74,7 +74,7 @@ async function testUserManagement() {
     if (!hasToken || currentUrl.includes('/login')) {
       throw new Error('Login failed');
     }
-    console.log('✓ Login successful');
+    console.log('[OK] Login successful');
     
     // Step 6: Navigate to user management page
     console.log('\n[Step 6] Navigating to user management page...');
@@ -91,11 +91,11 @@ async function testUserManagement() {
     
     // Check if page contains user management elements
     const pageContent = await page.content();
-    const hasUserManagementText = pageContent.includes('用户管理');
-    const hasAddUserButton = pageContent.includes('添加用户');
+    const hasUserManagementText = pageContent.includes('用户管理') || pageContent.includes('User Management');
+    const hasAddUserButton = pageContent.includes('添加用户') || pageContent.includes('Add User');
     
-    console.log(`Has '用户管理' text: ${hasUserManagementText}`);
-    console.log(`Has '添加用户' button: ${hasAddUserButton}`);
+    console.log(`Has user management text: ${hasUserManagementText}`);
+    console.log(`Has add user button: ${hasAddUserButton}`);
     
     // Check if there are user rows in the table
     const userRows = await page.$$eval('table tr', rows => rows.length);
@@ -105,24 +105,24 @@ async function testUserManagement() {
     console.log('\n[Step 8] Checking for errors...');
     const errorMessages = await getErrorMessages(page);
     if (errorMessages.length > 0) {
-      console.error('✗ ERROR: Found error messages on page:');
+      console.error('[ERROR] Found error messages on page:');
       errorMessages.forEach((error, i) => console.error(`  ${i + 1}. ${error}`));
     }
     
     // Determine test result
     if (hasUserManagementText && hasAddUserButton && userRows > 0) {
-      console.log('\n✅ TEST PASSED: User management functionality verified!');
+      console.log('\n[PASS] TEST PASSED: User management functionality verified!');
       console.log(`  - Found user management text: ${hasUserManagementText ? 'YES' : 'NO'}`);
       console.log(`  - Found add user button: ${hasAddUserButton ? 'YES' : 'NO'}`);
       console.log(`  - User table rows: ${userRows}`);
       return { success: true, message: 'User management test passed' };
     } else {
-      console.error('\n❌ TEST FAILED: User management functionality not fully verified!');
+      console.error('\n[FAIL] TEST FAILED: User management functionality not fully verified!');
       throw new Error('User management test failed - missing expected elements');
     }
     
   } catch (error) {
-    console.error('\n✗ TEST FAILED WITH EXCEPTION:', error.message);
+    console.error('\n[FAIL] TEST FAILED WITH EXCEPTION:', error.message);
     console.error('Stack trace:', error.stack);
     
     // Capture final screenshot
@@ -151,7 +151,7 @@ async function runTest() {
   console.log('\n============================================');
   console.log('Test Result:');
   console.log('============================================');
-  console.log(`Status: ${result.success ? '✅ PASS' : '✗ FAIL'}`);
+  console.log(`Status: ${result.success ? '[PASS] PASS' : '[FAIL] FAIL'}`);
   console.log(`Message: ${result.message}`);
   
   if (!result.success) {

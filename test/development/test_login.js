@@ -42,11 +42,11 @@ async function testLogin() {
     // Wait for the login form to be present
     try {
       await page.waitForSelector('form[name="login"]', { timeout: config.TIMEOUTS.short });
-      console.log('✓ Login form found');
+      console.log('[OK] Login form found');
     } catch (e) {
       console.log('Form not found by name, trying other selectors...');
       await page.waitForSelector('form', { timeout: config.TIMEOUTS.short });
-      console.log('✓ Found a form element');
+      console.log('[OK] Found a form element');
     }
     
     // Wait for input fields with multiple possible selectors
@@ -80,7 +80,7 @@ async function testLogin() {
         }
         
         if (usernameInput && passwordInput) {
-          console.log(`✓ Found inputs using selector: ${selector}`);
+          console.log(`[OK] Found inputs using selector: ${selector}`);
           break;
         }
       }
@@ -102,12 +102,12 @@ async function testLogin() {
         if (!passwordInput && allInputs.length > 1) {
           passwordInput = allInputs[1];
         }
-        console.log('✓ Found inputs by position');
+        console.log('[OK] Found inputs by position');
       }
     }
     
     if (!usernameInput) {
-      console.error('✗ ERROR: Could not find username input');
+      console.error('[ERROR] Could not find username input');
       // Take screenshot for debugging
       await captureScreenshot(page, 'debug_no_username_input');
       const allInputs = await page.$$eval('input', inputs => inputs.map(i => ({
@@ -123,7 +123,7 @@ async function testLogin() {
     }
     
     if (!passwordInput) {
-      console.error('✗ ERROR: Could not find password input');
+      console.error('[ERROR] Could not find password input');
       await captureScreenshot(page, 'debug_no_password_input');
       const allInputs = await page.$$eval('input', inputs => inputs.map(i => ({
         type: i.type,
@@ -139,46 +139,49 @@ async function testLogin() {
     const buttonSelectors = [
       'button.ant-btn-primary',
       'button[type="submit"]',
-      'button:contains("登录")',
-      'button'
+      'button',
+      'input[type="submit"]'
     ];
     
     for (const selector of buttonSelectors) {
       try {
-        if (selector.includes('contains')) {
-          // Handle :contains selector
-          const buttons = await page.$x(`//button[contains(text(), '登录')]`);
-          if (buttons.length > 0) {
-            loginButton = buttons[0];
-            console.log(`✓ Found login button using XPath: ${selector}`);
-            break;
-          }
-        } else {
-          const buttons = await page.$$(selector);
-          if (buttons.length > 0) {
-            // Prefer buttons with text "登录" or primary style
-            for (const button of buttons) {
-              const buttonText = await page.evaluate(el => el.textContent, button);
-              if (buttonText.includes('登录') || selector === 'button.ant-btn-primary') {
-                loginButton = button;
-                console.log(`✓ Found login button using selector: ${selector}`);
-                break;
-              }
+        const buttons = await page.$$(selector);
+        if (buttons.length > 0) {
+          // Prefer buttons with text "Login", "登录", or primary style
+          for (const button of buttons) {
+            const buttonText = await page.evaluate(el => el.textContent || el.value || '', button);
+            if (buttonText.includes('Login') || buttonText.includes('登录') || selector === 'button.ant-btn-primary') {
+              loginButton = button;
+              console.log(`[OK] Found login button using selector: ${selector}`);
+              break;
             }
-            if (loginButton) break;
-            // Otherwise take the first button
-            loginButton = buttons[0];
-            console.log(`✓ Found a button using selector: ${selector}`);
-            break;
           }
+          if (loginButton) break;
+          // Otherwise take the first button
+          loginButton = buttons[0];
+          console.log(`[OK] Found a button using selector: ${selector}`);
+          break;
         }
       } catch (e) {
         // Continue with next selector
       }
     }
     
+    // Also try XPath for login text
     if (!loginButton) {
-      console.error('✗ ERROR: Could not find login button');
+      try {
+        const loginButtons = await page.$x(`//button[contains(text(), 'Login') or contains(text(), '登录')]`);
+        if (loginButtons.length > 0) {
+          loginButton = loginButtons[0];
+          console.log(`[OK] Found login button using XPath`);
+        }
+      } catch (e) {
+        // Continue
+      }
+    }
+    
+    if (!loginButton) {
+      console.error('[ERROR] Could not find login button');
       const allButtons = await page.$$eval('button', buttons => buttons.map(b => ({
         text: b.textContent,
         type: b.type,
@@ -193,14 +196,14 @@ async function testLogin() {
     console.log('\n[Step 4] Entering credentials...');
     await usernameInput.type(config.TEST_CREDENTIALS.admin.username);
     await passwordInput.type(config.TEST_CREDENTIALS.admin.password);
-    console.log('✓ Credentials entered');
+    console.log('[OK] Credentials entered');
     
     await captureScreenshot(page, 'credentials_entered');
     
     // Step 5: Click login button
     console.log('\n[Step 5] Clicking login button...');
     await loginButton.click();
-    console.log('✓ Login button clicked');
+    console.log('[OK] Login button clicked');
     
     // Step 6: Wait for navigation
     console.log(`\n[Step 6] Waiting for navigation (${config.TIMEOUTS.medium / 1000} seconds)...`);
@@ -220,13 +223,13 @@ async function testLogin() {
     // Check for error messages on page
     const errorText = await getErrorMessages(page);
     if (errorText.length > 0) {
-      console.error('✗ ERROR: Found error messages on page:');
+      console.error('[ERROR] Found error messages on page:');
       errorText.forEach((error, i) => console.error(`  ${i + 1}. ${error}`));
     }
     
     // Determine test result
     if (currentUrl.includes('/login') || currentUrl.endsWith('/login')) {
-      console.error('\n✗ TEST FAILED: Still on login page');
+      console.error('\n[FAIL] TEST FAILED: Still on login page');
       
       // Save detailed debug info
       const debugInfo = {
@@ -245,18 +248,18 @@ async function testLogin() {
       
       throw new Error('Login failed - still on login page');
     } else if (!hasToken) {
-      console.warn('⚠️ WARNING: Not on login page but no token found in storage');
-      console.log('✓ TEST PARTIALLY PASSED: Navigated away from login page');
+      console.warn('[WARN] Not on login page but no token found in storage');
+      console.log('[OK] TEST PARTIALLY PASSED: Navigated away from login page');
       return { success: true, message: 'Navigated from login page but no token found' };
     } else {
-      console.log('\n✅ TEST PASSED: Successfully logged in!');
+      console.log('\n[PASS] TEST PASSED: Successfully logged in!');
       console.log(`  - Redirected to: ${currentUrl}`);
       console.log(`  - Token found in storage: YES`);
       return { success: true, message: 'Login successful' };
     }
     
   } catch (error) {
-    console.error('\n✗ TEST FAILED WITH EXCEPTION:', error.message);
+    console.error('\n[FAIL] TEST FAILED WITH EXCEPTION:', error.message);
     console.error('Stack trace:', error.stack);
     
     // Capture final screenshot
@@ -285,7 +288,7 @@ async function runTest() {
   console.log('\n============================================');
   console.log('Test Result:');
   console.log('============================================');
-  console.log(`Status: ${result.success ? '✅ PASS' : '✗ FAIL'}`);
+  console.log(`Status: ${result.success ? '[PASS] PASS' : '[FAIL] FAIL'}`);
   console.log(`Message: ${result.message}`);
   
   if (!result.success) {

@@ -33,7 +33,7 @@ async function testNewTables() {
     // Find username and password inputs
     const antInputs = await page.$$('input.ant-input');
     if (antInputs.length < 2) {
-      throw new Error('无法找到足够的输入框元素');
+      throw new Error('Cannot find enough input elements');
     }
     
     const usernameInput = antInputs[0];
@@ -42,7 +42,7 @@ async function testNewTables() {
     // Find login button
     const loginButton = await page.$('button.ant-btn-primary');
     if (!loginButton) {
-      throw new Error('无法找到登录按钮');
+      throw new Error('Cannot find login button');
     }
     
     // Enter credentials and login
@@ -62,7 +62,7 @@ async function testNewTables() {
     if (!hasToken || currentUrl.includes('/login')) {
       throw new Error('Login failed');
     }
-    console.log('✓ Login successful');
+    console.log('[OK] Login successful');
     
     // Test results tracking
     const testResults = {
@@ -72,7 +72,7 @@ async function testNewTables() {
     };
     
     // Test 1: Check if process category 1 route exists
-    console.log('\n=== 测试工序类别一 ===');
+    console.log('\n=== Testing Process Category 1 ===');
     console.log('\n[Step 4] Testing Process Category 1 access...');
     
     try {
@@ -86,19 +86,19 @@ async function testNewTables() {
       
       const currentUrl1 = page.url();
       testResults.processCat1Access = !currentUrl1.includes('/404') && !currentUrl1.includes('/login');
-      console.log(`✅ 工序类别一页面访问: ${testResults.processCat1Access ? '通过' : '失败'}`);
+      console.log(`[${testResults.processCat1Access ? 'PASS' : 'FAIL'}] Process Category 1 page access: ${testResults.processCat1Access ? 'PASS' : 'FAIL'}`);
       
       // Check for common UI elements
       const pageContent1 = await page.content();
-      const hasProcessCat1Text = pageContent1.includes('工序类别一') || pageContent1.includes('process-cat1');
-      console.log(`✅ 包含工序类别一相关文本: ${hasProcessCat1Text}`);
+      const hasProcessCat1Text = pageContent1.includes('工序类别一') || pageContent1.includes('process-cat1') || pageContent1.includes('Process Category 1');
+      console.log(`[${hasProcessCat1Text ? 'PASS' : 'FAIL'}] Contains process category 1 related text: ${hasProcessCat1Text}`);
       
     } catch (error) {
-      console.error(`❌ 工序类别一测试失败: ${error.message}`);
+      console.error(`[FAIL] Process Category 1 test failed: ${error.message}`);
     }
     
     // Test 2: Check if process category 2 route exists
-    console.log('\n=== 测试工序类别二 ===');
+    console.log('\n=== Testing Process Category 2 ===');
     console.log('\n[Step 5] Testing Process Category 2 access...');
     
     try {
@@ -112,19 +112,19 @@ async function testNewTables() {
       
       const currentUrl2 = page.url();
       testResults.processCat2Access = !currentUrl2.includes('/404') && !currentUrl2.includes('/login');
-      console.log(`✅ 工序类别二页面访问: ${testResults.processCat2Access ? '通过' : '失败'}`);
+      console.log(`[${testResults.processCat2Access ? 'PASS' : 'FAIL'}] Process Category 2 page access: ${testResults.processCat2Access ? 'PASS' : 'FAIL'}`);
       
       // Check for common UI elements
       const pageContent2 = await page.content();
-      const hasProcessCat2Text = pageContent2.includes('工序类别二') || pageContent2.includes('process-cat2');
-      console.log(`✅ 包含工序类别二相关文本: ${hasProcessCat2Text}`);
+      const hasProcessCat2Text = pageContent2.includes('工序类别二') || pageContent2.includes('process-cat2') || pageContent2.includes('Process Category 2');
+      console.log(`[${hasProcessCat2Text ? 'PASS' : 'FAIL'}] Contains process category 2 related text: ${hasProcessCat2Text}`);
       
     } catch (error) {
-      console.error(`❌ 工序类别二测试失败: ${error.message}`);
+      console.error(`[FAIL] Process Category 2 test failed: ${error.message}`);
     }
     
     // Test 3: Check if models route exists
-    console.log('\n=== 测试型号表 ===');
+    console.log('\n=== Testing Models Table ===');
     console.log('\n[Step 6] Testing Models access...');
     
     try {
@@ -138,46 +138,46 @@ async function testNewTables() {
       
       const currentUrl3 = page.url();
       testResults.modelsAccess = !currentUrl3.includes('/404') && !currentUrl3.includes('/login');
-      console.log(`✅ 型号页面访问: ${testResults.modelsAccess ? '通过' : '失败'}`);
+      console.log(`[${testResults.modelsAccess ? 'PASS' : 'FAIL'}] Models page access: ${testResults.modelsAccess ? 'PASS' : 'FAIL'}`);
       
       // Check for common UI elements
       const pageContent3 = await page.content();
-      const hasModelsText = pageContent3.includes('型号') || pageContent3.includes('models');
-      console.log(`✅ 包含型号相关文本: ${hasModelsText}`);
+      const hasModelsText = pageContent3.includes('型号') || pageContent3.includes('models') || pageContent3.includes('Models');
+      console.log(`[${hasModelsText ? 'PASS' : 'FAIL'}] Contains models related text: ${hasModelsText}`);
       
     } catch (error) {
-      console.error(`❌ 型号测试失败: ${error.message}`);
+      console.error(`[FAIL] Models test failed: ${error.message}`);
     }
     
     // Step 7: Verify no errors on pages
     console.log('\n[Step 7] Checking for errors on pages...');
     const errorMessages = await getErrorMessages(page);
     if (errorMessages.length > 0) {
-      console.error('✗ Found error messages on page:');
+      console.error('[ERROR] Found error messages on page:');
       errorMessages.forEach((error, i) => console.error(`  ${i + 1}. ${error}`));
     } else {
-      console.log('✓ No error messages found on pages');
+      console.log('[OK] No error messages found on pages');
     }
     
     // Step 8: Summary of test results
-    console.log('\n=== 测试结果摘要 ===');
-    console.log(`✅ 工序类别一访问: ${testResults.processCat1Access ? '通过' : '失败'}`);
-    console.log(`✅ 工序类别二访问: ${testResults.processCat2Access ? '通过' : '失败'}`);
-    console.log(`✅ 型号表访问: ${testResults.modelsAccess ? '通过' : '失败'}`);
+    console.log('\n=== Test Results Summary ===');
+    console.log(`[${testResults.processCat1Access ? 'PASS' : 'FAIL'}] Process Category 1 access: ${testResults.processCat1Access ? 'PASS' : 'FAIL'}`);
+    console.log(`[${testResults.processCat2Access ? 'PASS' : 'FAIL'}] Process Category 2 access: ${testResults.processCat2Access ? 'PASS' : 'FAIL'}`);
+    console.log(`[${testResults.modelsAccess ? 'PASS' : 'FAIL'}] Models table access: ${testResults.modelsAccess ? 'PASS' : 'FAIL'}`);
     
     // Determine overall result
     const allTestsPassed = testResults.processCat1Access || testResults.processCat2Access || testResults.modelsAccess;
     
     if (allTestsPassed) {
-      console.log('\n✅ TEST PASSED: New tables functionality verified!');
+      console.log('\n[PASS] TEST PASSED: New tables functionality verified!');
       return { success: true, message: 'New Tables Test passed', testResults };
     } else {
-      console.error('\n❌ TEST FAILED: New tables functionality test failed');
+      console.error('\n[FAIL] TEST FAILED: New tables functionality test failed');
       throw new Error('New Tables Test failed');
     }
     
   } catch (error) {
-    console.error('\n✗ TEST FAILED WITH EXCEPTION:', error.message);
+    console.error('\n[FAIL] TEST FAILED WITH EXCEPTION:', error.message);
     console.error('Stack trace:', error.stack);
     
     // Capture final screenshot
@@ -206,14 +206,14 @@ async function runTest() {
   console.log('\n============================================');
   console.log('Test Result:');
   console.log('============================================');
-  console.log(`Status: ${result.success ? '✅ PASS' : '✗ FAIL'}`);
+  console.log(`Status: ${result.success ? '[PASS] PASS' : '[FAIL] FAIL'}`);
   console.log(`Message: ${result.message}`);
   
   if (result.testResults) {
     console.log('\nTest Results Detail:');
-    console.log(`  - Process Category 1 Access: ${result.testResults.processCat1Access ? '✅ PASS' : '✗ FAIL'}`);
-    console.log(`  - Process Category 2 Access: ${result.testResults.processCat2Access ? '✅ PASS' : '✗ FAIL'}`);
-    console.log(`  - Models Access: ${result.testResults.modelsAccess ? '✅ PASS' : '✗ FAIL'}`);
+    console.log(`  - Process Category 1 Access: ${result.testResults.processCat1Access ? '[PASS] PASS' : '[FAIL] FAIL'}`);
+    console.log(`  - Process Category 2 Access: ${result.testResults.processCat2Access ? '[PASS] PASS' : '[FAIL] FAIL'}`);
+    console.log(`  - Models Access: ${result.testResults.modelsAccess ? '[PASS] PASS' : '[FAIL] FAIL'}`);
   }
   
   if (!result.success) {

@@ -30,22 +30,22 @@ if os.path.exists(config_file_path):
 BASE_URL = config["base_url"]
 TEST_CREDENTIALS = config["test_credentials"]
 
-print(f"=== 测试开发环境API (BASE_URL: {BASE_URL}) ===")
+print(f"=== Testing Development Environment API (BASE_URL: {BASE_URL}) ===")
 
 class APITester:
-    """API测试类，用于测试开发环境的API端点"""
+    """API test class for testing development environment API endpoints"""
     
     def __init__(self):
-        """初始化测试类"""
+        """Initialize test class"""
         self.token = None
         self.headers = {}
     
     def login(self):
         """
-        测试登录API并获取token
+        Test login API and get token
         
         Returns:
-            bool: 登录是否成功
+            bool: Whether login was successful
         """
         url = f"{BASE_URL}/api/auth/login"
         payload = {
@@ -54,235 +54,235 @@ class APITester:
         }
         
         try:
-            logger.info(f"测试登录API: {url}")
+            logger.info(f"Testing login API: {url}")
             response = requests.post(url, json=payload, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
-            logger.info(f"响应内容: {response.text}")
+            logger.info(f"Status code: {response.status_code}")
+            logger.info(f"Response: {response.text}")
             
             if response.status_code == 200:
                 self.token = response.json().get("access_token")
                 self.headers = {"Authorization": f"Bearer {self.token}"}
-                logger.info("登录成功，获取到token")
+                logger.info("Login successful, token obtained")
                 return True
             return False
         except Exception as e:
-            logger.error(f"请求失败: {e}")
+            logger.error(f"Request failed: {e}")
             return False
     
     def test_get_users(self):
         """
-        测试获取用户列表API
+        Test get users list API
         
         Returns:
-            bool: 测试是否成功
+            bool: Whether test was successful
         """
         if not self.token:
-            logger.error("需要先登录获取token")
+            logger.error("Need to login first to get token")
             return False
         
         url = f"{BASE_URL}/api/users/"
         
         try:
-            logger.info(f"测试获取用户列表API: {url}")
+            logger.info(f"Testing get users list API: {url}")
             response = requests.get(url, headers=self.headers, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
+            logger.info(f"Status code: {response.status_code}")
             
             if response.status_code == 200:
                 users = response.json()
-                logger.info(f"获取到 {len(users)} 个用户")
-                logger.info(f"第一个用户: {json.dumps(users[0], ensure_ascii=False) if users else '无用户'}")
+                logger.info(f"Got {len(users)} users")
+                logger.info(f"First user: {json.dumps(users[0], ensure_ascii=False) if users else 'No users'}")
                 return True
-            logger.error(f"获取用户列表失败: {response.text}")
+            logger.error(f"Failed to get users list: {response.text}")
             return False
         except Exception as e:
-            logger.error(f"请求失败: {e}")
+            logger.error(f"Request failed: {e}")
             return False
     
     def test_get_workers(self):
         """
-        测试获取工人列表API
+        Test get workers list API
         
         Returns:
-            bool: 测试是否成功
+            bool: Whether test was successful
         """
         if not self.token:
-            logger.error("需要先登录获取token")
+            logger.error("Need to login first to get token")
             return False
         
         url = f"{BASE_URL}/api/workers/"
         
         try:
-            logger.info(f"测试获取工人列表API: {url}")
+            logger.info(f"Testing get workers list API: {url}")
             response = requests.get(url, headers=self.headers, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
+            logger.info(f"Status code: {response.status_code}")
             
             if response.status_code == 200:
                 workers = response.json()
-                logger.info(f"获取到 {len(workers)} 个工人")
-                logger.info(f"第一个工人: {json.dumps(workers[0], ensure_ascii=False) if workers else '无工人'}")
+                logger.info(f"Got {len(workers)} workers")
+                logger.info(f"First worker: {json.dumps(workers[0], ensure_ascii=False) if workers else 'No workers'}")
                 return True
-            logger.error(f"获取工人列表失败: {response.text}")
+            logger.error(f"Failed to get workers list: {response.text}")
             return False
         except Exception as e:
-            logger.error(f"请求失败: {e}")
+            logger.error(f"Request failed: {e}")
             return False
     
     def test_get_processes(self):
         """
-        测试获取工序列表API
+        Test get processes list API
         
         Returns:
-            bool: 测试是否成功
+            bool: Whether test was successful
         """
         if not self.token:
-            logger.error("需要先登录获取token")
+            logger.error("Need to login first to get token")
             return False
         
         url = f"{BASE_URL}/api/processes/"
         
         try:
-            logger.info(f"测试获取工序列表API: {url}")
+            logger.info(f"Testing get processes list API: {url}")
             response = requests.get(url, headers=self.headers, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
+            logger.info(f"Status code: {response.status_code}")
             
             if response.status_code == 200:
                 processes = response.json()
-                logger.info(f"获取到 {len(processes)} 个工序")
-                logger.info(f"第一个工序: {json.dumps(processes[0], ensure_ascii=False) if processes else '无工序'}")
+                logger.info(f"Got {len(processes)} processes")
+                logger.info(f"First process: {json.dumps(processes[0], ensure_ascii=False) if processes else 'No processes'}")
                 return True
-            logger.error(f"获取工序列表失败: {response.text}")
+            logger.error(f"Failed to get processes list: {response.text}")
             return False
         except Exception as e:
-            logger.error(f"请求失败: {e}")
+            logger.error(f"Request failed: {e}")
             return False
     
     def test_get_process_cat1(self):
         """
-        测试获取工序类别一列表API
+        Test get process category 1 list API
         
         Returns:
-            bool: 测试是否成功
+            bool: Whether test was successful
         """
         if not self.token:
-            logger.error("需要先登录获取token")
+            logger.error("Need to login first to get token")
             return False
         
         url = f"{BASE_URL}/api/process-cat1/"
         
         try:
-            logger.info(f"测试获取工序类别一列表API: {url}")
+            logger.info(f"Testing get process category 1 list API: {url}")
             response = requests.get(url, headers=self.headers, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
+            logger.info(f"Status code: {response.status_code}")
             
             if response.status_code == 200:
                 process_cat1_list = response.json()
-                logger.info(f"获取到 {len(process_cat1_list)} 个工序类别一")
+                logger.info(f"Got {len(process_cat1_list)} process category 1 items")
                 if process_cat1_list:
-                    logger.info(f"第一个工序类别一: {json.dumps(process_cat1_list[0], ensure_ascii=False)}")
+                    logger.info(f"First process category 1: {json.dumps(process_cat1_list[0], ensure_ascii=False)}")
                 else:
-                    logger.info("无工序类别一")
+                    logger.info("No process category 1 items")
                 return True
-            logger.error(f"获取工序类别一列表失败: {response.text}")
+            logger.error(f"Failed to get process category 1 list: {response.text}")
             return False
         except Exception as e:
-            logger.error(f"请求失败: {e}")
+            logger.error(f"Request failed: {e}")
             return False
     
     def test_get_process_cat2(self):
         """
-        测试获取工序类别二列表API
+        Test get process category 2 list API
         
         Returns:
-            bool: 测试是否成功
+            bool: Whether test was successful
         """
         if not self.token:
-            logger.error("需要先登录获取token")
+            logger.error("Need to login first to get token")
             return False
         
         url = f"{BASE_URL}/api/process-cat2/"
         
         try:
-            logger.info(f"测试获取工序类别二列表API: {url}")
+            logger.info(f"Testing get process category 2 list API: {url}")
             response = requests.get(url, headers=self.headers, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
+            logger.info(f"Status code: {response.status_code}")
             
             if response.status_code == 200:
                 process_cat2_list = response.json()
-                logger.info(f"获取到 {len(process_cat2_list)} 个工序类别二")
+                logger.info(f"Got {len(process_cat2_list)} process category 2 items")
                 if process_cat2_list:
-                    logger.info(f"第一个工序类别二: {json.dumps(process_cat2_list[0], ensure_ascii=False)}")
+                    logger.info(f"First process category 2: {json.dumps(process_cat2_list[0], ensure_ascii=False)}")
                 else:
-                    logger.info("无工序类别二")
+                    logger.info("No process category 2 items")
                 return True
-            logger.error(f"获取工序类别二列表失败: {response.text}")
+            logger.error(f"Failed to get process category 2 list: {response.text}")
             return False
         except Exception as e:
-            logger.error(f"请求失败: {e}")
+            logger.error(f"Request failed: {e}")
             return False
     
     def test_get_models(self):
         """
-        测试获取型号列表API
+        Test get motor models list API
         
         Returns:
-            bool: 测试是否成功
+            bool: Whether test was successful
         """
         if not self.token:
-            logger.error("需要先登录获取token")
+            logger.error("Need to login first to get token")
             return False
         
         url = f"{BASE_URL}/api/motor-models/"
         
         try:
-            logger.info(f"测试获取型号列表API: {url}")
+            logger.info(f"Testing get motor models list API: {url}")
             response = requests.get(url, headers=self.headers, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
+            logger.info(f"Status code: {response.status_code}")
             
             if response.status_code == 200:
                 models = response.json()
-                logger.info(f"获取到 {len(models)} 个型号")
+                logger.info(f"Got {len(models)} motor models")
                 if models:
-                    logger.info(f"第一个型号: {json.dumps(models[0], ensure_ascii=False)}")
+                    logger.info(f"First motor model: {json.dumps(models[0], ensure_ascii=False)}")
                 else:
-                    logger.info("无型号")
+                    logger.info("No motor models")
                 return True
-            logger.error(f"获取型号列表失败: {response.text}")
+            logger.error(f"Failed to get motor models list: {response.text}")
             return False
         except Exception as e:
-            logger.error(f"请求失败: {e}")
+            logger.error(f"Request failed: {e}")
             return False
     
     def test_health_check(self):
         """
-        测试健康检查API（如果可用）
+        Test health check API (if available)
         
         Returns:
-            bool: 测试是否成功
+            bool: Whether test was successful
         """
         url = f"{BASE_URL}/health"
         
         try:
-            logger.info(f"测试健康检查API: {url}")
+            logger.info(f"Testing health check API: {url}")
             response = requests.get(url, timeout=10)
-            logger.info(f"状态码: {response.status_code}")
+            logger.info(f"Status code: {response.status_code}")
             
             if response.status_code == 200:
-                logger.info("健康检查通过")
+                logger.info("Health check passed")
                 return True
-            logger.warning(f"健康检查失败: {response.text}")
-            # 健康检查失败不一定是严重问题，返回True
+            logger.warning(f"Health check failed: {response.text}")
+            # Health check failure is not necessarily a critical problem, return True
             return True
         except Exception as e:
-            logger.warning(f"健康检查请求失败: {e}")
-            # 健康检查失败不一定是严重问题，返回True
+            logger.warning(f"Health check request failed: {e}")
+            # Health check failure is not necessarily a critical problem, return True
             return True
     
     def run_all_tests(self):
         """
-        运行所有API测试
+        Run all API tests
         
         Returns:
-            tuple: (测试结果列表, 是否全部通过)
+            tuple: (Test results list, Whether all tests passed)
         """
         tests = [
             ("health_check", self.test_health_check),
@@ -299,15 +299,15 @@ class APITester:
         all_passed = True
         
         for test_name, test_func in tests:
-            logger.info(f"\n=== 运行测试: {test_name} ===")
+            logger.info(f"\n=== Running test: {test_name} ===")
             try:
                 result = test_func()
                 results.append((test_name, result))
                 if not result:
                     all_passed = False
-                logger.info(f"测试 {test_name} {'通过' if result else '失败'}")
+                logger.info(f"Test {test_name} {'PASSED' if result else 'FAILED'}")
             except Exception as e:
-                logger.error(f"测试 {test_name} 执行出错: {e}")
+                logger.error(f"Test {test_name} execution error: {e}")
                 results.append((test_name, False))
                 all_passed = False
         
@@ -315,25 +315,25 @@ class APITester:
 
 def main():
     """
-    主函数，运行所有API测试
+    Main function, run all API tests
     """
     tester = APITester()
     
-    logger.info("开始运行开发环境API测试")
-    logger.info(f"测试环境: {BASE_URL}")
+    logger.info("Starting development environment API tests")
+    logger.info(f"Test environment: {BASE_URL}")
     
     results, all_passed = tester.run_all_tests()
     
-    # 打印测试结果摘要
-    logger.info("\n=== 测试结果摘要 ===")
+    # Print test results summary
+    logger.info("\n=== Test Results Summary ===")
     for test_name, result in results:
-        logger.info(f"{test_name}: {'✅ 通过' if result else '❌ 失败'}")
+        logger.info(f"{test_name}: {'[PASS] PASS' if result else '[FAIL] FAIL'}")
     
     if all_passed:
-        logger.info("\n🎉 所有API测试通过！")
+        logger.info("\n[PASS] All API tests passed!")
         sys.exit(0)
     else:
-        logger.error("\n❌ 部分API测试失败！")
+        logger.error("\n[FAIL] Some API tests failed!")
         sys.exit(1)
 
 if __name__ == "__main__":
