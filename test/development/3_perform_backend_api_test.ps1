@@ -79,8 +79,20 @@ function Run-BackendTests {
         $originalErrorAction = $ErrorActionPreference
         $ErrorActionPreference = "Continue"
         
+        # Check if virtual environment exists
+        $venvPath = Join-Path $BackendDir "venv"
+        $venvPython = Join-Path $venvPath "Scripts\python.exe"
+        
+        if (Test-Path $venvPython) {
+            Write-TestOutput "Using virtual environment Python: $venvPython" -ColorCode "Green"
+            $pythonCommand = $venvPython
+        } else {
+            Write-TestOutput "Virtual environment not found, using system Python" -ColorCode "Yellow"
+            $pythonCommand = "python"
+        }
+        
         # Run the Python script and capture all output
-        $result = python test_api.py 2>&1
+        $result = & $pythonCommand test_api.py 2>&1
         
         # Restore original error action preference
         $ErrorActionPreference = $originalErrorAction

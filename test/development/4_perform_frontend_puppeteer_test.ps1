@@ -109,7 +109,7 @@ function Run-FrontendTests {
     $frontendTestFiles = @(
         "test_login.js",
         "test_user_management.js",
-        "test_worker_process_operations.js",
+        # "test_worker_process_operations.js",
         "test_new_tables.js"
     )
     

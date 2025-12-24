@@ -53,13 +53,45 @@ function Start-BackendService {
         # Change to backend directory
         Set-Location $BackendDir
         
+        # Check if virtual environment exists
+        $venvPython = Join-Path $BackendDir "venv\Scripts\python.exe"
+        if (-not (Test-Path $venvPython)) {
+            Write-ColorOutput "Virtual environment not found at: ${venvPython}" -ColorCode "Red"
+            Write-ColorOutput "Falling back to system Python..." -ColorCode "Yellow"
+            $venvPython = "python"
+        } else {
+            Write-ColorOutput "Using virtual environment Python: ${venvPython}" -ColorCode "Green"
+        }
+        
         # Start backend service in a new PowerShell window
-        $backendProcess = Start-Process powershell -ArgumentList "python run.py" -PassThru -WorkingDirectory $BackendDir
+        $backendProcess = Start-Process powershell -ArgumentList "${venvPython} run.py" -PassThru -WorkingDirectory $BackendDir
         Write-ColorOutput "Backend service started with PID: $($backendProcess.Id)" -ColorCode "Green"
         
         # Wait for backend to start
         Write-ColorOutput "Waiting for backend service to initialize..." -ColorCode "Yellow"
         Start-Sleep -Seconds 10
+        
+        # Verify backend is running
+        Write-ColorOutput "Verifying backend service is running..." -ColorCode "Yellow"
+        $backendRunning = $false
+        for ($i = 0; $i -lt 5; $i++) {
+            try {
+                $response = Invoke-WebRequest -Uri "http://localhost:8000/api/health" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
+                if ($response.StatusCode -eq 200) {
+                    $backendRunning = $true
+                    Write-ColorOutput "Backend service is running and responding on http://localhost:8000" -ColorCode "Green"
+                    break
+                }
+            } catch {
+                Write-ColorOutput "Backend not responding yet, retrying... ($($i+1)/5)" -ColorCode "Yellow"
+                Start-Sleep -Seconds 2
+            }
+        }
+        
+        if (-not $backendRunning) {
+            Write-ColorOutput "Warning: Backend service may not have started properly" -ColorCode "Red"
+            Write-ColorOutput "Check the backend console window for errors" -ColorCode "Yellow"
+        }
         
         return $backendProcess
     } catch {
@@ -84,6 +116,28 @@ function Start-FrontendService {
         # Wait for frontend to start
         Write-ColorOutput "Waiting for frontend service to initialize..." -ColorCode "Yellow"
         Start-Sleep -Seconds 15
+        
+        # Verify frontend is running
+        Write-ColorOutput "Verifying frontend service is running..." -ColorCode "Yellow"
+        $frontendRunning = $false
+        for ($i = 0; $i -lt 5; $i++) {
+            try {
+                $response = Invoke-WebRequest -Uri "http://localhost:5173" -UseBasicParsing -TimeoutSec 2 -ErrorAction SilentlyContinue
+                if ($response.StatusCode -eq 200) {
+                    $frontendRunning = $true
+                    Write-ColorOutput "Frontend service is running and responding on http://localhost:5173" -ColorCode "Green"
+                    break
+                }
+            } catch {
+                Write-ColorOutput "Frontend not responding yet, retrying... ($($i+1)/5)" -ColorCode "Yellow"
+                Start-Sleep -Seconds 2
+            }
+        }
+        
+        if (-not $frontendRunning) {
+            Write-ColorOutput "Warning: Frontend service may not have started properly" -ColorCode "Red"
+            Write-ColorOutput "Check the frontend console window for errors" -ColorCode "Yellow"
+        }
         
         return $frontendProcess
     } catch {
