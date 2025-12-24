@@ -1,0 +1,8 @@
+# Test report files
+*_report_*.txt
+
+# Screenshots directory
+screenshots/
+
+# Debug directory
+debug/
