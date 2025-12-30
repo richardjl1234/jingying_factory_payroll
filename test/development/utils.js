@@ -69,9 +69,11 @@ async function capturePageInfo(page) {
  */
 async function launchBrowser(options = {}) {
   const defaultOptions = {
-    headless: false, // Run in non-headless mode so user can see the browser
+    headless: false, // Show browser window for debugging
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized'],
-    defaultViewport: null // Use default browser viewport
+    defaultViewport: { width: 1920, height: 1080 },
+    executablePath: '/usr/bin/google-chrome-stable', // Use system Chrome
+    slowMo: 50 // Slow down operations by 50ms for better visibility
   };
   
   return puppeteer.launch({ ...defaultOptions, ...options });

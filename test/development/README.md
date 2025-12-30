@@ -1,137 +1,124 @@
-# 开发环境测试套件
+# Development Test Scripts
 
-这个测试套件用于测试开发环境中的应用程序，包括前端和后端。
+This directory contains Linux shell scripts for testing and managing the payroll system backend and frontend services.
 
-## 测试套件结构
+## Scripts Overview
 
+### 1. Service Management Scripts
+
+- **`0_stop_backend_frontend.sh`** - Stops all backend and frontend services
+- **`1_start_backend_frontend.sh`** - Starts backend and frontend services
+- **`2_init_database_add_test_data.sh`** - Initializes database and adds test data
+- **`3_perform_backend_api_test.sh`** - Runs backend API tests
+- **`4_perform_frontend_puppeteer_test.sh`** - Runs frontend Puppeteer tests
+- **`99_overall_test.sh`** - Orchestrates all test steps in sequence
+
+### 2. Individual Test Files
+
+- **`test_login.js`** - Tests login functionality
+- **`test_user_management.js`** - Tests user management
+- **`test_worker.js`** - Tests worker management
+- **`test_process.js`** - Tests process management
+- **`test_new_tables.js`** - Tests new tables (motor models, process categories)
+
+## Quick Start
+
+### Make scripts executable:
+```bash
+chmod +x *.sh
 ```
-test/development/
-├── config.js              # 测试配置文件
-├── utils.js               # 测试工具函数
-├── test_login.js          # 前端登录测试
-├── test_api.py            # 后端API测试
-├── run_tests.sh           # Unix测试运行脚本
-├── run_tests.bat          # Windows测试运行脚本
-└── README.md              # 本说明文件
+
+### Start services:
+```bash
+./0_stop_backend_frontend.sh  # Stop any running services first
+./1_start_backend_frontend.sh  # Start backend and frontend
 ```
 
-## 配置说明
+### Initialize database with test data:
+```bash
+./2_init_database_add_test_data.sh
+```
 
-### config.js
+### Run backend API tests:
+```bash
+./3_perform_backend_api_test.sh
+```
 
-测试配置文件包含以下配置项：
+### Run frontend tests:
+```bash
+./4_perform_frontend_puppeteer_test.sh
+```
 
-- **BASE_URLS**: 测试环境URL
-  - `backend`: 后端服务URL，默认为 `http://localhost:8000`
-  - `frontend`: 前端服务URL，默认为 `http://localhost:5173`（符合要求）
+### Run complete test suite:
+```bash
+./99_overall_test.sh
+```
 
-- **TEST_CREDENTIALS**: 测试用户凭证
-  - `admin`: 管理员用户凭证
-  - `report`: 报表用户凭证
+## Service URLs
 
-- **TIMEOUTS**: 测试超时设置（毫秒）
-  - `short`: 5000毫秒
-  - `medium`: 15000毫秒
-  - `long`: 30000毫秒
+- **Backend API**: http://localhost:8000
+- **Backend API Documentation**: http://localhost:8000/docs
+- **Frontend UI**: http://localhost:5173
 
-- **API_ENDPOINTS**: API端点路径
+## Test Credentials
 
-## 测试内容
+After running `2_init_database_add_test_data.sh`, you can use:
 
-### 1. 后端API测试 (test_api.py)
+- **Root user**: `root` / `root123`
+- **Test user**: `test` / `test123`
 
-测试以下API端点：
-- 健康检查（如果可用）
-- 用户登录
-- 获取用户列表
-- 获取工人列表
-- 获取工序列表
+## Test Data
 
-### 2. 前端登录测试 (test_login.js)
+The test data includes:
+- 10 workers
+- 5 processes
+- 4 process category 1 items
+- 5 process category 2 items
+- 5 motor models
+- 15 quotas
+- 50 salary records
 
-测试前端登录功能：
-- 访问登录页面
-- 输入凭证
-- 点击登录按钮
-- 验证登录结果
+## Troubleshooting
 
-## 如何运行测试
-
-### 在Windows上运行
-
-1. 确保前端服务正在 `http://localhost:5173` 运行
-2. 确保后端服务正在 `http://localhost:8000` 运行
-3. 打开命令提示符（CMD）
-4. 导航到测试目录：
+### Services not starting
+1. Check if ports 8000 and 5173 are already in use:
+   ```bash
+   lsof -i :8000
+   lsof -i :5173
    ```
-   cd e:\jianglei\trae\new_payroll\test\development
-   ```
-5. 运行测试：
-   ```
-   run_tests.bat
-   ```
+2. Stop conflicting services or use `./0_stop_backend_frontend.sh`
 
-### 运行特定测试
-
-- 只运行API测试：
-  ```
-  run_tests.bat --api-only
-  ```
-
-- 只运行前端测试：
-  ```
-  run_tests.bat --frontend-only
-  ```
-
-### 在Unix/Linux上运行
-
-1. 确保前端服务正在 `http://localhost:5173` 运行
-2. 确保后端服务正在 `http://localhost:8000` 运行
-3. 打开终端
-4. 导航到测试目录：
+### Database initialization issues
+1. Ensure Python environment is set up:
+   ```bash
+   python3 --version
+   pip list | grep -E "sqlalchemy|fastapi|pydantic"
    ```
-   cd /path/to/new_payroll/test/development
-   ```
-5. 赋予脚本执行权限：
-   ```
-   chmod +x run_tests.sh
-   ```
-6. 运行测试：
-   ```
-   ./run_tests.sh
+2. Check backend requirements:
+   ```bash
+   cd ../backend && pip install -r requirements.txt
    ```
 
-## 测试结果
+### Frontend tests failing
+Frontend Puppeteer tests may fail due to:
+- Missing Chrome/Chromium browser
+- Missing npm dependencies
+- Timing issues with service startup
 
-- 测试结果会显示在控制台
-- 截图会保存在 `screenshots` 目录（自动创建）
-- 详细调试信息会保存在 `debug` 目录（失败时自动创建）
+Install dependencies:
+```bash
+cd ../frontend && npm install
+```
 
-## 依赖
+## Log Files
 
-### 前端测试依赖
-- Node.js
-- Puppeteer（会自动安装）
+- Backend logs: `../backend/backend.log`
+- Frontend logs: `../frontend/frontend.log`
+- Test reports: Generated in current directory with timestamp
 
-### 后端测试依赖
-- Python 3
-- requests 库（会自动安装）
+## Notes
 
-## 扩展测试套件
-
-要添加新的测试：
-
-1. 创建新的测试文件（如 `test_new_feature.js` 或 `test_new_api.py`）
-2. 在测试文件中导入配置和工具函数
-3. 添加新的测试逻辑
-4. 更新 `run_tests.sh` 和 `run_tests.bat` 以包含新测试
-
-## 注意事项
-
-- 确保在运行测试前，前端和后端服务已经启动
-- 测试使用默认的测试凭证，确保这些凭证在开发环境中有效
-- 可以通过环境变量覆盖默认配置，例如：
-  ```
-  set TEST_BASE_URL=http://localhost:8001
-  run_tests.bat
-  ```
+- All scripts include colored output for better readability
+- Each script generates detailed log files
+- The overall test script (`99_overall_test.sh`) orchestrates all steps and generates a comprehensive report
+- Scripts are designed to be idempotent (can be run multiple times safely)

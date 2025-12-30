@@ -22,11 +22,11 @@ async function testLogin() {
     // Step 1: Navigate to login page
     console.log('\n[Step 1] Navigating to login page...');
     await page.goto(`${config.BASE_URLS.frontend}/login`, {
-      waitUntil: 'networkidle0',
+      waitUntil: 'domcontentloaded', // Changed from networkidle0 for faster loading
       timeout: config.TIMEOUTS.long
     });
     
-    await sleep(3000);
+    await sleep(1000); // Reduced from 3000 to 1000
     await captureScreenshot(page, 'login_page_loaded');
     
     // Step 2: Analyze page structure

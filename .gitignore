@@ -17,6 +17,7 @@ env/
 .idea/
 *.swp
 *.swo
+.marscode/
 
 # OS files
 .DS_Store
@@ -36,6 +37,7 @@ payroll.db
 /test/development/debug/
 /test/development/node_modules/
 /test/development/test_report_*.txt
+/test/development/.service_pids
 
 # Backup directories
 scripts/backup/

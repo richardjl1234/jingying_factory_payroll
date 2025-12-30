@@ -20,11 +20,11 @@ async function testProcessManagement() {
     // Step 1: 导航到登录页面
     console.log('\n[Step 1] Navigating to login page...');
     await page.goto(`${config.BASE_URLS.frontend}/login`, {
-      waitUntil: 'networkidle0',
+      waitUntil: 'domcontentloaded', // Changed for faster loading
       timeout: config.TIMEOUTS.long
     });
     
-    await sleep(3000);
+    await sleep(1000); // Reduced from 3000 to 1000
     await captureScreenshot(page, 'process_login_page_loaded');
     
     // Step 2: 查找登录表单元素
@@ -55,13 +55,13 @@ async function testProcessManagement() {
     await loginButton.click();
     console.log('[OK] Login button clicked');
     
-    await sleep(config.TIMEOUTS.medium);
+    await sleep(2000); // Reduced from config.TIMEOUTS.medium (5000) to 2000
     await captureScreenshot(page, 'process_home_page');
     
     // Step 4: 等待导航到主页
     console.log('\n[Step 4] Waiting for navigation to home page...');
-    await page.waitForNavigation({ waitUntil: 'networkidle0', timeout: config.TIMEOUTS.long }).catch(() => {});
-    await sleep(2000);
+    await page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: config.TIMEOUTS.long }).catch(() => {});
+    await sleep(1000); // Reduced from 2000 to 1000
     await captureScreenshot(page, 'process_home_page_loaded');
     
     // Step 5: 验证登录状态
@@ -82,11 +82,11 @@ async function testProcessManagement() {
     // Step 6: 导航到工序管理页面
     console.log('\n[Step 6] Navigating to process management page...');
     await page.goto(`${config.BASE_URLS.frontend}/processes`, {
-      waitUntil: 'networkidle0',
+      waitUntil: 'domcontentloaded', // Changed for faster loading
       timeout: config.TIMEOUTS.long
     });
     
-    await sleep(3000);
+    await sleep(1500); // Reduced from 3000 to 1500
     await captureScreenshot(page, 'process_management_page_loaded');
     
     // Step 7: 验证工序管理页面内容
@@ -138,7 +138,7 @@ async function testProcessManagement() {
     await addButton.click();
     console.log('[OK] Clicked add process button');
     
-    await sleep(3000);
+    await sleep(1500); // Reduced from 3000 to 1500
     await captureScreenshot(page, 'process_after_add_click');
     
     // Step 9: 填写工序表单
@@ -170,7 +170,7 @@ async function testProcessManagement() {
       console.log('[OK] Entered process description');
     }
     
-    await sleep(2000);
+    await sleep(1000); // Reduced from 2000 to 1000
     await captureScreenshot(page, 'process_form_filled');
     
     // 查找提交按钮
@@ -204,7 +204,7 @@ async function testProcessManagement() {
     await submitButton.click();
     console.log('[OK] Clicked submit button');
     
-    await sleep(3000);
+    await sleep(1500); // Reduced from 3000 to 1500
     await captureScreenshot(page, 'process_after_submission');
     
     // Step 10: 测试工序编辑功能
@@ -231,7 +231,7 @@ async function testProcessManagement() {
     await editButton.click();
     console.log('[OK] Clicked edit button');
     
-    await sleep(3000);
+    await sleep(1500); // Reduced from 3000 to 1500
     await captureScreenshot(page, 'process_after_edit_click');
     
     // 更新工序名称
@@ -243,7 +243,7 @@ async function testProcessManagement() {
       console.log('[OK] Updated process name');
     }
     
-    await sleep(2000);
+    await sleep(1000); // Reduced from 2000 to 1000
     await captureScreenshot(page, 'process_edit_form_filled');
     
     // 查找编辑提交按钮
@@ -277,7 +277,7 @@ async function testProcessManagement() {
     await editSubmitButton.click();
     console.log('[OK] Clicked edit submit button');
     
-    await sleep(3000);
+    await sleep(1500); // Reduced from 3000 to 1500
     await captureScreenshot(page, 'process_after_edit_submission');
     
     // Step 11: 测试工序删除功能
@@ -304,7 +304,7 @@ async function testProcessManagement() {
     await deleteButton.click();
     console.log('[OK] Clicked delete button');
     
-    await sleep(2000);
+    await sleep(1000); // Reduced from 2000 to 1000
     await captureScreenshot(page, 'process_after_delete_click');
     
     // 查找确认删除按钮
@@ -331,7 +331,7 @@ async function testProcessManagement() {
     await confirmationButton.click();
     console.log('[OK] Clicked confirmation button');
     
-    await sleep(3000);
+    await sleep(1500); // Reduced from 3000 to 1500
     await captureScreenshot(page, 'process_after_deletion');
     
     // Step 12: 检查错误
