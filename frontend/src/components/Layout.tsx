@@ -92,12 +92,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {
         key: 'process-cat1',
         icon: <TagOutlined />,
-        label: <Link to="/process-cat1">类别一管理</Link>
+        label: <Link to="/process-cat1">工段类别管理</Link>
       },
       {
         key: 'process-cat2',
         icon: <TagsOutlined />,
-        label: <Link to="/process-cat2">类别二管理</Link>
+        label: <Link to="/process-cat2">工序类别管理</Link>
       },
       {
         key: 'processes',

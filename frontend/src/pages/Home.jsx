@@ -75,23 +75,23 @@ const Home = () => {
           <Col span={8}>
             <Card hoverable>
               <Statistic
-                title="类别一管理"
+                title="工段类别管理"
                 value={statistics.process_cat1_count}
                 prefix={<TagOutlined />}
                 valueStyle={{ color: '#faad14' }}
               />
-              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理工序类别一</p>
+              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理工段类别</p>
             </Card>
           </Col>
           <Col span={8}>
             <Card hoverable>
               <Statistic
-                title="类别二管理"
+                title="工序类别管理"
                 value={statistics.process_cat2_count}
                 prefix={<TagsOutlined />}
                 valueStyle={{ color: '#722ed1' }}
               />
-              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理工序类别二</p>
+              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理工序类别</p>
             </Card>
           </Col>
           <Col span={8}>
@@ -156,8 +156,8 @@ const Home = () => {
         <ul>
           <li>用户管理：添加、编辑、删除系统用户</li>
           <li>工人信息管理：添加、编辑、删除工人信息</li>
-          <li>类别一管理：定义和维护工序类别一</li>
-          <li>类别二管理：定义和维护工序类别二</li>
+          <li>工段类别管理：定义和维护工段类别</li>
+          <li>工序类别管理：定义和维护工序类别</li>
           <li>型号管理：管理产品型号信息</li>
           <li>工序管理：定义生产工序，维护工序信息</li>
           <li>定额管理：设置各工序的单价，支持历史记录查询</li>

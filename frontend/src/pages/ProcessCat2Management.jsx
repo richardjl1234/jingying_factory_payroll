@@ -100,13 +100,13 @@ const ProcessCat2Management = () => {
 
   const columns = [
     {
-      title: '类别二编码',
+      title: '工序类别编码',
       dataIndex: 'cat2_code',
       key: 'cat2_code',
       width: 120,
     },
     {
-      title: '类别二名称',
+      title: '工序类别名称',
       dataIndex: 'name',
       key: 'name',
     },
@@ -155,7 +155,7 @@ const ProcessCat2Management = () => {
     <div>
       <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <Title level={3}>工序类别二管理</Title>
+          <Title level={3}>工序类别管理</Title>
           <Button type="primary" icon={<PlusOutlined />} onClick={showModal}>
             新增类别
           </Button>
@@ -176,7 +176,7 @@ const ProcessCat2Management = () => {
       </Card>
 
       <Modal
-        title={editingRecord ? '编辑工序类别二' : '新增工序类别二'}
+        title={editingRecord ? '编辑工序类别' : '新增工序类别'}
         open={modalVisible}
         onCancel={handleCancel}
         footer={null}
@@ -189,7 +189,7 @@ const ProcessCat2Management = () => {
         >
           {!editingRecord && (
             <Form.Item
-              label="类别二编码"
+              label="工序类别编码"
               name="cat2_code"
               rules={[
                 { required: true, message: '请输入类别二编码' },
@@ -201,7 +201,7 @@ const ProcessCat2Management = () => {
           )}
           
           <Form.Item
-            label="类别二名称"
+              label="工序类别名称"
             name="name"
             rules={[
               { required: true, message: '请输入类别二名称' },

@@ -64,10 +64,10 @@ def main():
         print(f"删除型号: {model_count} 个")
         
         process_cat1_count = db.query(models.ProcessCat1).delete()
-        print(f"删除类别一: {process_cat1_count} 个")
+        print(f"删除工段类别: {process_cat1_count} 个")
         
         process_cat2_count = db.query(models.ProcessCat2).delete()
-        print(f"删除类别二: {process_cat2_count} 个")
+        print(f"删除工序类别: {process_cat2_count} 个")
         
         # 删除用户（保留root用户，只删除其他用户）
         user_count = db.query(models.User).filter(models.User.username != "root").delete()
@@ -175,7 +175,7 @@ def main():
         print(f"\n工序数据生成完成，共生成 {len(processes)} 个工序")
         
         # 3.1 生成工序类别一数据
-        print("\n生成工序类别一数据...")
+        print("\n生成工段类别数据...")
         cat1_data = [
             {"code": "C101", "name": "机械加工", "description": "机械加工类别"},
             {"code": "C102", "name": "装配制造", "description": "装配制造类别"},
@@ -195,13 +195,13 @@ def main():
                 )
                 db.add(cat1)
                 process_cat1s.append(cat1)
-                print(f"生成类别一: {cat1_info['code']} - {cat1_info['name']}")
+                print(f"生成工段类别: {cat1_info['code']} - {cat1_info['name']}")
             else:
                 process_cat1s.append(existing_cat1)
-                print(f"类别一已存在: {cat1_info['code']} - {existing_cat1.name}")
+                print(f"工段类别已存在: {cat1_info['code']} - {existing_cat1.name}")
         
         # 3.2 生成工序类别二数据
-        print("\n生成工序类别二数据...")
+        print("\n生成工序类别数据...")
         cat2_data = [
             {"code": "C201", "name": "车床加工", "description": "车床加工类别"},
             {"code": "C202", "name": "铣床加工", "description": "铣床加工类别"},
@@ -222,10 +222,10 @@ def main():
                 )
                 db.add(cat2)
                 process_cat2s.append(cat2)
-                print(f"生成类别二: {cat2_info['code']} - {cat2_info['name']}")
+                print(f"生成工序类别: {cat2_info['code']} - {cat2_info['name']}")
             else:
                 process_cat2s.append(existing_cat2)
-                print(f"类别二已存在: {cat2_info['code']} - {existing_cat2.name}")
+                print(f"工序类别已存在: {cat2_info['code']} - {existing_cat2.name}")
         
         # 3.3 生成型号数据
         print("\n生成型号数据...")
@@ -255,8 +255,8 @@ def main():
                 print(f"型号已存在: {model_info['name']} - {existing_model.aliases}")
         
         db.commit()
-        print(f"\n工序类别一数据生成完成，共生成 {len(process_cat1s)} 个类别一")
-        print(f"工序类别二数据生成完成，共生成 {len(process_cat2s)} 个类别二")
+        print(f"\n工段类别数据生成完成，共生成 {len(process_cat1s)} 个工段类别")
+        print(f"工序类别数据生成完成，共生成 {len(process_cat2s)} 个工序类别")
         print(f"型号数据生成完成，共生成 {len(models_list)} 个型号")
         
         # 4. 生成定额数据
@@ -344,8 +344,8 @@ def main():
         print("\n=== 测试数据生成完成 ===")
         print(f"工人数量: {len(workers)}")
         print(f"工序数量: {len(processes)}")
-        print(f"工序类别一数量: {len(process_cat1s)}")
-        print(f"工序类别二数量: {len(process_cat2s)}")
+        print(f"工段类别数量: {len(process_cat1s)}")
+        print(f"工序类别数量: {len(process_cat2s)}")
         print(f"型号数量: {len(models_list)}")
         print(f"定额数量: {len(quotas)}")
         print(f"工资记录数量: {len(salary_records)}")
