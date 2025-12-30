@@ -9,8 +9,8 @@
 1. **users** - 用户表
 2. **workers** - 工人表  
 3. **processes** - 工序表
-4. **process_cat1** - 工序类别一表
-5. **process_cat2** - 工序类别二表
+4. **process_cat1** - 工段类别表
+5. **process_cat2** - 工序类别表
 6. **motor_models** - 电机型号表
 7. **quotas** - 定额表
 8. **salary_records** - 工资记录表
@@ -126,9 +126,9 @@ CREATE TABLE processes (
 **关系**：
 - 一对多关系：一个工序可以有多个定额（quotas）
 
-### 4. process_cat1 - 工序类别一表
+### 4. process_cat1 - 工段类别表
 
-**描述**：存储工序的一级分类信息。
+**描述**：存储工段分类信息。
 
 **表结构**：
 ```sql
@@ -145,9 +145,9 @@ CREATE TABLE process_cat1 (
 **字段说明**：
 | 字段名 | 数据类型 | 约束 | 说明 |
 |--------|----------|------|------|
-| cat1_code | VARCHAR(4) | PRIMARY KEY | 类别一编码，主键 |
-| name | VARCHAR(50) | NOT NULL | 类别一名称 |
-| description | VARCHAR(100) | NULLABLE | 类别一描述 |
+| cat1_code | VARCHAR(4) | PRIMARY KEY | 工段编码，主键 |
+| name | VARCHAR(50) | NOT NULL | 工段名称 |
+| description | VARCHAR(100) | NULLABLE | 工段描述 |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | DATETIME | NULLABLE | 更新时间 |
 
@@ -156,11 +156,11 @@ CREATE TABLE process_cat1 (
 - `ix_process_cat1_name` (name)
 
 **关系**：
-- 一对多关系：一个工序类别一可以有多个工序类别二（process_cat2）
+- 一对多关系：一个工段可以有多个工序类别（process_cat2）
 
-### 5. process_cat2 - 工序类别二表
+### 5. process_cat2 - 工序类别表
 
-**描述**：存储工序的二级分类信息。
+**描述**：存储工序分类信息。
 
 **表结构**：
 ```sql
@@ -177,9 +177,9 @@ CREATE TABLE process_cat2 (
 **字段说明**：
 | 字段名 | 数据类型 | 约束 | 说明 |
 |--------|----------|------|------|
-| cat2_code | VARCHAR(4) | PRIMARY KEY | 类别二编码，主键 |
-| name | VARCHAR(50) | NOT NULL | 类别二名称 |
-| description | VARCHAR(100) | NULLABLE | 类别二描述 |
+| cat2_code | VARCHAR(4) | PRIMARY KEY | 工序编码，主键 |
+| name | VARCHAR(50) | NOT NULL | 工序名称 |
+| description | VARCHAR(100) | NULLABLE | 工序描述 |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | DATETIME | NULLABLE | 更新时间 |
 
@@ -188,7 +188,7 @@ CREATE TABLE process_cat2 (
 - `ix_process_cat2_name` (name)
 
 **关系**：
-- 多对一关系：工序类别二属于工序类别一（process_cat1）
+- 多对一关系：工序类别属于工段（process_cat1）
 
 ### 6. motor_models - 电机型号表
 
