@@ -104,23 +104,23 @@ async function testNewTables() {
 }
 
 /**
- * 测试工序类别一管理
+ * 测试工段类别管理
  */
 async function testProcessCat1Management(page) {
-  console.log('\n=== 测试工序类别一管理 ===');
+  console.log('\n=== 测试工段类别管理 ===');
   
   try {
-    // 导航到工序类别一管理页面
-    console.log('1. 导航到工序类别一管理页面...');
+    // 导航到工段类别管理页面
+    console.log('1. 导航到工段类别管理页面...');
     await page.goto('http://localhost:5173/process-cat1', { waitUntil: 'networkidle0' });
     await waitForTimeout(2000);
     
     // 检查页面标题
     const pageTitle = await page.$eval('h3', el => el.textContent);
-    if (pageTitle.includes('工序类别一管理')) {
-      console.log('✓ 工序类别一管理页面加载成功');
+    if (pageTitle.includes('工段类别管理')) {
+      console.log('✓ 工段类别管理页面加载成功');
     } else {
-      console.log('✗ 工序类别一管理页面加载失败');
+      console.log('✗ 工段类别管理页面加载失败');
       return;
     }
     
@@ -130,10 +130,10 @@ async function testProcessCat1Management(page) {
     await waitForTimeout(1000);
     
     // 填写表单
-    console.log('3. 填写工序类别一表单...');
-    await page.type('input[placeholder="请输入类别一编码"]', 'T1');
-    await page.type('input[placeholder="请输入类别一名称"]', '测试类别一');
-    await page.type('textarea[placeholder="请输入描述（可选）"]', '这是测试类别一的描述');
+    console.log('3. 填写工段类别表单...');
+    await page.type('input[placeholder="请输入工段编码"]', 'T1');
+    await page.type('input[placeholder="请输入工段名称"]', '测试工段');
+    await page.type('textarea[placeholder="请输入描述（可选）"]', '这是测试工段的描述');
     
     // 点击创建按钮
     console.log('4. 点击创建按钮...');
@@ -143,34 +143,34 @@ async function testProcessCat1Management(page) {
     // 检查是否创建成功（通过检查表格中是否有新记录）
     const tableRows = await page.$$('tbody tr');
     if (tableRows.length > 0) {
-      console.log('✓ 工序类别一创建成功');
+      console.log('✓ 工段类别创建成功');
     } else {
-      console.log('✗ 工序类别一创建失败');
+      console.log('✗ 工段类别创建失败');
     }
     
   } catch (error) {
-    console.error('工序类别一管理测试失败:', error);
+    console.error('工段类别管理测试失败:', error);
   }
 }
 
 /**
- * 测试工序类别二管理
+ * 测试工序类别管理
  */
 async function testProcessCat2Management(page) {
-  console.log('\n=== 测试工序类别二管理 ===');
+  console.log('\n=== 测试工序类别管理 ===');
   
   try {
-    // 导航到工序类别二管理页面
-    console.log('1. 导航到工序类别二管理页面...');
+    // 导航到工序类别管理页面
+    console.log('1. 导航到工序类别管理页面...');
     await page.goto('http://localhost:5173/process-cat2', { waitUntil: 'networkidle0' });
     await waitForTimeout(2000);
     
     // 检查页面标题
     const pageTitle = await page.$eval('h3', el => el.textContent);
-    if (pageTitle.includes('工序类别二管理')) {
-      console.log('✓ 工序类别二管理页面加载成功');
+    if (pageTitle.includes('工序类别管理')) {
+      console.log('✓ 工序类别管理页面加载成功');
     } else {
-      console.log('✗ 工序类别二管理页面加载失败');
+      console.log('✗ 工序类别管理页面加载失败');
       return;
     }
     
@@ -180,10 +180,10 @@ async function testProcessCat2Management(page) {
     await waitForTimeout(1000);
     
     // 填写表单
-    console.log('3. 填写工序类别二表单...');
-    await page.type('input[placeholder="请输入类别二编码"]', 'T2');
-    await page.type('input[placeholder="请输入类别二名称"]', '测试类别二');
-    await page.type('textarea[placeholder="请输入描述（可选）"]', '这是测试类别二的描述');
+    console.log('3. 填写工序类别表单...');
+    await page.type('input[placeholder="请输入工序编码"]', 'T2');
+    await page.type('input[placeholder="请输入工序名称"]', '测试工序');
+    await page.type('textarea[placeholder="请输入描述（可选）"]', '这是测试工序的描述');
     
     // 点击创建按钮
     console.log('4. 点击创建按钮...');
@@ -193,13 +193,13 @@ async function testProcessCat2Management(page) {
     // 检查是否创建成功
     const tableRows = await page.$$('tbody tr');
     if (tableRows.length > 0) {
-      console.log('✓ 工序类别二创建成功');
+      console.log('✓ 工序类别创建成功');
     } else {
-      console.log('✗ 工序类别二创建失败');
+      console.log('✗ 工序类别创建失败');
     }
     
   } catch (error) {
-    console.error('工序类别二管理测试失败:', error);
+    console.error('工序类别管理测试失败:', error);
   }
 }
 

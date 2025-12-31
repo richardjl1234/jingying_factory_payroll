@@ -232,12 +232,12 @@ CREATE TABLE quotas (
     process_code VARCHAR(20) NOT NULL,
     unit_price NUMERIC(10, 2) NOT NULL,
     effective_date DATE NOT NULL,
-    created_by INTEGER NOT NULL,
+    created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     CONSTRAINT _process_effective_date_uc UNIQUE (process_code, effective_date),
     FOREIGN KEY(process_code) REFERENCES processes (process_code),
-    FOREIGN KEY(created_by) REFERENCES users (id)
+    FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE SET NULL
 );
 ```
 
@@ -248,7 +248,7 @@ CREATE TABLE quotas (
 | process_code | VARCHAR(20) | NOT NULL, FOREIGN KEY | 工序编码，外键引用processes表 |
 | unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
 | effective_date | DATE | NOT NULL | 生效日期 |
-| created_by | INTEGER | NOT NULL, FOREIGN KEY | 创建者ID，外键引用users表 |
+| created_by | INTEGER | NULLABLE, FOREIGN KEY | 创建者ID，外键引用users表（用户删除时设为NULL） |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
 **约束**：
@@ -276,12 +276,12 @@ CREATE TABLE salary_records (
     unit_price NUMERIC(10, 2) NOT NULL,
     amount NUMERIC(10, 2) NOT NULL,
     record_date VARCHAR(7) NOT NULL,
-    created_by INTEGER NOT NULL,
+    created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     FOREIGN KEY(worker_code) REFERENCES workers (worker_code),
     FOREIGN KEY(quota_id) REFERENCES quotas (id),
-    FOREIGN KEY(created_by) REFERENCES users (id)
+    FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE SET NULL
 );
 ```
 
@@ -295,7 +295,7 @@ CREATE TABLE salary_records (
 | unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
 | amount | NUMERIC(10, 2) | NOT NULL | 金额，保留两位小数（quantity × unit_price） |
 | record_date | VARCHAR(7) | NOT NULL | 记录日期，格式：YYYY-MM |
-| created_by | INTEGER | NOT NULL, FOREIGN KEY | 创建者ID，外键引用users表 |
+| created_by | INTEGER | NULLABLE, FOREIGN KEY | 创建者ID，外键引用users表（用户删除时设为NULL） |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
 **索引**：

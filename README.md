@@ -18,7 +18,7 @@
    - 修复TypeScript编译警告（未使用的导入等）
 
 3. **菜单结构调整**：
-   - 工人管理 → 型号管理 → 类别一管理 → 类别二管理 → 工序管理 → 定额管理 → 工资记录 → 报表统计
+   - 工人管理 → 型号管理 → 工段类别管理 → 工序类别管理 → 工序管理 → 定额管理 → 工资记录 → 报表统计
    - 符合业务逻辑流程，优化用户体验
 
 ### HTTPS部署与云服务器配置 (2025-12-05)
@@ -86,8 +86,8 @@
 2. `UserManagement.jsx` - 用户管理页面
 3. `WorkerManagement.jsx` - 工人管理页面
 4. `ProcessManagement.jsx` - 工序管理页面
-5. `ProcessCat1Management.jsx` - 工序类别一管理
-6. `ProcessCat2Management.jsx` - 工序类别二管理
+5. `ProcessCat1Management.jsx` - 工段类别管理
+6. `ProcessCat2Management.jsx` - 工序类别管理
 7. `MotorModelManagement.jsx` - 电机型号管理
 8. `QuotaManagement.jsx` - 定额管理页面
 9. `SalaryRecord.jsx` - 工资记录页面

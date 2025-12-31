@@ -60,7 +60,7 @@ class Quota(Base):
     process_code = Column(String(20), ForeignKey("processes.process_code"), nullable=False, index=True)
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     effective_date = Column(Date, nullable=False, comment="生效日期", index=True)
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 约束：同一工序在同一日期只能有一个生效定额
@@ -84,7 +84,7 @@ class SalaryRecord(Base):
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     amount = Column(Numeric(10, 2), nullable=False, comment="金额，保留两位小数")
     record_date = Column(String(7), nullable=False, comment="记录日期，格式：YYYY-MM", index=True)
-    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 关系
