@@ -75,13 +75,33 @@ const MotorModelManagement = () => {
 
   // 删除记录
   const handleDelete = async (motorModelName) => {
-    try {
-      await motorModelAPI.deleteMotorModel(motorModelName);
-      message.success('电机型号删除成功');
-      fetchData();
-    } catch (error) {
-      message.error('删除失败');
-    }
+    Modal.confirm({
+      title: '确认删除电机型号',
+      content: (
+        <div>
+          <p>删除电机型号将同时删除以下相关数据：</p>
+          <ul>
+            <li>所有相关的定额记录</li>
+            <li>所有相关的工资记录</li>
+          </ul>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+      ),
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await motorModelAPI.deleteMotorModel(motorModelName);
+          message.success('电机型号删除成功');
+          fetchData();
+        } catch (error) {
+          message.error('删除失败');
+        }
+      },
+    });
   };
 
   // 打开新建模态框
@@ -137,16 +157,14 @@ const MotorModelManagement = () => {
           >
             编辑
           </Button>
-          <Popconfirm
-            title="确定删除这个电机型号吗？"
-            onConfirm={() => handleDelete(record.name)}
-            okText="确定"
-            cancelText="取消"
+          <Button 
+            type="link" 
+            danger 
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.name)}
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+            删除
+          </Button>
         </Space>
       ),
     },

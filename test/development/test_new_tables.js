@@ -90,7 +90,7 @@ async function testNewTables() {
       
       // Check for common UI elements
       const pageContent1 = await page.content();
-      const hasProcessCat1Text = pageContent1.includes('工序类别一') || pageContent1.includes('process-cat1') || pageContent1.includes('Process Category 1');
+      const hasProcessCat1Text = pageContent1.includes('工段类别') || pageContent1.includes('process-cat1') || pageContent1.includes('Process Category 1');
       console.log(`[${hasProcessCat1Text ? 'PASS' : 'FAIL'}] Contains process category 1 related text: ${hasProcessCat1Text}`);
       
     } catch (error) {
@@ -116,37 +116,37 @@ async function testNewTables() {
       
       // Check for common UI elements
       const pageContent2 = await page.content();
-      const hasProcessCat2Text = pageContent2.includes('工序类别二') || pageContent2.includes('process-cat2') || pageContent2.includes('Process Category 2');
+      const hasProcessCat2Text = pageContent2.includes('工序类别') || pageContent2.includes('process-cat2') || pageContent2.includes('Process Category 2');
       console.log(`[${hasProcessCat2Text ? 'PASS' : 'FAIL'}] Contains process category 2 related text: ${hasProcessCat2Text}`);
       
     } catch (error) {
       console.error(`[FAIL] Process Category 2 test failed: ${error.message}`);
     }
     
-    // Test 3: Check if models route exists
-    console.log('\n=== Testing Models Table ===');
-    console.log('\n[Step 6] Testing Models access...');
+    // Test 3: Check if motor models route exists
+    console.log('\n=== Testing Motor Models Table ===');
+    console.log('\n[Step 6] Testing Motor Models access...');
     
     try {
-      await page.goto(`${config.BASE_URLS.frontend}/models`, {
+      await page.goto(`${config.BASE_URLS.frontend}/motor-models`, {
         waitUntil: 'networkidle0',
         timeout: config.TIMEOUTS.long
       });
       
       await sleep(3000);
-      await captureScreenshot(page, 'models_page_loaded');
+      await captureScreenshot(page, 'motor_models_page_loaded');
       
       const currentUrl3 = page.url();
       testResults.modelsAccess = !currentUrl3.includes('/404') && !currentUrl3.includes('/login');
-      console.log(`[${testResults.modelsAccess ? 'PASS' : 'FAIL'}] Models page access: ${testResults.modelsAccess ? 'PASS' : 'FAIL'}`);
+      console.log(`[${testResults.modelsAccess ? 'PASS' : 'FAIL'}] Motor Models page access: ${testResults.modelsAccess ? 'PASS' : 'FAIL'}`);
       
       // Check for common UI elements
       const pageContent3 = await page.content();
-      const hasModelsText = pageContent3.includes('型号') || pageContent3.includes('models') || pageContent3.includes('Models');
-      console.log(`[${hasModelsText ? 'PASS' : 'FAIL'}] Contains models related text: ${hasModelsText}`);
+      const hasModelsText = pageContent3.includes('电机型号') || pageContent3.includes('motor-models') || pageContent3.includes('Motor Models');
+      console.log(`[${hasModelsText ? 'PASS' : 'FAIL'}] Contains motor models related text: ${hasModelsText}`);
       
     } catch (error) {
-      console.error(`[FAIL] Models test failed: ${error.message}`);
+      console.error(`[FAIL] Motor Models test failed: ${error.message}`);
     }
     
     // Step 7: Verify no errors on pages

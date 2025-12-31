@@ -28,10 +28,8 @@ export interface Worker {
  * 工序类型定义
  */
 export interface Process {
-  id: number;
   process_code: string;
-  process_name: string;
-  unit: string;
+  name: string;
   description?: string;
   created_at?: string;
   updated_at?: string;
@@ -43,13 +41,15 @@ export interface Process {
 export interface Quota {
   id: number;
   process_code: string;
-  process_name: string;
-  unit: string;
-  quota_value: number;
-  wage_per_unit: number;
+  cat1_code: string;
+  cat2_code: string;
+  model_name: string;
+  unit_price: number;
   effective_date: string;
+  created_by?: number;
   created_at?: string;
-  updated_at?: string;
+  process?: Process;
+  creator?: User;
 }
 
 /**

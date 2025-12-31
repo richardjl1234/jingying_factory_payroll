@@ -204,36 +204,36 @@ async function testProcessCat2Management(page) {
 }
 
 /**
- * 测试型号管理
+ * 测试电机型号管理
  */
 async function testModelManagement(page) {
-  console.log('\n=== 测试型号管理 ===');
+  console.log('\n=== 测试电机型号管理 ===');
   
   try {
-    // 导航到型号管理页面
-    console.log('1. 导航到型号管理页面...');
-    await page.goto('http://localhost:5173/models', { waitUntil: 'networkidle0' });
+    // 导航到电机型号管理页面
+    console.log('1. 导航到电机型号管理页面...');
+    await page.goto('http://localhost:5173/motor-models', { waitUntil: 'networkidle0' });
     await waitForTimeout(2000);
     
     // 检查页面标题
     const pageTitle = await page.$eval('h3', el => el.textContent);
-    if (pageTitle.includes('型号管理')) {
-      console.log('✓ 型号管理页面加载成功');
+    if (pageTitle.includes('电机型号管理')) {
+      console.log('✓ 电机型号管理页面加载成功');
     } else {
-      console.log('✗ 型号管理页面加载失败');
+      console.log('✗ 电机型号管理页面加载失败');
       return;
     }
     
     // 点击新增按钮
-    console.log('2. 点击新增型号按钮...');
-    await page.click('button:has-text("新增型号")');
+    console.log('2. 点击新增电机型号按钮...');
+    await page.click('button:has-text("新增电机型号")');
     await waitForTimeout(1000);
     
     // 填写表单
-    console.log('3. 填写型号表单...');
-    await page.type('input[placeholder="请输入型号名称"]', 'TEST001');
-    await page.type('input[placeholder="请输入型号别名（可选）"]', '测试型号001');
-    await page.type('textarea[placeholder="请输入描述（可选）"]', '这是测试型号的描述');
+    console.log('3. 填写电机型号表单...');
+    await page.type('input[placeholder="请输入电机型号名称"]', 'TEST001');
+    await page.type('input[placeholder="请输入电机型号别名（可选）"]', '测试型号001');
+    await page.type('textarea[placeholder="请输入描述（可选）"]', '这是测试电机型号的描述');
     
     // 点击创建按钮
     console.log('4. 点击创建按钮...');
@@ -243,13 +243,13 @@ async function testModelManagement(page) {
     // 检查是否创建成功
     const tableRows = await page.$$('tbody tr');
     if (tableRows.length > 0) {
-      console.log('✓ 型号创建成功');
+      console.log('✓ 电机型号创建成功');
     } else {
-      console.log('✗ 型号创建失败');
+      console.log('✗ 电机型号创建失败');
     }
     
   } catch (error) {
-    console.error('型号管理测试失败:', error);
+    console.error('电机型号管理测试失败:', error);
   }
 }
 

@@ -45,7 +45,6 @@ const ProcessManagement = () => {
     form.setFieldsValue({
       process_code: process.process_code,
       name: process.name,
-      category: process.category,
       description: process.description
     });
     setIsModalVisible(true);
@@ -119,11 +118,6 @@ const ProcessManagement = () => {
       key: 'name',
     },
     {
-      title: '工序类别',
-      dataIndex: 'category',
-      key: 'category',
-    },
-    {
       title: '工序描述',
       dataIndex: 'description',
       key: 'description',
@@ -189,17 +183,6 @@ const ProcessManagement = () => {
             rules={[{ required: true, message: '请输入工序名称!' }]}
           >
             <Input placeholder="工序名称" />
-          </Form.Item>
-          <Form.Item
-            name="category"
-            label="工序类别"
-            rules={[{ required: true, message: '请选择工序类别!' }]}
-          >
-            <Select placeholder="请选择工序类别">
-              <Select.Option value="精加工">精加工</Select.Option>
-              <Select.Option value="装配喷漆">装配喷漆</Select.Option>
-              <Select.Option value="绕嵌排">绕嵌排</Select.Option>
-            </Select>
           </Form.Item>
           <Form.Item
             name="description"

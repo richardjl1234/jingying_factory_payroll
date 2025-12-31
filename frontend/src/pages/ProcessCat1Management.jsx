@@ -75,13 +75,33 @@ const ProcessCat1Management = () => {
 
   // 删除记录
   const handleDelete = async (cat1Code) => {
-    try {
-      await processCat1API.deleteProcessCat1(cat1Code);
-      message.success('删除成功');
-      fetchData();
-    } catch (error) {
-      message.error('删除失败');
-    }
+    Modal.confirm({
+      title: '确认删除工段类别',
+      content: (
+        <div>
+          <p>删除工段类别将同时删除以下相关数据：</p>
+          <ul>
+            <li>所有相关的定额记录</li>
+            <li>所有相关的工资记录</li>
+          </ul>
+          <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
+            此操作不可恢复，确定要继续吗？
+          </p>
+        </div>
+      ),
+      okText: '确定删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await processCat1API.deleteProcessCat1(cat1Code);
+          message.success('删除成功');
+          fetchData();
+        } catch (error) {
+          message.error('删除失败');
+        }
+      },
+    });
   };
 
   // 打开新建模态框
@@ -136,16 +156,14 @@ const ProcessCat1Management = () => {
           >
             编辑
           </Button>
-          <Popconfirm
-            title="确定删除这个类别吗？"
-            onConfirm={() => handleDelete(record.cat1_code)}
-            okText="确定"
-            cancelText="取消"
+          <Button 
+            type="link" 
+            danger 
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.cat1_code)}
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
-          </Popconfirm>
+            删除
+          </Button>
         </Space>
       ),
     },
