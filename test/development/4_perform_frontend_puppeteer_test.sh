@@ -112,6 +112,7 @@ run_frontend_tests() {
         "test_cat1.js"
         "test_cat2.js"
         "test_motor_model.js"
+        "test_quota.js"
     )
     
     local all_passed=true

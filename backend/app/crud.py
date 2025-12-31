@@ -263,7 +263,7 @@ def get_quotas(db: Session, process_code: str = None, skip: int = 0, limit: int 
     query = db.query(models.Quota)
     if process_code:
         query = query.filter(models.Quota.process_code == process_code)
-    return query.order_by(desc(models.Quota.effective_date)).offset(skip).limit(limit).all()
+    return query.order_by(desc(models.Quota.id)).offset(skip).limit(limit).all()
 
 def get_latest_quota(db: Session, process_code: str, effective_date: date = None) -> Optional[models.Quota]:
     """获取指定日期前的最新定额"""
