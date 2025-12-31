@@ -458,7 +458,7 @@ def get_salary_records(db: Session, worker_code: str = None, record_date: str = 
             logger.warning(f"Invalid record_date format: {record_date}, expected YYYY-MM")
             # If invalid format, treat as exact date (YYYY-MM-DD)
             query = query.filter(models.VSalaryRecord.record_date == record_date)
-    return query.order_by(desc(models.VSalaryRecord.created_at)).offset(skip).limit(limit).all()
+    return query.order_by(desc(models.VSalaryRecord.id)).offset(skip).limit(limit).all()
 
 def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -> Decimal:
     """获取工人月度工资汇总"""

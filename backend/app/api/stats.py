@@ -27,7 +27,7 @@ def get_statistics(
     model_count = db.query(func.count(models.MotorModel.name)).scalar()
     process_count = db.query(func.count(models.Process.process_code)).scalar()
     quota_count = db.query(func.count(models.Quota.id)).scalar()
-    salary_record_count = db.query(func.count(models.SalaryRecord.id)).scalar()
+    salary_record_count = db.query(func.count(models.WorkRecord.id)).scalar()
     
     return {
         "user_count": user_count,

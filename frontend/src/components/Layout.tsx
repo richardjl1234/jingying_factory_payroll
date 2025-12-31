@@ -112,7 +112,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       {
         key: 'salary-records',
         icon: <FileTextOutlined />,
-        label: <Link to="/salary-records">工资记录</Link>
+        label: <Link to="/salary-records">工资记录管理</Link>
       },
       {
         key: 'reports',

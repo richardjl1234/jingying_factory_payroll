@@ -29,9 +29,21 @@ def create_salary_records_view():
                 (wr.quantity * q.unit_price) AS amount,
                 wr.record_date,
                 wr.created_by,
-                wr.created_at
+                wr.created_at,
+                -- 电机型号: 型号名称 (别名)
+                mm.name || ' (' || COALESCE(mm.aliases, '') || ')' AS model_display,
+                -- 工段类别: 编码 (名称)
+                pc1.cat1_code || ' (' || pc1.name || ')' AS cat1_display,
+                -- 工序类别: 编码 (名称)
+                pc2.cat2_code || ' (' || pc2.name || ')' AS cat2_display,
+                -- 工序名称: 编码 (名称)
+                p.process_code || ' (' || p.name || ')' AS process_display
             FROM work_records wr
             JOIN quotas q ON wr.quota_id = q.id
+            JOIN processes p ON q.process_code = p.process_code
+            JOIN process_cat1 pc1 ON q.cat1_code = pc1.cat1_code
+            JOIN process_cat2 pc2 ON q.cat2_code = pc2.cat2_code
+            JOIN motor_models mm ON q.model_name = mm.name
             """
             db.execute(text(create_view_sql))
             db.commit()
@@ -56,9 +68,21 @@ def create_salary_records_view():
                 (wr.quantity * q.unit_price) AS amount,
                 wr.record_date,
                 wr.created_by,
-                wr.created_at
+                wr.created_at,
+                -- 电机型号: 型号名称 (别名)
+                mm.name || ' (' || COALESCE(mm.aliases, '') || ')' AS model_display,
+                -- 工段类别: 编码 (名称)
+                pc1.cat1_code || ' (' || pc1.name || ')' AS cat1_display,
+                -- 工序类别: 编码 (名称)
+                pc2.cat2_code || ' (' || pc2.name || ')' AS cat2_display,
+                -- 工序名称: 编码 (名称)
+                p.process_code || ' (' || p.name || ')' AS process_display
             FROM work_records wr
             JOIN quotas q ON wr.quota_id = q.id
+            JOIN processes p ON q.process_code = p.process_code
+            JOIN process_cat1 pc1 ON q.cat1_code = pc1.cat1_code
+            JOIN process_cat2 pc2 ON q.cat2_code = pc2.cat2_code
+            JOIN motor_models mm ON q.model_name = mm.name
             """
             db.execute(text(create_view_sql))
             db.commit()

@@ -14,7 +14,7 @@
 6. **motor_models** - 电机型号表
 7. **quotas** - 定额表
 8. **work_records** - 工作记录表
-9. **salary_records** - 工资记录视图
+9. **v_salary_records** - 工资记录视图
 
 ## 表结构详情
 
@@ -309,25 +309,37 @@ CREATE TABLE work_records (
 - 多对一关系：工作记录使用一个定额（quotas）
 - 多对一关系：工作记录由一个用户创建（users）
 
-### 9. salary_records - 工资记录视图
+### 9. v_salary_records - 工资记录视图
 
-**描述**：基于work_records和quotas表的视图，计算工资金额。
+**描述**：基于work_records、quotas及相关表的视图，计算工资金额并包含显示信息。
 
 **视图结构**：
 ```sql
-CREATE VIEW salary_records AS
+CREATE VIEW v_salary_records AS
 SELECT 
     wr.id,
     wr.worker_code,
     wr.quota_id,
     wr.quantity,
     q.unit_price,
-    wr.quantity * q.unit_price AS amount,
+    (wr.quantity * q.unit_price) AS amount,
     wr.record_date,
     wr.created_by,
-    wr.created_at
+    wr.created_at,
+    -- 电机型号: 型号名称 (别名)
+    mm.name || ' (' || COALESCE(mm.aliases, '') || ')' AS model_display,
+    -- 工段类别: 编码 (名称)
+    pc1.cat1_code || ' (' || pc1.name || ')' AS cat1_display,
+    -- 工序类别: 编码 (名称)
+    pc2.cat2_code || ' (' || pc2.name || ')' AS cat2_display,
+    -- 工序名称: 编码 (名称)
+    p.process_code || ' (' || p.name || ')' AS process_display
 FROM work_records wr
-JOIN quotas q ON wr.quota_id = q.id;
+JOIN quotas q ON wr.quota_id = q.id
+JOIN processes p ON q.process_code = p.process_code
+JOIN process_cat1 pc1 ON q.cat1_code = pc1.cat1_code
+JOIN process_cat2 pc2 ON q.cat2_code = pc2.cat2_code
+JOIN motor_models mm ON q.model_name = mm.name;
 ```
 
 **字段说明**：
@@ -342,10 +354,15 @@ JOIN quotas q ON wr.quota_id = q.id;
 | record_date | DATE | 记录日期 |
 | created_by | INTEGER | 创建者ID |
 | created_at | DATETIME | 创建时间 |
+| model_display | VARCHAR(150) | 电机型号显示: 型号名称 (别名) |
+| cat1_display | VARCHAR(100) | 工段类别显示: 编码 (名称) |
+| cat2_display | VARCHAR(100) | 工序类别显示: 编码 (名称) |
+| process_display | VARCHAR(150) | 工序显示: 编码 (名称) |
 
 **关系**：
-- 基于work_records和quotas表的连接视图
+- 基于work_records、quotas、processes、process_cat1、process_cat2、motor_models表的连接视图
 - 提供工资计算功能，金额自动计算
+- 包含格式化显示字段便于前端展示
 
 ## 实体关系图（ERD）
 

@@ -181,6 +181,10 @@ class SalaryRecordInDB(SalaryRecordBase):
     amount: Decimal
     created_by: int
     created_at: datetime
+    model_display: Optional[str] = None
+    cat1_display: Optional[str] = None
+    cat2_display: Optional[str] = None
+    process_display: Optional[str] = None
 
     class Config:
         from_attributes = True

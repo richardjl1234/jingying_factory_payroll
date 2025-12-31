@@ -146,6 +146,10 @@ class VSalaryRecord(Base):
     record_date = Column(Date, nullable=False, comment="记录日期", index=True)
     created_by = Column(Integer, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False)
+    model_display = Column(String(150), nullable=True, comment="电机型号显示: 型号名称 (别名)")
+    cat1_display = Column(String(100), nullable=True, comment="工段类别显示: 编码 (名称)")
+    cat2_display = Column(String(100), nullable=True, comment="工序类别显示: 编码 (名称)")
+    process_display = Column(String(150), nullable=True, comment="工序显示: 编码 (名称)")
     
     # 注意：视图没有外键约束，但我们可以定义关系以便查询
     worker = relationship("Worker", foreign_keys=[worker_code], primaryjoin="VSalaryRecord.worker_code == Worker.worker_code", viewonly=True)

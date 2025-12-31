@@ -82,7 +82,7 @@ const ProcessCat2Management = () => {
           <p>删除工序类别将同时删除以下相关数据：</p>
           <ul>
             <li>所有相关的定额记录</li>
-            <li>所有相关的工资记录</li>
+            <li>所有相关的工作记录</li>
           </ul>
           <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
             此操作不可恢复，确定要继续吗？

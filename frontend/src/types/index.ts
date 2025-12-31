@@ -78,6 +78,10 @@ export interface SalaryRecord {
   record_date: string;
   created_by?: number;
   created_at?: string;
+  model_display?: string;
+  cat1_display?: string;
+  cat2_display?: string;
+  process_display?: string;
 }
 
 /**
