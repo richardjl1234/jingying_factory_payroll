@@ -94,23 +94,23 @@ class SalaryRecord(Base):
 
 
 class ProcessCat1(Base):
-    """工序类别一表"""
+    """工段类别表"""
     __tablename__ = "process_cat1"
     
-    cat1_code = Column(String(4), primary_key=True, index=True, comment="类别一编码")
-    name = Column(String(50), nullable=False, index=True, comment="类别一名称")
-    description = Column(String(100), nullable=True, comment="类别一描述")
+    cat1_code = Column(String(4), primary_key=True, index=True, comment="工段编码")
+    name = Column(String(50), nullable=False, index=True, comment="工段名称")
+    description = Column(String(100), nullable=True, comment="工段描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class ProcessCat2(Base):
-    """工序类别二表"""
+    """工序类别表"""
     __tablename__ = "process_cat2"
     
-    cat2_code = Column(String(4), primary_key=True, index=True, comment="类别二编码")
-    name = Column(String(50), nullable=False, index=True, comment="类别二名称")
-    description = Column(String(100), nullable=True, comment="类别二描述")
+    cat2_code = Column(String(4), primary_key=True, index=True, comment="工序编码")
+    name = Column(String(50), nullable=False, index=True, comment="工序名称")
+    description = Column(String(100), nullable=True, comment="工序描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
