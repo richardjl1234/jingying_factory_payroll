@@ -169,17 +169,17 @@ const QuotaManagement = () => {
   // 表格列配置
   const columns = [
     {
-      title: '工序编码',
-      dataIndex: 'process_code',
-      key: 'process_code',
+      title: '定额编号',
+      dataIndex: 'id',
+      key: 'id',
     },
     {
-      title: '工序名称',
-      dataIndex: 'process_code',
-      key: 'process_name',
-      render: (process_code) => {
-        const process = processes.find(p => p.process_code === process_code);
-        return process ? process.name : process_code;
+      title: '电机型号',
+      dataIndex: 'model_name',
+      key: 'model_name',
+      render: (name) => {
+        const model = motorModelList.find(m => m.name === name);
+        return model ? `${name} (${model.aliases || ''})` : name;
       }
     },
     {
@@ -201,12 +201,12 @@ const QuotaManagement = () => {
       }
     },
     {
-      title: '电机型号',
-      dataIndex: 'model_name',
-      key: 'model_name',
-      render: (name) => {
-        const model = motorModelList.find(m => m.name === name);
-        return model ? `${name} (${model.aliases || ''})` : name;
+      title: '工序编码 (名称)',
+      dataIndex: 'process_code',
+      key: 'process_code',
+      render: (process_code) => {
+        const process = processes.find(p => p.process_code === process_code);
+        return process ? `${process_code} (${process.name})` : process_code;
       }
     },
     {
