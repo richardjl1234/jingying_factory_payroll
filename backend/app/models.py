@@ -67,9 +67,9 @@ class Quota(Base):
     
     # 关系
     process = relationship("Process", back_populates="quotas")
-    cat1 = relationship("ProcessCat1")
-    cat2 = relationship("ProcessCat2")
-    model = relationship("MotorModel")
+    cat1 = relationship("ProcessCat1", passive_deletes=True)
+    cat2 = relationship("ProcessCat2", passive_deletes=True)
+    model = relationship("MotorModel", passive_deletes=True)
     creator = relationship("User", back_populates="quotas")
     salary_records = relationship("SalaryRecord", back_populates="quota")
 
@@ -79,7 +79,7 @@ class SalaryRecord(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     worker_code = Column(String(20), ForeignKey("workers.worker_code"), nullable=False, index=True)
-    quota_id = Column(Integer, ForeignKey("quotas.id"), nullable=False, index=True)
+    quota_id = Column(Integer, ForeignKey("quotas.id", ondelete="CASCADE"), nullable=False, index=True)
     quantity = Column(Numeric(10, 2), nullable=False, comment="数量，保留两位小数")
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     amount = Column(Numeric(10, 2), nullable=False, comment="金额，保留两位小数")
@@ -89,7 +89,7 @@ class SalaryRecord(Base):
     
     # 关系
     worker = relationship("Worker", back_populates="salary_records")
-    quota = relationship("Quota", back_populates="salary_records")
+    quota = relationship("Quota", back_populates="salary_records", passive_deletes=True)
     creator = relationship("User", back_populates="salary_records")
 
 
@@ -104,7 +104,7 @@ class ProcessCat1(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # 关系
-    quotas = relationship("Quota", back_populates="cat1")
+    quotas = relationship("Quota", back_populates="cat1", passive_deletes=True)
 
 
 class ProcessCat2(Base):
@@ -118,7 +118,7 @@ class ProcessCat2(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # 关系
-    quotas = relationship("Quota", back_populates="cat2")
+    quotas = relationship("Quota", back_populates="cat2", passive_deletes=True)
 
 
 class MotorModel(Base):
@@ -132,4 +132,4 @@ class MotorModel(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # 关系
-    quotas = relationship("Quota", back_populates="model")
+    quotas = relationship("Quota", back_populates="model", passive_deletes=True)

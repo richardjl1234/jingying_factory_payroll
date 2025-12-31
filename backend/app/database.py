@@ -1,5 +1,5 @@
 import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -31,9 +31,18 @@ logger.debug(f"数据库URL: {DATABASE_URL}")
 # 创建数据库引擎
 logger.debug("创建数据库引擎...")
 engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}  # SQLite特定配置
+    DATABASE_URL, connect_args={"check_same_thread": False}
 )
 logger.debug(f"数据库引擎创建完成: {engine}")
+
+# 为SQLite启用外键约束
+if DATABASE_URL.startswith("sqlite"):
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        logger.debug("启用SQLite外键约束")
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 # 创建会话本地类
 logger.debug("创建会话本地类...")
