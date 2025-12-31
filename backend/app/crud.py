@@ -146,15 +146,15 @@ def delete_worker(db: Session, worker_code: str) -> Optional[dict]:
         "name": db_worker.name
     }
     
-    # 先删除相关的工资记录
-    logger.debug(f"查找工人相关的工资记录: worker_code={worker_code}")
-    salary_records = db.query(models.SalaryRecord).filter(
-        models.SalaryRecord.worker_code == worker_code
+    # 先删除相关的工作记录
+    logger.debug(f"查找工人相关的工作记录: worker_code={worker_code}")
+    work_records = db.query(models.WorkRecord).filter(
+        models.WorkRecord.worker_code == worker_code
     ).all()
     
-    if salary_records:
-        logger.debug(f"删除{len(salary_records)}条相关的工资记录")
-        for record in salary_records:
+    if work_records:
+        logger.debug(f"删除{len(work_records)}条相关的工作记录")
+        for record in work_records:
             db.delete(record)
     
     logger.debug(f"删除工人对象: {db_worker}")
@@ -223,22 +223,22 @@ def delete_process(db: Session, process_code: str) -> Optional[dict]:
         "name": db_process.name
     }
     
-    # 先删除相关的定额和工资记录
+    # 先删除相关的定额和工作记录
     logger.debug(f"查找工序相关的定额: process_code={process_code}")
     quotas = db.query(models.Quota).filter(
         models.Quota.process_code == process_code
     ).all()
     
     if quotas:
-        logger.debug(f"删除{len(quotas)}个相关的定额及其工资记录")
+        logger.debug(f"删除{len(quotas)}个相关的定额及其工作记录")
         for quota in quotas:
-            # 删除定额相关的工资记录
-            salary_records = db.query(models.SalaryRecord).filter(
-                models.SalaryRecord.quota_id == quota.id
+            # 删除定额相关的工作记录
+            work_records = db.query(models.WorkRecord).filter(
+                models.WorkRecord.quota_id == quota.id
             ).all()
-            if salary_records:
-                logger.debug(f"删除定额ID={quota.id}的{len(salary_records)}条工资记录")
-                for record in salary_records:
+            if work_records:
+                logger.debug(f"删除定额ID={quota.id}的{len(work_records)}条工作记录")
+                for record in work_records:
                     db.delete(record)
             
             # 删除定额
@@ -324,15 +324,15 @@ def delete_quota(db: Session, quota_id: int) -> Optional[dict]:
         "effective_date": str(db_quota.effective_date)
     }
     
-    # 先删除相关的工资记录
-    logger.debug(f"查找定额相关的工资记录: quota_id={quota_id}")
-    salary_records = db.query(models.SalaryRecord).filter(
-        models.SalaryRecord.quota_id == quota_id
+    # 先删除相关的工作记录
+    logger.debug(f"查找定额相关的工作记录: quota_id={quota_id}")
+    work_records = db.query(models.WorkRecord).filter(
+        models.WorkRecord.quota_id == quota_id
     ).all()
     
-    if salary_records:
-        logger.debug(f"删除{len(salary_records)}条相关的工资记录")
-        for record in salary_records:
+    if work_records:
+        logger.debug(f"删除{len(work_records)}条相关的工作记录")
+        for record in work_records:
             db.delete(record)
     
     logger.debug(f"删除定额对象: {db_quota}")
@@ -341,19 +341,19 @@ def delete_quota(db: Session, quota_id: int) -> Optional[dict]:
     logger.info(f"定额删除成功: quota_id={quota_id}")
     return quota_info
 
-# 工资记录相关CRUD
+# 工作记录相关CRUD
 
-def get_salary_record_by_id(db: Session, record_id: int) -> Optional[models.SalaryRecord]:
-    """根据ID获取工资记录"""
-    logger.debug(f"根据ID获取工资记录: record_id={record_id}")
-    return db.query(models.SalaryRecord).filter(models.SalaryRecord.id == record_id).first()
+def get_work_record_by_id(db: Session, record_id: int) -> Optional[models.WorkRecord]:
+    """根据ID获取工作记录"""
+    logger.debug(f"根据ID获取工作记录: record_id={record_id}")
+    return db.query(models.WorkRecord).filter(models.WorkRecord.id == record_id).first()
 
-def get_salary_records(db: Session, worker_code: str = None, record_date: str = None, skip: int = 0, limit: int = 100) -> List[models.SalaryRecord]:
-    """获取工资记录列表"""
-    logger.debug(f"获取工资记录列表: worker_code={worker_code}, record_date={record_date}, skip={skip}, limit={limit}")
-    query = db.query(models.SalaryRecord)
+def get_work_records(db: Session, worker_code: str = None, record_date: str = None, skip: int = 0, limit: int = 100) -> List[models.WorkRecord]:
+    """获取工作记录列表"""
+    logger.debug(f"获取工作记录列表: worker_code={worker_code}, record_date={record_date}, skip={skip}, limit={limit}")
+    query = db.query(models.WorkRecord)
     if worker_code:
-        query = query.filter(models.SalaryRecord.worker_code == worker_code)
+        query = query.filter(models.WorkRecord.worker_code == worker_code)
     if record_date:
         # record_date is in YYYY-MM format, filter by month
         from datetime import datetime
@@ -361,17 +361,17 @@ def get_salary_records(db: Session, worker_code: str = None, record_date: str = 
             year_month = datetime.strptime(record_date, "%Y-%m")
             # Filter records where record_date's year and month match
             query = query.filter(
-                db.func.strftime("%Y-%m", models.SalaryRecord.record_date) == record_date
+                db.func.strftime("%Y-%m", models.WorkRecord.record_date) == record_date
             )
         except ValueError:
             logger.warning(f"Invalid record_date format: {record_date}, expected YYYY-MM")
             # If invalid format, treat as exact date (YYYY-MM-DD)
-            query = query.filter(models.SalaryRecord.record_date == record_date)
-    return query.order_by(desc(models.SalaryRecord.created_at)).offset(skip).limit(limit).all()
+            query = query.filter(models.WorkRecord.record_date == record_date)
+    return query.order_by(desc(models.WorkRecord.created_at)).offset(skip).limit(limit).all()
 
-def create_salary_record(db: Session, record: schemas.SalaryRecordCreate, created_by: int) -> Optional[models.SalaryRecord]:
-    """创建工资记录"""
-    logger.debug(f"创建工资记录: worker_code={record.worker_code}, quota_id={record.quota_id}, quantity={record.quantity}, record_date={record.record_date}, created_by={created_by}")
+def create_work_record(db: Session, record: schemas.WorkRecordCreate, created_by: int) -> Optional[models.WorkRecord]:
+    """创建工作记录"""
+    logger.debug(f"创建工作记录: worker_code={record.worker_code}, quota_id={record.quota_id}, quantity={record.quantity}, record_date={record.record_date}, created_by={created_by}")
     
     # 获取定额信息
     logger.debug(f"获取定额信息: quota_id={record.quota_id}")
@@ -380,29 +380,23 @@ def create_salary_record(db: Session, record: schemas.SalaryRecordCreate, create
         logger.warning(f"定额不存在: quota_id={record.quota_id}")
         return None
     
-    # 计算金额
-    amount = record.quantity * quota.unit_price
-    logger.debug(f"计算金额: quantity={record.quantity}, unit_price={quota.unit_price}, amount={amount}")
-    
-    db_record = models.SalaryRecord(
+    db_record = models.WorkRecord(
         **record.model_dump(),
-        unit_price=quota.unit_price,
-        amount=amount,
         created_by=created_by
     )
-    logger.debug(f"创建工资记录对象: {db_record}")
+    logger.debug(f"创建工作记录对象: {db_record}")
     db.add(db_record)
     db.commit()
     db.refresh(db_record)
-    logger.info(f"工资记录创建成功: id={db_record.id}, worker_code={record.worker_code}, amount={amount}")
+    logger.info(f"工作记录创建成功: id={db_record.id}, worker_code={record.worker_code}")
     return db_record
 
-def update_salary_record(db: Session, record_id: int, record_update: schemas.SalaryRecordUpdate) -> Optional[models.SalaryRecord]:
-    """更新工资记录"""
-    logger.debug(f"更新工资记录: record_id={record_id}, update_data={record_update.model_dump(exclude_unset=True)}")
-    db_record = get_salary_record_by_id(db, record_id)
+def update_work_record(db: Session, record_id: int, record_update: schemas.WorkRecordUpdate) -> Optional[models.WorkRecord]:
+    """更新工作记录"""
+    logger.debug(f"更新工作记录: record_id={record_id}, update_data={record_update.model_dump(exclude_unset=True)}")
+    db_record = get_work_record_by_id(db, record_id)
     if not db_record:
-        logger.warning(f"工资记录不存在: record_id={record_id}")
+        logger.warning(f"工作记录不存在: record_id={record_id}")
         return None
     
     update_data = record_update.model_dump(exclude_unset=True)
@@ -410,22 +404,17 @@ def update_salary_record(db: Session, record_id: int, record_update: schemas.Sal
     for field, value in update_data.items():
         setattr(db_record, field, value)
     
-    # 如果更新了数量，重新计算金额
-    if "quantity" in update_data:
-        db_record.amount = db_record.quantity * db_record.unit_price
-        logger.debug(f"重新计算金额: quantity={db_record.quantity}, unit_price={db_record.unit_price}, amount={db_record.amount}")
-    
     db.commit()
     db.refresh(db_record)
-    logger.info(f"工资记录更新成功: record_id={record_id}")
+    logger.info(f"工作记录更新成功: record_id={record_id}")
     return db_record
 
-def delete_salary_record(db: Session, record_id: int) -> Optional[dict]:
-    """删除工资记录"""
-    logger.debug(f"删除工资记录: record_id={record_id}")
-    db_record = get_salary_record_by_id(db, record_id)
+def delete_work_record(db: Session, record_id: int) -> Optional[dict]:
+    """删除工作记录"""
+    logger.debug(f"删除工作记录: record_id={record_id}")
+    db_record = get_work_record_by_id(db, record_id)
     if not db_record:
-        logger.warning(f"工资记录不存在: record_id={record_id}")
+        logger.warning(f"工作记录不存在: record_id={record_id}")
         return None
     
     # 保存记录信息用于返回
@@ -434,26 +423,52 @@ def delete_salary_record(db: Session, record_id: int) -> Optional[dict]:
         "worker_code": db_record.worker_code,
         "quota_id": db_record.quota_id,
         "quantity": str(db_record.quantity),
-        "record_date": db_record.record_date,
-        "unit_price": str(db_record.unit_price),
-        "amount": str(db_record.amount)
+        "record_date": db_record.record_date
     }
     
-    logger.debug(f"删除工资记录对象: {db_record}")
+    logger.debug(f"删除工作记录对象: {db_record}")
     db.delete(db_record)
     db.commit()
-    logger.info(f"工资记录删除成功: record_id={record_id}")
+    logger.info(f"工作记录删除成功: record_id={record_id}")
     return record_info
+
+# 工资记录视图相关CRUD
+
+def get_salary_record_by_id(db: Session, record_id: int) -> Optional[models.VSalaryRecord]:
+    """根据ID获取工资记录（视图）"""
+    logger.debug(f"根据ID获取工资记录（视图）: record_id={record_id}")
+    return db.query(models.VSalaryRecord).filter(models.VSalaryRecord.id == record_id).first()
+
+def get_salary_records(db: Session, worker_code: str = None, record_date: str = None, skip: int = 0, limit: int = 100) -> List[models.VSalaryRecord]:
+    """获取工资记录列表（视图）"""
+    logger.debug(f"获取工资记录列表（视图）: worker_code={worker_code}, record_date={record_date}, skip={skip}, limit={limit}")
+    query = db.query(models.VSalaryRecord)
+    if worker_code:
+        query = query.filter(models.VSalaryRecord.worker_code == worker_code)
+    if record_date:
+        # record_date is in YYYY-MM format, filter by month
+        from datetime import datetime
+        try:
+            year_month = datetime.strptime(record_date, "%Y-%m")
+            # Filter records where record_date's year and month match
+            query = query.filter(
+                db.func.strftime("%Y-%m", models.VSalaryRecord.record_date) == record_date
+            )
+        except ValueError:
+            logger.warning(f"Invalid record_date format: {record_date}, expected YYYY-MM")
+            # If invalid format, treat as exact date (YYYY-MM-DD)
+            query = query.filter(models.VSalaryRecord.record_date == record_date)
+    return query.order_by(desc(models.VSalaryRecord.created_at)).offset(skip).limit(limit).all()
 
 def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -> Decimal:
     """获取工人月度工资汇总"""
     logger.debug(f"获取工人月度工资汇总: worker_code={worker_code}, record_date={record_date}")
     # record_date is in YYYY-MM format, filter by month
     result = db.query(
-        func.sum(models.SalaryRecord.amount).label("total_amount")
+        func.sum(models.VSalaryRecord.amount).label("total_amount")
     ).filter(
-        models.SalaryRecord.worker_code == worker_code,
-        db.func.strftime("%Y-%m", models.SalaryRecord.record_date) == record_date
+        models.VSalaryRecord.worker_code == worker_code,
+        db.func.strftime("%Y-%m", models.VSalaryRecord.record_date) == record_date
     ).first()
     
     total = result.total_amount or Decimal("0.00")

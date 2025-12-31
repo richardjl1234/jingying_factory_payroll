@@ -2,7 +2,7 @@
 
 ## 概述
 
-本文档详细描述了工资管理系统（Payroll System）的数据库架构。系统使用SQLite数据库，包含5个核心表，用于管理用户、工人、工序、定额和工资记录。
+本文档详细描述了工资管理系统（Payroll System）的数据库架构。系统使用SQLite数据库，包含8个核心表和1个视图，用于管理用户、工人、工序、定额和工资记录。
 
 ## 数据库表列表
 
@@ -13,7 +13,8 @@
 5. **process_cat2** - 工序类别表
 6. **motor_models** - 电机型号表
 7. **quotas** - 定额表
-8. **salary_records** - 工资记录表
+8. **work_records** - 工作记录表
+9. **salary_records** - 工资记录视图
 
 ## 表结构详情
 
@@ -268,19 +269,17 @@ CREATE TABLE quotas (
 - 多对一关系：定额由一个用户创建（users）
 - 一对多关系：一个定额可以有多个工资记录（salary_records）
 
-### 5. salary_records - 工资记录表
+### 8. work_records - 工作记录表
 
-**描述**：存储工人的工资记录，包括工作数量、单价和金额。
+**描述**：存储工人的工作记录，包括工作数量和记录日期。金额通过视图计算。
 
 **表结构**：
 ```sql
-CREATE TABLE salary_records (
+CREATE TABLE work_records (
     id INTEGER NOT NULL,
     worker_code VARCHAR(20) NOT NULL,
     quota_id INTEGER NOT NULL,
     quantity NUMERIC(10, 2) NOT NULL,
-    unit_price NUMERIC(10, 2) NOT NULL,
-    amount NUMERIC(10, 2) NOT NULL,
     record_date DATE NOT NULL,
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -298,19 +297,55 @@ CREATE TABLE salary_records (
 | worker_code | VARCHAR(20) | NOT NULL, FOREIGN KEY | 工号，外键引用workers表 |
 | quota_id | INTEGER | NOT NULL, FOREIGN KEY | 定额ID，外键引用quotas表 |
 | quantity | NUMERIC(10, 2) | NOT NULL | 数量，保留两位小数 |
-| unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
-| amount | NUMERIC(10, 2) | NOT NULL | 金额，保留两位小数（quantity × unit_price） |
 | record_date | DATE | NOT NULL | 记录日期 |
 | created_by | INTEGER | NULLABLE, FOREIGN KEY | 创建者ID，外键引用users表（用户删除时设为NULL） |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
 **索引**：
-- `ix_salary_records_id` (id)
+- `ix_work_records_id` (id)
 
 **关系**：
-- 多对一关系：工资记录属于一个工人（workers）
-- 多对一关系：工资记录使用一个定额（quotas）
-- 多对一关系：工资记录由一个用户创建（users）
+- 多对一关系：工作记录属于一个工人（workers）
+- 多对一关系：工作记录使用一个定额（quotas）
+- 多对一关系：工作记录由一个用户创建（users）
+
+### 9. salary_records - 工资记录视图
+
+**描述**：基于work_records和quotas表的视图，计算工资金额。
+
+**视图结构**：
+```sql
+CREATE VIEW salary_records AS
+SELECT 
+    wr.id,
+    wr.worker_code,
+    wr.quota_id,
+    wr.quantity,
+    q.unit_price,
+    wr.quantity * q.unit_price AS amount,
+    wr.record_date,
+    wr.created_by,
+    wr.created_at
+FROM work_records wr
+JOIN quotas q ON wr.quota_id = q.id;
+```
+
+**字段说明**：
+| 字段名 | 数据类型 | 说明 |
+|--------|----------|------|
+| id | INTEGER | 记录ID |
+| worker_code | VARCHAR(20) | 工号 |
+| quota_id | INTEGER | 定额ID |
+| quantity | NUMERIC(10, 2) | 数量 |
+| unit_price | NUMERIC(10, 2) | 单价（来自quotas表） |
+| amount | NUMERIC(10, 2) | 金额（quantity × unit_price） |
+| record_date | DATE | 记录日期 |
+| created_by | INTEGER | 创建者ID |
+| created_at | DATETIME | 创建时间 |
+
+**关系**：
+- 基于work_records和quotas表的连接视图
+- 提供工资计算功能，金额自动计算
 
 ## 实体关系图（ERD）
 

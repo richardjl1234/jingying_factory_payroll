@@ -53,22 +53,31 @@ export interface Quota {
 }
 
 /**
- * 工资记录类型定义
+ * 工作记录类型定义（用于创建/更新）
+ */
+export interface WorkRecord {
+  id: number;
+  worker_code: string;
+  quota_id: number;
+  quantity: number;
+  record_date: string;
+  created_by?: number;
+  created_at?: string;
+}
+
+/**
+ * 工资记录类型定义（从视图读取）
  */
 export interface SalaryRecord {
   id: number;
   worker_code: string;
-  worker_name: string;
-  process_code: string;
-  process_name: string;
-  unit: string;
-  completed_quantity: number;
-  quota_value: number;
-  wage_per_unit: number;
-  total_wage: number;
+  quota_id: number;
+  quantity: number;
+  unit_price: number;
+  amount: number;
   record_date: string;
+  created_by?: number;
   created_at?: string;
-  updated_at?: string;
 }
 
 /**

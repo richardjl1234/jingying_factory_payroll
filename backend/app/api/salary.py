@@ -21,7 +21,7 @@ def read_salary_records(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """获取工资记录列表"""
+    """获取工资记录列表（从视图读取）"""
     return crud.get_salary_records(
         db, 
         worker_code=worker_code, 
@@ -36,19 +36,19 @@ def read_salary_record(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """根据ID获取工资记录信息"""
+    """根据ID获取工资记录信息（从视图读取）"""
     record = crud.get_salary_record_by_id(db, record_id=record_id)
     if not record:
         raise HTTPException(status_code=404, detail="Salary record not found")
     return record
 
-@router.post("/", response_model=schemas.SalaryRecord, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=schemas.WorkRecord, status_code=status.HTTP_201_CREATED)
 def create_salary_record(
-    record: schemas.SalaryRecordCreate,
+    record: schemas.WorkRecordCreate,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """创建新工资记录"""
+    """创建新工作记录"""
     # 检查工人是否存在
     if not crud.get_worker_by_code(db, worker_code=record.worker_code):
         raise HTTPException(status_code=400, detail="Worker not found")
@@ -57,19 +57,19 @@ def create_salary_record(
     if not crud.get_quota_by_id(db, quota_id=record.quota_id):
         raise HTTPException(status_code=400, detail="Quota not found")
     
-    return crud.create_salary_record(db=db, record=record, created_by=current_user.id)
+    return crud.create_work_record(db=db, record=record, created_by=current_user.id)
 
-@router.put("/{record_id}", response_model=schemas.SalaryRecord)
+@router.put("/{record_id}", response_model=schemas.WorkRecord)
 def update_salary_record(
     record_id: int,
-    record_update: schemas.SalaryRecordUpdate,
+    record_update: schemas.WorkRecordUpdate,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """更新工资记录信息"""
-    record = crud.update_salary_record(db, record_id=record_id, record_update=record_update)
+    """更新工作记录信息"""
+    record = crud.update_work_record(db, record_id=record_id, record_update=record_update)
     if not record:
-        raise HTTPException(status_code=404, detail="Salary record not found")
+        raise HTTPException(status_code=404, detail="Work record not found")
     return record
 
 @router.delete("/{record_id}")
@@ -78,8 +78,8 @@ def delete_salary_record(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """删除工资记录"""
-    record = crud.delete_salary_record(db, record_id=record_id)
+    """删除工作记录"""
+    record = crud.delete_work_record(db, record_id=record_id)
     if not record:
-        raise HTTPException(status_code=404, detail="Salary record not found")
-    return {"message": "工资记录删除成功", "record_id": record_id}
+        raise HTTPException(status_code=404, detail="Work record not found")
+    return {"message": "工作记录删除成功", "record_id": record_id}

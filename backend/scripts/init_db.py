@@ -1,10 +1,72 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app.database import SessionLocal, engine
 from app import models
 from app.utils.auth import get_password_hash
 
 # 创建数据库表
 models.Base.metadata.create_all(bind=engine)
+
+def create_salary_records_view():
+    """创建工资记录视图"""
+    db = SessionLocal()
+    try:
+        # 检查视图是否已存在
+        view_exists = db.execute(
+            text("SELECT name FROM sqlite_master WHERE type='view' AND name='v_salary_records'")
+        ).fetchone()
+        
+        if not view_exists:
+            # 创建视图
+            create_view_sql = """
+            CREATE VIEW v_salary_records AS
+            SELECT 
+                wr.id,
+                wr.worker_code,
+                wr.quota_id,
+                wr.quantity,
+                q.unit_price,
+                (wr.quantity * q.unit_price) AS amount,
+                wr.record_date,
+                wr.created_by,
+                wr.created_at
+            FROM work_records wr
+            JOIN quotas q ON wr.quota_id = q.id
+            """
+            db.execute(text(create_view_sql))
+            db.commit()
+            print("工资记录视图创建成功!")
+        else:
+            print("工资记录视图已存在")
+    except Exception as e:
+        print(f"创建工资记录视图时出错: {e}")
+        # 如果视图创建失败，尝试删除并重新创建
+        try:
+            print("尝试删除现有视图并重新创建...")
+            db.execute(text("DROP VIEW IF EXISTS v_salary_records"))
+            db.commit()
+            create_view_sql = """
+            CREATE VIEW v_salary_records AS
+            SELECT 
+                wr.id,
+                wr.worker_code,
+                wr.quota_id,
+                wr.quantity,
+                q.unit_price,
+                (wr.quantity * q.unit_price) AS amount,
+                wr.record_date,
+                wr.created_by,
+                wr.created_at
+            FROM work_records wr
+            JOIN quotas q ON wr.quota_id = q.id
+            """
+            db.execute(text(create_view_sql))
+            db.commit()
+            print("工资记录视图重新创建成功!")
+        except Exception as e2:
+            print(f"重新创建视图失败: {e2}")
+    finally:
+        db.close()
 
 def init_db():
     """初始化数据库，创建root用户"""
@@ -35,4 +97,7 @@ def init_db():
         db.close()
 
 if __name__ == "__main__":
+    # 创建视图
+    create_salary_records_view()
+    # 初始化数据库
     init_db()

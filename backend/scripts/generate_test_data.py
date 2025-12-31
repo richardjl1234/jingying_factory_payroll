@@ -43,9 +43,9 @@ def main():
         # 0. 删除现有数据（按外键依赖顺序删除）
         print("删除现有数据...")
         
-        # 删除工资记录（有外键指向工人、定额和用户）
-        salary_record_count = db.query(models.SalaryRecord).delete()
-        print(f"删除工资记录: {salary_record_count} 条")
+        # 删除工作记录（有外键指向工人、定额和用户）
+        work_record_count = db.query(models.WorkRecord).delete()
+        print(f"删除工作记录: {work_record_count} 条")
         
         # 删除定额（有外键指向工序和用户）
         quota_count = db.query(models.Quota).delete()
@@ -55,7 +55,7 @@ def main():
         process_count = db.query(models.Process).delete()
         print(f"删除工序: {process_count} 个")
         
-        # 删除工人（被工资记录表引用）
+        # 删除工人（被工作记录表引用）
         worker_count = db.query(models.Worker).delete()
         print(f"删除工人: {worker_count} 个")
         
@@ -302,9 +302,9 @@ def main():
         db.commit()
         print(f"\n定额数据生成完成，共生成 {len(quotas)} 个定额")
         
-        # 5. 生成工资记录数据
-        print("\n生成工资记录数据...")
-        salary_records = []
+        # 5. 生成工作记录数据
+        print("\n生成工作记录数据...")
+        work_records = []
         
         for i in range(NUM_SALARY_RECORDS):
             # 随机选择工人
@@ -320,28 +320,23 @@ def main():
             # 生成随机日期（2023-01-01 到 2025-12-31）
             record_date = random_date(date(2023, 1, 1), date(2025, 12, 31))
             
-            # 计算金额
-            amount = quantity * quota.unit_price
-            
-            # 创建工资记录
-            salary_record = models.SalaryRecord(
+            # 创建工作记录
+            work_record = models.WorkRecord(
                 worker_code=worker.worker_code,
                 quota_id=quota.id,
                 quantity=quantity,
-                unit_price=quota.unit_price,
-                amount=amount,
                 record_date=record_date,
                 created_by=test_user.id
             )
             
-            db.add(salary_record)
-            salary_records.append(salary_record)
+            db.add(work_record)
+            work_records.append(work_record)
             
             if (i + 1) % 10 == 0:
-                print(f"生成工资记录: {i + 1}/{NUM_SALARY_RECORDS}")
+                print(f"生成工作记录: {i + 1}/{NUM_SALARY_RECORDS}")
         
         db.commit()
-        print(f"\n工资记录数据生成完成，共生成 {len(salary_records)} 条工资记录")
+        print(f"\n工作记录数据生成完成，共生成 {len(work_records)} 条工作记录")
         
         print("\n=== 测试数据生成完成 ===")
         print(f"工人数量: {len(workers)}")
@@ -350,7 +345,7 @@ def main():
         print(f"工序类别数量: {len(process_cat2s)}")
         print(f"型号数量: {len(models_list)}")
         print(f"定额数量: {len(quotas)}")
-        print(f"工资记录数量: {len(salary_records)}")
+        print(f"工作记录数量: {len(work_records)}")
         print(f"测试用户: test / test123")
         print(f"Root用户: root / root123")
         print("\n使用以下命令运行服务：")

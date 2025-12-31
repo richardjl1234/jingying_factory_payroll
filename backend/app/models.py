@@ -19,7 +19,7 @@ class User(Base):
     
     # 关系
     quotas = relationship("Quota", back_populates="creator")
-    salary_records = relationship("SalaryRecord", back_populates="creator")
+    work_records = relationship("WorkRecord", back_populates="creator")
 
 class Worker(Base):
     """工人表"""
@@ -31,7 +31,7 @@ class Worker(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # 关系
-    salary_records = relationship("SalaryRecord", back_populates="worker")
+    work_records = relationship("WorkRecord", back_populates="worker")
 
 class Process(Base):
     """工序表"""
@@ -71,26 +71,24 @@ class Quota(Base):
     cat2 = relationship("ProcessCat2", passive_deletes=True)
     model = relationship("MotorModel", passive_deletes=True)
     creator = relationship("User", back_populates="quotas")
-    salary_records = relationship("SalaryRecord", back_populates="quota")
+    work_records = relationship("WorkRecord", back_populates="quota", passive_deletes=True)
 
-class SalaryRecord(Base):
-    """工资记录表"""
-    __tablename__ = "salary_records"
+class WorkRecord(Base):
+    """工作记录表"""
+    __tablename__ = "work_records"
     
     id = Column(Integer, primary_key=True, index=True)
     worker_code = Column(String(20), ForeignKey("workers.worker_code"), nullable=False, index=True)
     quota_id = Column(Integer, ForeignKey("quotas.id", ondelete="CASCADE"), nullable=False, index=True)
     quantity = Column(Numeric(10, 2), nullable=False, comment="数量，保留两位小数")
-    unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
-    amount = Column(Numeric(10, 2), nullable=False, comment="金额，保留两位小数")
     record_date = Column(Date, nullable=False, comment="记录日期", index=True)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # 关系
-    worker = relationship("Worker", back_populates="salary_records")
-    quota = relationship("Quota", back_populates="salary_records", passive_deletes=True)
-    creator = relationship("User", back_populates="salary_records")
+    worker = relationship("Worker", back_populates="work_records")
+    quota = relationship("Quota", back_populates="work_records", passive_deletes=True)
+    creator = relationship("User", back_populates="work_records")
 
 
 class ProcessCat1(Base):
@@ -133,3 +131,23 @@ class MotorModel(Base):
     
     # 关系
     quotas = relationship("Quota", back_populates="model", passive_deletes=True)
+
+
+class VSalaryRecord(Base):
+    """工资记录视图"""
+    __tablename__ = "v_salary_records"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    worker_code = Column(String(20), nullable=False, index=True)
+    quota_id = Column(Integer, nullable=False, index=True)
+    quantity = Column(Numeric(10, 2), nullable=False, comment="数量，保留两位小数")
+    unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
+    amount = Column(Numeric(10, 2), nullable=False, comment="金额，保留两位小数")
+    record_date = Column(Date, nullable=False, comment="记录日期", index=True)
+    created_by = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+    
+    # 注意：视图没有外键约束，但我们可以定义关系以便查询
+    worker = relationship("Worker", foreign_keys=[worker_code], primaryjoin="VSalaryRecord.worker_code == Worker.worker_code", viewonly=True)
+    quota = relationship("Quota", foreign_keys=[quota_id], primaryjoin="VSalaryRecord.quota_id == Quota.id", viewonly=True)
+    creator = relationship("User", foreign_keys=[created_by], primaryjoin="VSalaryRecord.created_by == User.id", viewonly=True)

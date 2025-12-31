@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Worker, Process, Quota, SalaryRecord, LoginResponse, PaginatedResponse } from '../types';
+import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse } from '../types';
 
 // 创建axios实例
 const api = axios.create({
@@ -114,9 +114,9 @@ export const salaryAPI = {
     api.get('/salary-records/', { params }),
   getSalaryRecord: (id: number): Promise<SalaryRecord> => 
     api.get(`/salary-records/${id}`),
-  createSalaryRecord: (data: Omit<SalaryRecord, 'id'>): Promise<SalaryRecord> => 
+  createSalaryRecord: (data: Omit<WorkRecord, 'id'>): Promise<WorkRecord> => 
     api.post('/salary-records/', data),
-  updateSalaryRecord: (id: number, data: Partial<SalaryRecord>): Promise<SalaryRecord> => 
+  updateSalaryRecord: (id: number, data: Partial<WorkRecord>): Promise<WorkRecord> => 
     api.put(`/salary-records/${id}`, data),
   deleteSalaryRecord: (id: number): Promise<void> => 
     api.delete(`/salary-records/${id}`)

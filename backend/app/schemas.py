@@ -125,7 +125,39 @@ class Quota(QuotaInDB):
     process: Optional[Process] = None
     creator: Optional[User] = None
 
-# 工资记录相关模型
+# 工作记录相关模型
+class WorkRecordBase(BaseModel):
+    """工作记录基础模型"""
+    worker_code: str = Field(..., min_length=1, max_length=20)
+    quota_id: int
+    quantity: Decimal = Field(..., ge=0, decimal_places=2)
+    record_date: date
+
+class WorkRecordCreate(WorkRecordBase):
+    """创建工作记录模型"""
+    pass
+
+class WorkRecordUpdate(BaseModel):
+    """更新工作记录模型"""
+    quantity: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    record_date: Optional[date] = None
+
+class WorkRecordInDB(WorkRecordBase):
+    """数据库中的工作记录模型"""
+    id: int
+    created_by: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class WorkRecord(WorkRecordInDB):
+    """返回给客户端的工作记录模型"""
+    worker: Optional[Worker] = None
+    quota: Optional[Quota] = None
+    creator: Optional[User] = None
+
+# 工资记录视图相关模型
 class SalaryRecordBase(BaseModel):
     """工资记录基础模型"""
     worker_code: str = Field(..., min_length=1, max_length=20)

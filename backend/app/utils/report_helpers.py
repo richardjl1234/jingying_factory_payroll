@@ -30,7 +30,7 @@ def get_worker_by_code(db: Session, worker_code: str) -> models.Worker:
     """
     return db.query(models.Worker).filter(models.Worker.worker_code == worker_code).first()
 
-def get_salary_records_by_worker_and_month(db: Session, worker_code: str, month: str) -> List[models.SalaryRecord]:
+def get_salary_records_by_worker_and_month(db: Session, worker_code: str, month: str) -> List[models.VSalaryRecord]:
     """
     获取工人月度工资记录
     
@@ -40,14 +40,14 @@ def get_salary_records_by_worker_and_month(db: Session, worker_code: str, month:
         month: 月份（格式：YYYY-MM）
         
     Returns:
-        List[SalaryRecord]: 工资记录列表
+        List[VSalaryRecord]: 工资记录列表
     """
-    return db.query(models.SalaryRecord).filter(
-        models.SalaryRecord.worker_code == worker_code,
-        models.SalaryRecord.record_date == month
+    return db.query(models.VSalaryRecord).filter(
+        models.VSalaryRecord.worker_code == worker_code,
+        models.VSalaryRecord.record_date == month
     ).all()
 
-def calculate_total_amount(records: List[models.SalaryRecord]) -> float:
+def calculate_total_amount(records: List[models.VSalaryRecord]) -> float:
     """
     计算工资记录总金额
     
@@ -59,7 +59,7 @@ def calculate_total_amount(records: List[models.SalaryRecord]) -> float:
     """
     return sum(record.amount for record in records) if records else 0
 
-def build_salary_details(records: List[models.SalaryRecord], processes: Dict[str, models.Process]) -> List[Dict[str, Any]]:
+def build_salary_details(records: List[models.VSalaryRecord], processes: Dict[str, models.Process]) -> List[Dict[str, Any]]:
     """
     构建工资详情列表
     
@@ -96,12 +96,12 @@ def get_process_workload_summary(db: Session, month: str) -> List[Dict[str, Any]
     """
     results = db.query(
         models.Quota.process_code,
-        func.sum(models.SalaryRecord.quantity).label("total_quantity"),
-        func.sum(models.SalaryRecord.amount).label("total_amount")
+        func.sum(models.VSalaryRecord.quantity).label("total_quantity"),
+        func.sum(models.VSalaryRecord.amount).label("total_amount")
     ).join(
-        models.SalaryRecord, models.SalaryRecord.quota_id == models.Quota.id
+        models.VSalaryRecord, models.VSalaryRecord.quota_id == models.Quota.id
     ).filter(
-        models.SalaryRecord.record_date == month
+        models.VSalaryRecord.record_date == month
     ).group_by(
         models.Quota.process_code
     ).all()
@@ -140,25 +140,25 @@ def get_salary_summary(db: Session, month: str) -> Dict[str, Any]:
         Dict[str, Any]: 工资汇总信息
     """
     # 计算总工人数量
-    total_workers = db.query(func.count(distinct(models.SalaryRecord.worker_code))).filter(
-        models.SalaryRecord.record_date == month
+    total_workers = db.query(func.count(distinct(models.VSalaryRecord.worker_code))).filter(
+        models.VSalaryRecord.record_date == month
     ).scalar()
     
     # 计算总金额
-    total_amount = db.query(func.sum(models.SalaryRecord.amount)).filter(
-        models.SalaryRecord.record_date == month
+    total_amount = db.query(func.sum(models.VSalaryRecord.amount)).filter(
+        models.VSalaryRecord.record_date == month
     ).scalar() or 0
     
     # 按工序类别汇总
     category_results = db.query(
         models.Process.category,
-        func.sum(models.SalaryRecord.amount).label("total_amount")
+        func.sum(models.VSalaryRecord.amount).label("total_amount")
     ).join(
         models.Quota, models.Quota.process_code == models.Process.process_code
     ).join(
-        models.SalaryRecord, models.SalaryRecord.quota_id == models.Quota.id
+        models.VSalaryRecord, models.VSalaryRecord.quota_id == models.Quota.id
     ).filter(
-        models.SalaryRecord.record_date == month
+        models.VSalaryRecord.record_date == month
     ).group_by(
         models.Process.category
     ).all()
