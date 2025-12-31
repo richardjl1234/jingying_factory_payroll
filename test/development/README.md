@@ -10,7 +10,8 @@ This directory contains Linux shell scripts for testing and managing the payroll
 - **`1_start_backend_frontend.sh`** - Starts backend and frontend services
 - **`2_init_database_add_test_data.sh`** - Initializes database and adds test data
 - **`3_perform_backend_api_test.sh`** - Runs backend API tests
-- **`4_perform_frontend_puppeteer_test.sh`** - Runs frontend Puppeteer tests
+- **`4_perform_frontend_puppeteer_test.sh`** - Runs frontend Puppeteer tests (JavaScript)
+- **`5_perform_pytest_puppeteer_test.sh`** - Runs Python PyTest Puppeteer tests
 - **`99_overall_test.sh`** - Orchestrates all test steps in sequence
 
 ### 2. Individual Test Files
@@ -47,6 +48,11 @@ chmod +x *.sh
 ### Run frontend tests:
 ```bash
 ./4_perform_frontend_puppeteer_test.sh
+```
+
+### Run Python PyTest Puppeteer tests:
+```bash
+./5_perform_pytest_puppeteer_test.sh
 ```
 
 ### Run complete test suite:
@@ -109,6 +115,22 @@ Install dependencies:
 ```bash
 cd ../frontend && npm install
 ```
+
+### Python PyTest tests failing
+Python PyTest Puppeteer tests may fail due to:
+- Missing Python virtual environment
+- Missing Python packages
+- Chrome/Chromium browser not installed
+
+Install Python dependencies:
+```bash
+# Activate virtual environment first
+cd ../backend && source venv_linux/bin/activate
+# Install test packages
+pip install -r ../test/development/requirements-test.txt
+```
+
+Note: Python tests use shared login session via pytest fixtures. Login is performed once at the beginning of test session.
 
 ## Log Files
 

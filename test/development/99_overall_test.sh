@@ -6,7 +6,7 @@
 # 1. Start backend and frontend services  
 # 2. Initialize database and add test data
 # 3. Perform backend API tests
-# 4. Perform frontend Puppeteer tests
+# 4. Perform Python PyTest Puppeteer tests (replaces JavaScript frontend tests)
 # 5. Stop backend and frontend services (cleanup)
 #
 # Usage:
@@ -165,7 +165,8 @@ main() {
         "Step 2: Initialize Database and Add Test Data"
         "Step 3: Restart Services After DB Init"
         "Step 4: Perform Backend API Tests"
-        "Step 5: Perform Frontend Puppeteer Tests"
+        # "Step 5: Perform Frontend Puppeteer Tests"  # Commented out, using Python tests instead
+        "Step 5: Perform Python PyTest Puppeteer Tests"
         "Step 6: Cleanup - Stop Backend and Frontend Services"
     )
     
@@ -175,7 +176,8 @@ main() {
     step_scripts["Step 2: Initialize Database and Add Test Data"]="2_init_database_add_test_data.sh"
     step_scripts["Step 3: Restart Services After DB Init"]="1_start_backend_frontend.sh"
     step_scripts["Step 4: Perform Backend API Tests"]="3_perform_backend_api_test.sh"
-    step_scripts["Step 5: Perform Frontend Puppeteer Tests"]="4_perform_frontend_puppeteer_test.sh"
+    # step_scripts["Step 5: Perform Frontend Puppeteer Tests"]="4_perform_frontend_puppeteer_test.sh"  # Commented out
+    step_scripts["Step 5: Perform Python PyTest Puppeteer Tests"]="5_perform_pytest_puppeteer_test.sh"
     step_scripts["Step 6: Cleanup - Stop Backend and Frontend Services"]="0_stop_backend_frontend.sh"
     
     declare -A step_results
