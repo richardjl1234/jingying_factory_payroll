@@ -205,7 +205,6 @@
 {
   "process_code": "string",
   "name": "string",
-  "category": "精加工|装配喷漆|绕嵌排",
   "description": "string"
 }
 ```
@@ -219,7 +218,6 @@
 ```json
 {
   "name": "string",
-  "category": "精加工|装配喷漆|绕嵌排",
   "description": "string"
 }
 ```
@@ -268,6 +266,9 @@
 ```json
 {
   "process_code": "string",
+  "cat1_code": "string",
+  "cat2_code": "string",
+  "model_name": "string",
   "unit_price": 10.50,
   "effective_date": "2024-01-01"
 }
@@ -281,6 +282,9 @@
 - **请求体**:
 ```json
 {
+  "cat1_code": "string",
+  "cat2_code": "string",
+  "model_name": "string",
   "unit_price": 10.50,
   "effective_date": "2024-01-01"
 }
@@ -326,7 +330,7 @@
   "worker_code": "string",
   "quota_id": 1,
   "quantity": 100.50,
-  "record_date": "2024-01"
+  "record_date": "2024-01-01"
 }
 ```
 - **响应**: 创建的 SalaryRecord 对象
@@ -339,7 +343,7 @@
 ```json
 {
   "quantity": 100.50,
-  "record_date": "2024-01"
+  "record_date": "2024-01-01"
 }
 ```
 - **响应**: 更新后的 SalaryRecord 对象
@@ -454,15 +458,20 @@
 
 ## 数据模型对应关系
 
+### 近期更新 (2025-12-31)
+- **Process 模型**: 移除了 `category` 字段，不再需要工序类别分类
+- **Quota 模型**: 新增了 `cat1_code` (工段类别), `cat2_code` (工序类别), `model_name` (电机型号) 三个外键字段，用于更精细的定额管理
+- **SalaryRecord 模型**: `record_date` 字段格式从 `YYYY-MM` 改为 `YYYY-MM-DD` (DATE格式)
+
 ### 后端模型 (schemas.py) ↔ 前端类型 (types/index.ts)
 
 | 后端模型 | 前端类型 | 差异说明 |
 |---------|---------|---------|
 | User | User | 字段基本一致，前端多了 `full_name` 字段 |
 | Worker | Worker | 前端多了 `department`, `position`, `status` 字段 |
-| Process | Process | 字段基本一致 |
-| Quota | Quota | 字段基本一致 |
-| SalaryRecord | SalaryRecord | 字段基本一致 |
+| Process | Process | 字段基本一致 (已移除 category 字段) |
+| Quota | Quota | 字段基本一致 (新增 cat1_code, cat2_code, model_name) |
+| SalaryRecord | SalaryRecord | 字段基本一致 (record_date 格式为 DATE) |
 
 ### 数据库模型 (models.py) ↔ API模型 (schemas.py)
 
