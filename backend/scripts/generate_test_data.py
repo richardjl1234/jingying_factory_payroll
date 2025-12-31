@@ -171,7 +171,7 @@ def main():
         db.commit()
         print(f"\n工序数据生成完成，共生成 {len(processes)} 个工序")
         
-        # 3.1 生成工序类别一数据
+        # 3.1 生成工段类别数据
         print("\n生成工段类别数据...")
         cat1_data = [
             {"code": "C101", "name": "机械加工", "description": "机械加工类别"},
@@ -182,7 +182,7 @@ def main():
         process_cat1s = []
         
         for cat1_info in cat1_data:
-            # 检查是否已存在该类别一
+            # 检查是否已存在该工段类别
             existing_cat1 = db.query(models.ProcessCat1).filter(models.ProcessCat1.cat1_code == cat1_info["code"]).first()
             if not existing_cat1:
                 cat1 = models.ProcessCat1(
@@ -197,7 +197,7 @@ def main():
                 process_cat1s.append(existing_cat1)
                 print(f"工段类别已存在: {cat1_info['code']} - {existing_cat1.name}")
         
-        # 3.2 生成工序类别二数据
+        # 3.2 生成工序类别数据
         print("\n生成工序类别数据...")
         cat2_data = [
             {"code": "C201", "name": "车床加工", "description": "车床加工类别"},
@@ -209,7 +209,7 @@ def main():
         process_cat2s = []
         
         for cat2_info in cat2_data:
-            # 检查是否已存在该类别二
+            # 检查是否已存在该工序类别
             existing_cat2 = db.query(models.ProcessCat2).filter(models.ProcessCat2.cat2_code == cat2_info["code"]).first()
             if not existing_cat2:
                 cat2 = models.ProcessCat2(

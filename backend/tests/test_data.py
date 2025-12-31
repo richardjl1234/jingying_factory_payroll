@@ -42,7 +42,7 @@ def create_test_data():
             print("数据库中已存在数据，跳过数据创建")
             return
         
-        # 创建工序类别一测试数据
+        # 创建工段类别测试数据
         process_cat1_data = [
             {
                 "cat1_code": "A",
@@ -70,7 +70,7 @@ def create_test_data():
             process_cat1 = models.ProcessCat1(**data)
             db.add(process_cat1)
         
-        # 创建工序类别二测试数据
+        # 创建工序类别测试数据
         process_cat2_data = [
             {
                 "cat2_code": "A1",
@@ -155,8 +155,8 @@ def create_test_data():
         db.commit()
         
         print("测试数据创建成功！")
-        print(f"- 工序类别一: {len(process_cat1_data)} 条记录")
-        print(f"- 工序类别二: {len(process_cat2_data)} 条记录")
+        print(f"- 工段类别: {len(process_cat1_data)} 条记录")
+        print(f"- 工序类别: {len(process_cat2_data)} 条记录")
         print(f"- 型号: {len(model_data)} 条记录")
         
     except Exception as e:

@@ -85,10 +85,10 @@ async function testNewTables() {
       return;
     }
     
-    // 测试工序类别一管理
+    // 测试工段类别管理
     await testProcessCat1Management(page);
     
-    // 测试工序类别二管理
+    // 测试工序类别管理
     await testProcessCat2Management(page);
     
     // 测试型号管理

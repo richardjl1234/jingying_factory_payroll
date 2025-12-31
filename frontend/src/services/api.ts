@@ -146,7 +146,7 @@ export const statsAPI = {
   }> => api.get('/stats/')
 };
 
-// 工序类别一管理API
+// 工段类别管理API
 export const processCat1API = {
   getProcessCat1List: (): Promise<any[]> => api.get('/process-cat1/'),
   getProcessCat1: (code: string): Promise<any> => api.get(`/process-cat1/${code}`),
@@ -155,7 +155,7 @@ export const processCat1API = {
   deleteProcessCat1: (code: string): Promise<void> => api.delete(`/process-cat1/${code}`)
 };
 
-// 工序类别二管理API
+// 工序类别管理API
 export const processCat2API = {
   getProcessCat2List: (): Promise<any[]> => api.get('/process-cat2/'),
   getProcessCat2: (code: string): Promise<any> => api.get(`/process-cat2/${code}`),

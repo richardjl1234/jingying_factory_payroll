@@ -10,7 +10,7 @@
 1. **TypeScript迁移完成**：前端核心基础设施已迁移到TypeScript
    - 核心文件迁移：`App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`, `main.tsx`
    - 删除JavaScript重复文件：`App.jsx`, `Layout.jsx`, `Login.jsx`, `api.js`, `main.jsx`
-   - 菜单结构优化：重新排序侧边栏菜单项，"工序管理"现在位于"工序类别二"之后
+   - 菜单结构优化：重新排序侧边栏菜单项，"工序管理"现在位于"工序类别"之后
 
 2. **前端架构优化**：
    - 统一使用TypeScript作为入口点 (`main.tsx`)
@@ -78,7 +78,7 @@
 
 #### 已完成迁移 (Phase 1 & 2)
 - ✅ **核心基础设施**: `App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`, `main.tsx`
-- ✅ **菜单优化**: 重新排序侧边栏菜单，"工序管理"位于"工序类别二"之后
+- ✅ **菜单优化**: 重新排序侧边栏菜单，"工序管理"位于"工序类别"之后
 - ✅ **构建验证**: TypeScript编译通过，仅存在预期的类型警告
 
 #### 待迁移页面 (10个JavaScript文件)

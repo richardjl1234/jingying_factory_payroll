@@ -97,7 +97,7 @@ const App: React.FC = () => {
             </PrivateRoute>
           } />
           
-          {/* 类别一管理页面 */}
+          {/* 工段类别管理页面 */}
           <Route path="/process-cat1" element={
             <PrivateRoute>
               <AppLayout>
@@ -106,7 +106,7 @@ const App: React.FC = () => {
             </PrivateRoute>
           } />
           
-          {/* 类别二管理页面 */}
+          {/* 工序类别管理页面 */}
           <Route path="/process-cat2" element={
             <PrivateRoute>
               <AppLayout>

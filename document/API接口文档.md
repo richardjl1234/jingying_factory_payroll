@@ -419,14 +419,14 @@
 
 ### 9. 工序类别管理接口
 
-#### 9.1 工序类别一管理
+#### 9.1 工段类别管理
 - **URL**: `GET /api/process-cat1/` - 获取列表
 - **URL**: `GET /api/process-cat1/{code}` - 获取单个
 - **URL**: `POST /api/process-cat1/` - 创建
 - **URL**: `PUT /api/process-cat1/{code}` - 更新
 - **URL**: `DELETE /api/process-cat1/{code}` - 删除
 
-#### 9.2 工序类别二管理
+#### 9.2 工序类别管理
 - **URL**: `GET /api/process-cat2/` - 获取列表
 - **URL**: `GET /api/process-cat2/{code}` - 获取单个
 - **URL**: `POST /api/process-cat2/` - 创建
@@ -452,8 +452,8 @@
 6. **salaryAPI**: 工资记录管理接口
 7. **reportAPI**: 报表接口
 8. **statsAPI**: 统计接口
-9. **processCat1API**: 工序类别一管理接口
-10. **processCat2API**: 工序类别二管理接口
+9. **processCat1API**: 工段类别管理接口
+10. **processCat2API**: 工序类别管理接口
 11. **motorModelAPI**: 电机型号管理接口
 
 ## 数据模型对应关系

@@ -19,7 +19,7 @@ def read_process_cat2_list(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """获取工序类别二列表"""
+    """获取工序类别列表"""
     return crud.get_process_cat2_list(db, skip=skip, limit=limit)
 
 @router.get("/{cat2_code}", response_model=schemas.ProcessCat2)
@@ -28,7 +28,7 @@ def read_process_cat2(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """根据类别二编码获取工序类别二信息"""
+    """根据工序类别编码获取工序类别信息"""
     process_cat2 = crud.get_process_cat2_by_code(db, cat2_code=cat2_code)
     if not process_cat2:
         raise HTTPException(status_code=404, detail="Process category 2 not found")
@@ -40,12 +40,12 @@ def create_process_cat2(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """创建新工序类别二"""
-    # 检查类别二编码是否已存在
+    """创建新工序类别"""
+    # 检查工序类别编码是否已存在
     if crud.get_process_cat2_by_code(db, cat2_code=process_cat2.cat2_code):
         raise HTTPException(status_code=400, detail="Process category 2 code already exists")
     
-    # 检查类别二名称是否已存在
+    # 检查工序类别名称是否已存在
     if crud.get_process_cat2_by_name(db, name=process_cat2.name):
         raise HTTPException(status_code=400, detail="Process category 2 name already exists")
     
@@ -58,8 +58,8 @@ def update_process_cat2(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """更新工序类别二信息"""
-    # 检查类别二名称是否已存在（如果更新了名称）
+    """更新工序类别信息"""
+    # 检查工序类别名称是否已存在（如果更新了名称）
     if process_cat2_update.name:
         existing_process_cat2 = crud.get_process_cat2_by_name(db, name=process_cat2_update.name)
         if existing_process_cat2 and existing_process_cat2.cat2_code != cat2_code:
@@ -77,8 +77,8 @@ def delete_process_cat2(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
-    """删除工序类别二"""
+    """删除工序类别"""
     process_cat2 = crud.delete_process_cat2(db, cat2_code=cat2_code)
     if not process_cat2:
         raise HTTPException(status_code=404, detail="Process category 2 not found")
-    return {"message": "工序类别二删除成功", "cat2_code": cat2_code}
+    return {"message": "工序类别删除成功", "cat2_code": cat2_code}

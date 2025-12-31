@@ -461,40 +461,40 @@ def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -
     return total
 
 
-# 工序类别一相关CRUD
+# 工段类别相关CRUD
 
 def get_process_cat1_by_code(db: Session, cat1_code: str) -> Optional[models.ProcessCat1]:
-    """根据类别一编码获取工序类别一"""
-    logger.debug(f"根据类别一编码获取工序类别一: cat1_code={cat1_code}")
+    """根据工段类别编码获取工段类别"""
+    logger.debug(f"根据工段类别编码获取工段类别: cat1_code={cat1_code}")
     return db.query(models.ProcessCat1).filter(models.ProcessCat1.cat1_code == cat1_code).first()
 
 def get_process_cat1_by_name(db: Session, name: str) -> Optional[models.ProcessCat1]:
-    """根据类别一名称获取工序类别一"""
-    logger.debug(f"根据类别一名称获取工序类别一: name={name}")
+    """根据工段类别名称获取工段类别"""
+    logger.debug(f"根据工段类别名称获取工段类别: name={name}")
     return db.query(models.ProcessCat1).filter(models.ProcessCat1.name == name).first()
 
 def get_process_cat1_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.ProcessCat1]:
-    """获取工序类别一列表"""
-    logger.debug(f"获取工序类别一列表: skip={skip}, limit={limit}")
+    """获取工段类别列表"""
+    logger.debug(f"获取工段类别列表: skip={skip}, limit={limit}")
     return db.query(models.ProcessCat1).offset(skip).limit(limit).all()
 
 def create_process_cat1(db: Session, process_cat1: schemas.ProcessCat1Create) -> models.ProcessCat1:
-    """创建工序类别一"""
-    logger.debug(f"创建工序类别一: cat1_code={process_cat1.cat1_code}, name={process_cat1.name}")
+    """创建工段类别"""
+    logger.debug(f"创建工段类别: cat1_code={process_cat1.cat1_code}, name={process_cat1.name}")
     db_process_cat1 = models.ProcessCat1(**process_cat1.model_dump())
-    logger.debug(f"创建工序类别一对象: {db_process_cat1}")
+    logger.debug(f"创建工段类别对象: {db_process_cat1}")
     db.add(db_process_cat1)
     db.commit()
     db.refresh(db_process_cat1)
-    logger.info(f"工序类别一创建成功: cat1_code={process_cat1.cat1_code}")
+    logger.info(f"工段类别创建成功: cat1_code={process_cat1.cat1_code}")
     return db_process_cat1
 
 def update_process_cat1(db: Session, cat1_code: str, process_cat1_update: schemas.ProcessCat1Update) -> Optional[models.ProcessCat1]:
-    """更新工序类别一"""
-    logger.debug(f"更新工序类别一: cat1_code={cat1_code}, update_data={process_cat1_update.model_dump(exclude_unset=True)}")
+    """更新工段类别"""
+    logger.debug(f"更新工段类别: cat1_code={cat1_code}, update_data={process_cat1_update.model_dump(exclude_unset=True)}")
     db_process_cat1 = get_process_cat1_by_code(db, cat1_code)
     if not db_process_cat1:
-        logger.warning(f"工序类别一不存在: cat1_code={cat1_code}")
+        logger.warning(f"工段类别不存在: cat1_code={cat1_code}")
         return None
     
     update_data = process_cat1_update.model_dump(exclude_unset=True)
@@ -504,64 +504,64 @@ def update_process_cat1(db: Session, cat1_code: str, process_cat1_update: schema
     
     db.commit()
     db.refresh(db_process_cat1)
-    logger.info(f"工序类别一更新成功: cat1_code={cat1_code}")
+    logger.info(f"工段类别更新成功: cat1_code={cat1_code}")
     return db_process_cat1
 
 def delete_process_cat1(db: Session, cat1_code: str) -> Optional[dict]:
-    """删除工序类别一"""
-    logger.debug(f"删除工序类别一: cat1_code={cat1_code}")
+    """删除工段类别"""
+    logger.debug(f"删除工段类别: cat1_code={cat1_code}")
     db_process_cat1 = get_process_cat1_by_code(db, cat1_code)
     if not db_process_cat1:
-        logger.warning(f"工序类别一不存在: cat1_code={cat1_code}")
+        logger.warning(f"工段类别不存在: cat1_code={cat1_code}")
         return None
     
-    # 保存类别一信息用于返回
+    # 保存工段类别信息用于返回
     process_cat1_info = {
         "cat1_code": db_process_cat1.cat1_code,
         "name": db_process_cat1.name
     }
     
-    logger.debug(f"删除工序类别一对象: {db_process_cat1}")
+    logger.debug(f"删除工段类别对象: {db_process_cat1}")
     db.delete(db_process_cat1)
     db.commit()
-    logger.info(f"工序类别一删除成功: cat1_code={cat1_code}")
+    logger.info(f"工段类别删除成功: cat1_code={cat1_code}")
     return process_cat1_info
 
 
-# 工序类别二相关CRUD
+# 工序类别相关CRUD
 
 def get_process_cat2_by_code(db: Session, cat2_code: str) -> Optional[models.ProcessCat2]:
-    """根据类别二编码获取工序类别二"""
-    logger.debug(f"根据类别二编码获取工序类别二: cat2_code={cat2_code}")
+    """根据工序类别编码获取工序类别"""
+    logger.debug(f"根据工序类别编码获取工序类别: cat2_code={cat2_code}")
     return db.query(models.ProcessCat2).filter(models.ProcessCat2.cat2_code == cat2_code).first()
 
 def get_process_cat2_by_name(db: Session, name: str) -> Optional[models.ProcessCat2]:
-    """根据类别二名称获取工序类别二"""
-    logger.debug(f"根据类别二名称获取工序类别二: name={name}")
+    """根据工序类别名称获取工序类别"""
+    logger.debug(f"根据工序类别名称获取工序类别: name={name}")
     return db.query(models.ProcessCat2).filter(models.ProcessCat2.name == name).first()
 
 def get_process_cat2_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.ProcessCat2]:
-    """获取工序类别二列表"""
-    logger.debug(f"获取工序类别二列表: skip={skip}, limit={limit}")
+    """获取工序类别列表"""
+    logger.debug(f"获取工序类别列表: skip={skip}, limit={limit}")
     return db.query(models.ProcessCat2).offset(skip).limit(limit).all()
 
 def create_process_cat2(db: Session, process_cat2: schemas.ProcessCat2Create) -> models.ProcessCat2:
-    """创建工序类别二"""
-    logger.debug(f"创建工序类别二: cat2_code={process_cat2.cat2_code}, name={process_cat2.name}")
+    """创建工序类别"""
+    logger.debug(f"创建工序类别: cat2_code={process_cat2.cat2_code}, name={process_cat2.name}")
     db_process_cat2 = models.ProcessCat2(**process_cat2.model_dump())
-    logger.debug(f"创建工序类别二对象: {db_process_cat2}")
+    logger.debug(f"创建工序类别对象: {db_process_cat2}")
     db.add(db_process_cat2)
     db.commit()
     db.refresh(db_process_cat2)
-    logger.info(f"工序类别二创建成功: cat2_code={process_cat2.cat2_code}")
+    logger.info(f"工序类别创建成功: cat2_code={process_cat2.cat2_code}")
     return db_process_cat2
 
 def update_process_cat2(db: Session, cat2_code: str, process_cat2_update: schemas.ProcessCat2Update) -> Optional[models.ProcessCat2]:
-    """更新工序类别二"""
-    logger.debug(f"更新工序类别二: cat2_code={cat2_code}, update_data={process_cat2_update.model_dump(exclude_unset=True)}")
+    """更新工序类别"""
+    logger.debug(f"更新工序类别: cat2_code={cat2_code}, update_data={process_cat2_update.model_dump(exclude_unset=True)}")
     db_process_cat2 = get_process_cat2_by_code(db, cat2_code)
     if not db_process_cat2:
-        logger.warning(f"工序类别二不存在: cat2_code={cat2_code}")
+        logger.warning(f"工序类别不存在: cat2_code={cat2_code}")
         return None
     
     update_data = process_cat2_update.model_dump(exclude_unset=True)
@@ -571,27 +571,27 @@ def update_process_cat2(db: Session, cat2_code: str, process_cat2_update: schema
     
     db.commit()
     db.refresh(db_process_cat2)
-    logger.info(f"工序类别二更新成功: cat2_code={cat2_code}")
+    logger.info(f"工序类别更新成功: cat2_code={cat2_code}")
     return db_process_cat2
 
 def delete_process_cat2(db: Session, cat2_code: str) -> Optional[dict]:
-    """删除工序类别二"""
-    logger.debug(f"删除工序类别二: cat2_code={cat2_code}")
+    """删除工序类别"""
+    logger.debug(f"删除工序类别: cat2_code={cat2_code}")
     db_process_cat2 = get_process_cat2_by_code(db, cat2_code)
     if not db_process_cat2:
-        logger.warning(f"工序类别二不存在: cat2_code={cat2_code}")
+        logger.warning(f"工序类别不存在: cat2_code={cat2_code}")
         return None
     
-    # 保存类别二信息用于返回
+    # 保存工序类别信息用于返回
     process_cat2_info = {
         "cat2_code": db_process_cat2.cat2_code,
         "name": db_process_cat2.name
     }
     
-    logger.debug(f"删除工序类别二对象: {db_process_cat2}")
+    logger.debug(f"删除工序类别对象: {db_process_cat2}")
     db.delete(db_process_cat2)
     db.commit()
-    logger.info(f"工序类别二删除成功: cat2_code={cat2_code}")
+    logger.info(f"工序类别删除成功: cat2_code={cat2_code}")
     return process_cat2_info
 
 

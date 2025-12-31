@@ -210,11 +210,11 @@ const ProcessCat1Management = () => {
               label="工段类别编码"
               name="cat1_code"
               rules={[
-                { required: true, message: '请输入类别一编码' },
-                { min: 1, max: 4, message: '类别一编码长度应为1-4个字符' }
+                { required: true, message: '请输入工段类别编码' },
+                { min: 1, max: 4, message: '工段类别编码长度应为1-4个字符' }
               ]}
             >
-              <Input placeholder="请输入类别一编码" />
+              <Input placeholder="请输入工段类别编码" />
             </Form.Item>
           )}
           
@@ -222,11 +222,11 @@ const ProcessCat1Management = () => {
               label="工段类别名称"
             name="name"
             rules={[
-              { required: true, message: '请输入类别一名称' },
-              { min: 1, max: 50, message: '类别一名称长度应为1-50个字符' }
+              { required: true, message: '请输入工段类别名称' },
+              { min: 1, max: 50, message: '工段类别名称长度应为1-50个字符' }
             ]}
           >
-            <Input placeholder="请输入类别一名称" />
+            <Input placeholder="请输入工段类别名称" />
           </Form.Item>
           
           <Form.Item

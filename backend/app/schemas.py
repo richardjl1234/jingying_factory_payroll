@@ -207,24 +207,24 @@ class SalarySummaryReport(BaseModel):
     category_summary: List[dict]
 
 
-# 工序类别一相关模型
+# 工段类别相关模型
 class ProcessCat1Base(BaseModel):
-    """工序类别一基础模型"""
+    """工段类别基础模型"""
     cat1_code: str = Field(..., min_length=1, max_length=4)
     name: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=100)
 
 class ProcessCat1Create(ProcessCat1Base):
-    """创建工序类别一模型"""
+    """创建工段类别模型"""
     pass
 
 class ProcessCat1Update(BaseModel):
-    """更新工序类别一模型"""
+    """更新工段类别模型"""
     name: Optional[str] = Field(None, min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=100)
 
 class ProcessCat1InDB(ProcessCat1Base):
-    """数据库中的工序类别一模型"""
+    """数据库中的工段类别模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -232,28 +232,28 @@ class ProcessCat1InDB(ProcessCat1Base):
         from_attributes = True
 
 class ProcessCat1(ProcessCat1InDB):
-    """返回给客户端的工序类别一模型"""
+    """返回给客户端的工段类别模型"""
     pass
 
 
-# 工序类别二相关模型
+# 工序类别相关模型
 class ProcessCat2Base(BaseModel):
-    """工序类别二基础模型"""
+    """工序类别基础模型"""
     cat2_code: str = Field(..., min_length=1, max_length=4)
     name: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=100)
 
 class ProcessCat2Create(ProcessCat2Base):
-    """创建工序类别二模型"""
+    """创建工序类别模型"""
     pass
 
 class ProcessCat2Update(BaseModel):
-    """更新工序类别二模型"""
+    """更新工序类别模型"""
     name: Optional[str] = Field(None, min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=100)
 
 class ProcessCat2InDB(ProcessCat2Base):
-    """数据库中的工序类别二模型"""
+    """数据库中的工序类别模型"""
     created_at: datetime
     updated_at: Optional[datetime] = None
 
@@ -261,7 +261,7 @@ class ProcessCat2InDB(ProcessCat2Base):
         from_attributes = True
 
 class ProcessCat2(ProcessCat2InDB):
-    """返回给客户端的工序类别二模型"""
+    """返回给客户端的工序类别模型"""
     pass
 
 
