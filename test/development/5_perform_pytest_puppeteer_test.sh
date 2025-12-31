@@ -198,6 +198,15 @@ run_pytest_tests() {
     local test_files=(
         "test_login_pyppeteer.py"
         "test_process_pyppeteer.py"
+        "test_home_pyppeteer.py"
+        "test_user_management_pyppeteer.py"
+        "test_worker_pyppeteer.py"
+        "test_cat1_pyppeteer.py"
+        "test_cat2_pyppeteer.py"
+        "test_motor_model_pyppeteer.py"
+        "test_new_tables_pyppeteer.py"
+        "test_quota_pyppeteer.py"
+        "test_salary_record_pyppeteer.py"
     )
     
     local all_passed=true

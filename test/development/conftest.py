@@ -19,9 +19,9 @@ def pytest_configure(config):
 @pytest_asyncio.fixture(scope="function")
 async def browser():
     """Create a Pyppeteer browser instance for each test."""
-    # Launch browser with headless mode (can be changed to False for debugging)
+    # Launch browser with non-headless mode to see the browser
     browser = await launch(
-        headless=True,
+        headless=False,  # Changed to False to see the browser
         args=[
             '--no-sandbox',
             '--disable-setuid-sandbox',
