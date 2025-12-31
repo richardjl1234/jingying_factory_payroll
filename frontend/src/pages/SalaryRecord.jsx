@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { salaryAPI, workerAPI, processAPI, quotaAPI } from '../services/api';
+import { salaryAPI, workerAPI, quotaAPI } from '../services/api';
 
 const { Title } = Typography;
 const { Option } = Select;
-const { MonthPicker } = DatePicker;
 
 const SalaryRecord = () => {
   const [salaryRecords, setSalaryRecords] = useState([]);
   const [workers, setWorkers] = useState([]);
-  const [processes, setProcesses] = useState([]);
-  const [quotas, setQuotas] = useState({});
+  const [quotas, setQuotas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -30,31 +28,17 @@ const SalaryRecord = () => {
     }
   };
 
-  // 获取工序列表
-  const fetchProcesses = async () => {
+  // 获取定额列表
+  const fetchQuotas = async () => {
     try {
-      const data = await processAPI.getProcesses();
-      setProcesses(data);
-      
-      // 获取每个工序的最新定额
-      const quotaMap = {};
-      for (const process of data) {
-        try {
-          const quota = await quotaAPI.getLatestQuota(process.process_code);
-          if (quota) {
-            quotaMap[process.process_code] = quota;
-          }
-        } catch (error) {
-          console.error(`获取工序 ${process.process_code} 定额失败:`, error);
-        }
-      }
-      setQuotas(quotaMap);
+      const data = await quotaAPI.getQuotas();
+      setQuotas(data);
     } catch (error) {
-      message.error('获取工序列表失败');
+      message.error('获取定额列表失败');
     }
   };
 
-  // 获取工资记录列表
+  // 获取工作记录列表
   const fetchSalaryRecords = async () => {
     try {
       setLoading(true);
@@ -68,7 +52,7 @@ const SalaryRecord = () => {
       const data = await salaryAPI.getSalaryRecords(params);
       setSalaryRecords(data);
     } catch (error) {
-      message.error('获取工资记录失败');
+      message.error('获取工作记录失败');
     } finally {
       setLoading(false);
     }
@@ -76,7 +60,7 @@ const SalaryRecord = () => {
 
   useEffect(() => {
     fetchWorkers();
-    fetchProcesses();
+    fetchQuotas();
   }, []);
 
   useEffect(() => {
@@ -116,32 +100,32 @@ const SalaryRecord = () => {
       const formattedValues = {
         ...values,
         quantity: parseFloat(values.quantity), // 将字符串转换为数字
-        record_date: values.record_date.format('YYYY-MM') // 格式化日期为YYYY-MM格式
+        record_date: values.record_date.format('YYYY-MM-DD') // 格式化日期为YYYY-MM-DD格式
       };
       
       if (isEditMode) {
         // 编辑记录
         await salaryAPI.updateSalaryRecord(currentRecord.id, formattedValues);
-        message.success('工资记录更新成功');
+        message.success('工作记录更新成功');
       } else {
         // 添加记录
         await salaryAPI.createSalaryRecord(formattedValues);
-        message.success('工资记录添加成功');
+        message.success('工作记录添加成功');
       }
       setIsModalVisible(false);
       fetchSalaryRecords();
     } catch (error) {
-      message.error(isEditMode ? '工资记录更新失败' : '工资记录添加失败');
+      message.error(isEditMode ? '工作记录更新失败' : '工作记录添加失败');
     }
   };
 
   // 删除记录
   const handleDelete = async (recordId) => {
     Modal.confirm({
-      title: '确认删除工资记录',
+      title: '确认删除工作记录',
       content: (
         <div>
-          <p>确定要删除这条工资记录吗？</p>
+          <p>确定要删除这条工作记录吗？</p>
           <p style={{ color: '#ff4d4f', fontWeight: 'bold' }}>
             此操作不可恢复，确定要继续吗？
           </p>
@@ -153,10 +137,10 @@ const SalaryRecord = () => {
       onOk: async () => {
         try {
           await salaryAPI.deleteSalaryRecord(recordId);
-          message.success('工资记录删除成功');
+          message.success('工作记录删除成功');
           fetchSalaryRecords();
         } catch (error) {
-          message.error('工资记录删除失败');
+          message.error('工作记录删除失败');
         }
       },
     });
@@ -164,6 +148,16 @@ const SalaryRecord = () => {
 
   // 表格列配置
   const columns = [
+    {
+      title: '编号',
+      dataIndex: 'id',
+      key: 'id',
+    },
+    {
+      title: '记录日期',
+      dataIndex: 'record_date',
+      key: 'record_date',
+    },
     {
       title: '工人',
       dataIndex: 'worker_code',
@@ -174,14 +168,33 @@ const SalaryRecord = () => {
       }
     },
     {
-      title: '工序',
-      dataIndex: 'quota',
-      key: 'process_name',
-      render: (quota) => {
-        if (!quota) return '未知工序';
-        const process = processes.find(p => p.process_code === quota.process_code);
-        return process ? `${process.name} (${quota.process_code})` : quota.process_code;
-      }
+      title: '定额编号',
+      dataIndex: 'quota_id',
+      key: 'quota_id',
+    },
+    {
+      title: '电机型号',
+      dataIndex: 'model_display',
+      key: 'model_display',
+      render: (model_display) => model_display || '未知型号'
+    },
+    {
+      title: '工段类别',
+      dataIndex: 'cat1_display',
+      key: 'cat1_display',
+      render: (cat1_display) => cat1_display || '未知工段'
+    },
+    {
+      title: '工序类别',
+      dataIndex: 'cat2_display',
+      key: 'cat2_display',
+      render: (cat2_display) => cat2_display || '未知工序类别'
+    },
+    {
+      title: '工序名称',
+      dataIndex: 'process_display',
+      key: 'process_display',
+      render: (process_display) => process_display || '未知工序'
     },
     {
       title: '单价',
@@ -199,11 +212,6 @@ const SalaryRecord = () => {
       dataIndex: 'amount',
       key: 'amount',
       render: (amount) => `¥${amount}`
-    },
-    {
-      title: '记录月份',
-      dataIndex: 'record_date',
-      key: 'record_date',
     },
     {
       title: '操作',
@@ -230,14 +238,10 @@ const SalaryRecord = () => {
     setSelectedMonth(dateString);
   };
 
-  // 工序选择变化处理
-  const handleProcessChange = (value, option) => {
-    // 自动获取最新定额
-    const processCode = option.key;
-    const quota = quotas[processCode];
-    if (quota) {
-      form.setFieldsValue({ quota_id: quota.id });
-    }
+  // 定额选择变化处理
+  const handleQuotaChange = (value) => {
+    // 可以在这里添加额外的处理逻辑
+    console.log('Selected quota id:', value);
   };
 
   return (
@@ -261,8 +265,8 @@ const SalaryRecord = () => {
           </Select>
         </Col>
         <Col span={8}>
-          <MonthPicker
-            placeholder="按月份筛选"
+          <DatePicker
+            placeholder="按日期筛选"
             style={{ width: '100%' }}
             onChange={handleMonthChange}
             allowClear
@@ -270,12 +274,12 @@ const SalaryRecord = () => {
         </Col>
         <Col span={8}>
           <Button type="primary" icon={<PlusOutlined />} onClick={showAddModal}>
-            添加工资记录
+            添加工作记录
           </Button>
         </Col>
       </Row>
       
-      {/* 工资记录列表 */}
+      {/* 工作记录列表 */}
       <Table
         columns={columns}
         dataSource={salaryRecords}
@@ -284,9 +288,9 @@ const SalaryRecord = () => {
         pagination={{ pageSize: 10 }}
       />
 
-      {/* 添加/编辑工资记录模态框 */}
+      {/* 添加/编辑工作记录模态框 */}
       <Modal
-        title={isEditMode ? '编辑工资记录' : '添加工资记录'}
+        title={isEditMode ? '编辑工作记录' : '添加工作记录'}
         open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
@@ -311,18 +315,15 @@ const SalaryRecord = () => {
           </Form.Item>
           <Form.Item
             name="quota_id"
-            label="工序"
-            rules={[{ required: true, message: '请选择工序!' }]}
+            label="定额编号"
+            rules={[{ required: true, message: '请选择定额编号!' }]}
           >
-            <Select placeholder="请选择工序" onChange={handleProcessChange}>
-              {Object.entries(quotas).map(([processCode, quota]) => {
-                const process = processes.find(p => p.process_code === processCode);
-                return (
-                  <Option key={processCode} value={quota.id}>
-                    {process ? `${process.name} (¥${quota.unit_price})` : `${processCode} (¥${quota.unit_price})`}
-                  </Option>
-                );
-              })}
+            <Select placeholder="请选择定额编号" onChange={handleQuotaChange}>
+              {quotas.map(quota => (
+                <Option key={quota.id} value={quota.id}>
+                  {`定额${quota.id} (${quota.process_code} - ¥${quota.unit_price})`}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
           <Form.Item
@@ -342,10 +343,10 @@ const SalaryRecord = () => {
           </Form.Item>
           <Form.Item
             name="record_date"
-            label="记录月份"
-            rules={[{ required: true, message: '请选择记录月份!' }]}
+            label="日期"
+            rules={[{ required: true, message: '请选择日期!' }]}
           >
-            <MonthPicker style={{ width: '100%' }} />
+            <DatePicker style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item>
             <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
