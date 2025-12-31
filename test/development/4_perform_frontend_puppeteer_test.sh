@@ -109,7 +109,9 @@ run_frontend_tests() {
         "test_user_management.js"
         "test_worker.js"
         "test_process.js"
-        "test_new_tables.js"
+        "test_cat1.js"
+        "test_cat2.js"
+        "test_motor_model.js"
     )
     
     local all_passed=true
