@@ -46,6 +46,18 @@ def create_quota(
     if not crud.get_process_by_code(db, process_code=quota.process_code):
         raise HTTPException(status_code=400, detail="Process not found")
     
+    # 检查工段类别是否存在
+    if not crud.get_process_cat1_by_code(db, cat1_code=quota.cat1_code):
+        raise HTTPException(status_code=400, detail="Process category 1 not found")
+    
+    # 检查工序类别是否存在
+    if not crud.get_process_cat2_by_code(db, cat2_code=quota.cat2_code):
+        raise HTTPException(status_code=400, detail="Process category 2 not found")
+    
+    # 检查电机型号是否存在
+    if not crud.get_motor_model_by_name(db, name=quota.model_name):
+        raise HTTPException(status_code=400, detail="Motor model not found")
+    
     return crud.create_quota(db=db, quota=quota, created_by=current_user.id)
 
 @router.put("/{quota_id}", response_model=schemas.Quota)

@@ -220,8 +220,7 @@ def delete_process(db: Session, process_code: str) -> Optional[dict]:
     # 保存工序信息用于返回
     process_info = {
         "process_code": db_process.process_code,
-        "name": db_process.name,
-        "category": db_process.category
+        "name": db_process.name
     }
     
     # 先删除相关的定额和工资记录
@@ -356,7 +355,18 @@ def get_salary_records(db: Session, worker_code: str = None, record_date: str = 
     if worker_code:
         query = query.filter(models.SalaryRecord.worker_code == worker_code)
     if record_date:
-        query = query.filter(models.SalaryRecord.record_date == record_date)
+        # record_date is in YYYY-MM format, filter by month
+        from datetime import datetime
+        try:
+            year_month = datetime.strptime(record_date, "%Y-%m")
+            # Filter records where record_date's year and month match
+            query = query.filter(
+                db.func.strftime("%Y-%m", models.SalaryRecord.record_date) == record_date
+            )
+        except ValueError:
+            logger.warning(f"Invalid record_date format: {record_date}, expected YYYY-MM")
+            # If invalid format, treat as exact date (YYYY-MM-DD)
+            query = query.filter(models.SalaryRecord.record_date == record_date)
     return query.order_by(desc(models.SalaryRecord.created_at)).offset(skip).limit(limit).all()
 
 def create_salary_record(db: Session, record: schemas.SalaryRecordCreate, created_by: int) -> Optional[models.SalaryRecord]:
@@ -438,11 +448,12 @@ def delete_salary_record(db: Session, record_id: int) -> Optional[dict]:
 def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -> Decimal:
     """获取工人月度工资汇总"""
     logger.debug(f"获取工人月度工资汇总: worker_code={worker_code}, record_date={record_date}")
+    # record_date is in YYYY-MM format, filter by month
     result = db.query(
         func.sum(models.SalaryRecord.amount).label("total_amount")
     ).filter(
         models.SalaryRecord.worker_code == worker_code,
-        models.SalaryRecord.record_date == record_date
+        db.func.strftime("%Y-%m", models.SalaryRecord.record_date) == record_date
     ).first()
     
     total = result.total_amount or Decimal("0.00")

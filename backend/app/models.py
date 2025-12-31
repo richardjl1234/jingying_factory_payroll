@@ -39,15 +39,9 @@ class Process(Base):
     
     process_code = Column(String(20), primary_key=True, index=True, comment="工序编码")
     name = Column(String(100), unique=True, nullable=False, index=True)
-    category = Column(String(20), nullable=False, comment="工序类别：精加工/装配喷漆/绕嵌排", index=True)
     description = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
-    # 添加检查约束，确保category值只能是指定的枚举值
-    __table_args__ = (
-        CheckConstraint("category IN ('精加工', '装配喷漆', '绕嵌排')", name="_process_category_check"),
-    )
     
     # 关系
     quotas = relationship("Quota", back_populates="process")
@@ -58,18 +52,24 @@ class Quota(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     process_code = Column(String(20), ForeignKey("processes.process_code"), nullable=False, index=True)
+    cat1_code = Column(String(4), ForeignKey("process_cat1.cat1_code", ondelete="CASCADE"), nullable=False, index=True)
+    cat2_code = Column(String(4), ForeignKey("process_cat2.cat2_code", ondelete="CASCADE"), nullable=False, index=True)
+    model_name = Column(String(20), ForeignKey("motor_models.name", ondelete="CASCADE"), nullable=False, index=True)
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     effective_date = Column(Date, nullable=False, comment="生效日期", index=True)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # 约束：同一工序在同一日期只能有一个生效定额
+    # 约束：同一工序、工段、工序类别、电机型号在同一日期只能有一个生效定额
     __table_args__ = (
-        UniqueConstraint('process_code', 'effective_date', name='_process_effective_date_uc'),
+        UniqueConstraint('process_code', 'cat1_code', 'cat2_code', 'model_name', 'effective_date', name='_process_effective_date_uc'),
     )
     
     # 关系
     process = relationship("Process", back_populates="quotas")
+    cat1 = relationship("ProcessCat1")
+    cat2 = relationship("ProcessCat2")
+    model = relationship("MotorModel")
     creator = relationship("User", back_populates="quotas")
     salary_records = relationship("SalaryRecord", back_populates="quota")
 
@@ -83,7 +83,7 @@ class SalaryRecord(Base):
     quantity = Column(Numeric(10, 2), nullable=False, comment="数量，保留两位小数")
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     amount = Column(Numeric(10, 2), nullable=False, comment="金额，保留两位小数")
-    record_date = Column(String(7), nullable=False, comment="记录日期，格式：YYYY-MM", index=True)
+    record_date = Column(Date, nullable=False, comment="记录日期", index=True)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -102,6 +102,9 @@ class ProcessCat1(Base):
     description = Column(String(100), nullable=True, comment="工段描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # 关系
+    quotas = relationship("Quota", back_populates="cat1")
 
 
 class ProcessCat2(Base):
@@ -113,6 +116,9 @@ class ProcessCat2(Base):
     description = Column(String(100), nullable=True, comment="工序类别描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # 关系
+    quotas = relationship("Quota", back_populates="cat2")
 
 
 class MotorModel(Base):
@@ -124,3 +130,6 @@ class MotorModel(Base):
     description = Column(String(100), nullable=True, comment="电机型号描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # 关系
+    quotas = relationship("Quota", back_populates="model")

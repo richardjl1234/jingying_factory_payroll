@@ -139,21 +139,19 @@ def main():
         
         # 3. 生成工序数据
         print("\n生成工序数据...")
-        process_categories = ["精加工", "装配喷漆", "绕嵌排"]
         process_data = [
-            {"name": "组装", "category": "装配喷漆"},
-            {"name": "焊接", "category": "精加工"},
-            {"name": "喷漆", "category": "装配喷漆"},
-            {"name": "包装", "category": "绕嵌排"},
-            {"name": "质检", "category": "精加工"}
+            {"name": "组装", "description": "组装工序描述"},
+            {"name": "焊接", "description": "焊接工序描述"},
+            {"name": "喷漆", "description": "喷漆工序描述"},
+            {"name": "包装", "description": "包装工序描述"},
+            {"name": "质检", "description": "质检工序描述"}
         ]
         processes = []
         
         for i, process_info in enumerate(process_data):
             process_code = f"P{i+1:02d}"
             name = process_info["name"]
-            category = process_info["category"]
-            description = f"{name}工序描述"
+            description = process_info["description"]
             
             # 检查是否已存在该工序
             existing_process = db.query(models.Process).filter(models.Process.process_code == process_code).first()
@@ -161,12 +159,11 @@ def main():
                 process = models.Process(
                     process_code=process_code,
                     name=name,
-                    category=category,
                     description=description
                 )
                 db.add(process)
                 processes.append(process)
-                print(f"生成工序: {process_code} - {name} - {category}")
+                print(f"生成工序: {process_code} - {name}")
             else:
                 processes.append(existing_process)
                 print(f"工序已存在: {process_code} - {existing_process.name}")
@@ -271,26 +268,36 @@ def main():
             for i in range(3):
                 effective_date = start_date + timedelta(days=i*365)
                 unit_price = Decimal(f"{random.uniform(5.0, 50.0):.2f}")
+                # 随机选择工段类别、工序类别和型号
+                cat1 = random.choice(process_cat1s)
+                cat2 = random.choice(process_cat2s)
+                model = random.choice(models_list)
                 
-                # 检查是否已存在该定额
+                # 检查是否已存在该定额（基于新的唯一约束）
                 existing_quota = db.query(models.Quota).filter(
                     models.Quota.process_code == process.process_code,
+                    models.Quota.cat1_code == cat1.cat1_code,
+                    models.Quota.cat2_code == cat2.cat2_code,
+                    models.Quota.model_name == model.name,
                     models.Quota.effective_date == effective_date
                 ).first()
                 
                 if not existing_quota:
                     quota = models.Quota(
                         process_code=process.process_code,
+                        cat1_code=cat1.cat1_code,
+                        cat2_code=cat2.cat2_code,
+                        model_name=model.name,
                         unit_price=unit_price,
                         effective_date=effective_date,
                         created_by=test_user.id
                     )
                     db.add(quota)
                     quotas.append(quota)
-                    print(f"生成定额: {process.process_code} - {effective_date} - ¥{unit_price}")
+                    print(f"生成定额: {process.process_code} - {cat1.cat1_code} - {cat2.cat2_code} - {model.name} - {effective_date} - ¥{unit_price}")
                 else:
                     quotas.append(existing_quota)
-                    print(f"定额已存在: {process.process_code} - {effective_date}")
+                    print(f"定额已存在: {process.process_code} - {cat1.cat1_code} - {cat2.cat2_code} - {model.name} - {effective_date}")
         
         db.commit()
         print(f"\n定额数据生成完成，共生成 {len(quotas)} 个定额")
@@ -303,30 +310,25 @@ def main():
             # 随机选择工人
             worker = random.choice(workers)
             
-            # 随机选择工序
-            process = random.choice(processes)
-            
-            # 获取该工序的最新定额
-            latest_quota = db.query(models.Quota).filter(
-                models.Quota.process_code == process.process_code
-            ).order_by(models.Quota.effective_date.desc()).first()
-            
-            if not latest_quota:
+            # 随机选择定额
+            quota = random.choice(quotas) if quotas else None
+            if not quota:
                 continue
             
-            # 生成随机数量和记录月份
+            # 生成随机数量
             quantity = Decimal(f"{random.uniform(10.0, 200.0):.2f}")
-            record_date = random_month(2023, 2025)
+            # 生成随机日期（2023-01-01 到 2025-12-31）
+            record_date = random_date(date(2023, 1, 1), date(2025, 12, 31))
             
             # 计算金额
-            amount = quantity * latest_quota.unit_price
+            amount = quantity * quota.unit_price
             
             # 创建工资记录
             salary_record = models.SalaryRecord(
                 worker_code=worker.worker_code,
-                quota_id=latest_quota.id,
+                quota_id=quota.id,
                 quantity=quantity,
-                unit_price=latest_quota.unit_price,
+                unit_price=quota.unit_price,
                 amount=amount,
                 record_date=record_date,
                 created_by=test_user.id

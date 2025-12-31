@@ -90,19 +90,17 @@ CREATE TABLE workers (
 
 ### 3. processes - 工序表
 
-**描述**：存储工序信息，包括工序编码、名称、类别和描述。
+**描述**：存储工序信息，包括工序编码、名称和描述。
 
 **表结构**：
 ```sql
 CREATE TABLE processes (
     process_code VARCHAR(20) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    category VARCHAR(20) NOT NULL,
     description VARCHAR(500),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME,
     PRIMARY KEY (process_code),
-    CONSTRAINT _process_category_check CHECK (category IN ('精加工', '装配喷漆', '绕嵌排')),
     UNIQUE (name)
 );
 ```
@@ -112,13 +110,9 @@ CREATE TABLE processes (
 |--------|----------|------|------|
 | process_code | VARCHAR(20) | PRIMARY KEY | 工序编码，主键 |
 | name | VARCHAR(100) | NOT NULL, UNIQUE | 工序名称，唯一 |
-| category | VARCHAR(20) | NOT NULL | 工序类别：精加工/装配喷漆/绕嵌排 |
 | description | VARCHAR(500) | NULLABLE | 工序描述 |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | DATETIME | NULLABLE | 更新时间 |
-
-**约束**：
-- `_process_category_check`：检查约束，确保category只能是'精加工'、'装配喷漆'或'绕嵌排'
 
 **索引**：
 - `ix_processes_process_code` (process_code)
@@ -156,7 +150,7 @@ CREATE TABLE process_cat1 (
 - `ix_process_cat1_name` (name)
 
 **关系**：
-- 一对多关系：一个工段可以有多个工序类别（process_cat2）
+- 一对多关系：一个工段可以有多个定额（quotas）
 
 ### 5. process_cat2 - 工序类别表
 
@@ -188,7 +182,7 @@ CREATE TABLE process_cat2 (
 - `ix_process_cat2_name` (name)
 
 **关系**：
-- 多对一关系：工序类别属于工段（process_cat1）
+- 一对多关系：一个工序类别可以有多个定额（quotas）
 
 ### 6. motor_models - 电机型号表
 
@@ -230,13 +224,19 @@ CREATE TABLE motor_models (
 CREATE TABLE quotas (
     id INTEGER NOT NULL,
     process_code VARCHAR(20) NOT NULL,
+    cat1_code VARCHAR(4) NOT NULL,
+    cat2_code VARCHAR(4) NOT NULL,
+    model_name VARCHAR(20) NOT NULL,
     unit_price NUMERIC(10, 2) NOT NULL,
     effective_date DATE NOT NULL,
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    CONSTRAINT _process_effective_date_uc UNIQUE (process_code, effective_date),
+    CONSTRAINT _process_effective_date_uc UNIQUE (process_code, cat1_code, cat2_code, model_name, effective_date),
     FOREIGN KEY(process_code) REFERENCES processes (process_code),
+    FOREIGN KEY(cat1_code) REFERENCES process_cat1 (cat1_code) ON DELETE CASCADE,
+    FOREIGN KEY(cat2_code) REFERENCES process_cat2 (cat2_code) ON DELETE CASCADE,
+    FOREIGN KEY(model_name) REFERENCES motor_models (name) ON DELETE CASCADE,
     FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE SET NULL
 );
 ```
@@ -246,19 +246,25 @@ CREATE TABLE quotas (
 |--------|----------|------|------|
 | id | INTEGER | PRIMARY KEY, AUTOINCREMENT | 定额ID，主键 |
 | process_code | VARCHAR(20) | NOT NULL, FOREIGN KEY | 工序编码，外键引用processes表 |
+| cat1_code | VARCHAR(4) | NOT NULL, FOREIGN KEY | 工段编码，外键引用process_cat1表 |
+| cat2_code | VARCHAR(4) | NOT NULL, FOREIGN KEY | 工序类别编码，外键引用process_cat2表 |
+| model_name | VARCHAR(20) | NOT NULL, FOREIGN KEY | 电机型号名称，外键引用motor_models表 |
 | unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
 | effective_date | DATE | NOT NULL | 生效日期 |
 | created_by | INTEGER | NULLABLE, FOREIGN KEY | 创建者ID，外键引用users表（用户删除时设为NULL） |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
 **约束**：
-- `_process_effective_date_uc`：唯一约束，确保同一工序在同一日期只能有一个生效定额
+- `_process_effective_date_uc`：唯一约束，确保同一工序、工段、工序类别、电机型号在同一日期只能有一个生效定额
 
 **索引**：
 - `ix_quotas_id` (id)
 
 **关系**：
 - 多对一关系：定额属于一个工序（processes）
+- 多对一关系：定额属于一个工段（process_cat1）
+- 多对一关系：定额属于一个工序类别（process_cat2）
+- 多对一关系：定额属于一个电机型号（motor_models）
 - 多对一关系：定额由一个用户创建（users）
 - 一对多关系：一个定额可以有多个工资记录（salary_records）
 
@@ -275,7 +281,7 @@ CREATE TABLE salary_records (
     quantity NUMERIC(10, 2) NOT NULL,
     unit_price NUMERIC(10, 2) NOT NULL,
     amount NUMERIC(10, 2) NOT NULL,
-    record_date VARCHAR(7) NOT NULL,
+    record_date DATE NOT NULL,
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -294,7 +300,7 @@ CREATE TABLE salary_records (
 | quantity | NUMERIC(10, 2) | NOT NULL | 数量，保留两位小数 |
 | unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
 | amount | NUMERIC(10, 2) | NOT NULL | 金额，保留两位小数（quantity × unit_price） |
-| record_date | VARCHAR(7) | NOT NULL | 记录日期，格式：YYYY-MM |
+| record_date | DATE | NOT NULL | 记录日期 |
 | created_by | INTEGER | NULLABLE, FOREIGN KEY | 创建者ID，外键引用users表（用户删除时设为NULL） |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 
@@ -331,10 +337,32 @@ CREATE TABLE salary_records (
                  │   quotas    │
                  ├─────────────┤
                  │process_code │
-                 │ created_by  │
+                 │  cat1_code  │
+                 │  cat2_code  │
+                 │ model_name  │
                  │     ...     │
-                 └─────────────┘
+                 └──────┬──────┘
+                        │
+          ┌─────────────┼─────────────┐
+          │             │             │
+    ┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
+    │process_cat1│ │process_cat2│ │motor_models│
+    ├───────────┤ ├───────────┤ ├───────────┤
+    │cat1_code  │ │cat2_code  │ │ name      │
+    │   name    │ │   name    │ │ aliases   │
+    │   ...     │ │   ...     │ │   ...     │
+    └───────────┘ └───────────┘ └───────────┘
 ```
+
+**关系说明**：
+1. **users → quotas**：一对多关系，一个用户可以创建多个定额
+2. **users → salary_records**：一对多关系，一个用户可以创建多个工资记录
+3. **workers → salary_records**：一对多关系，一个工人可以有多个工资记录
+4. **processes → quotas**：一对多关系，一个工序可以有多个定额
+5. **process_cat1 → quotas**：一对多关系，一个工段可以有多个定额
+6. **process_cat2 → quotas**：一对多关系，一个工序类别可以有多个定额
+7. **motor_models → quotas**：一对多关系，一个电机型号可以有多个定额
+8. **quotas → salary_records**：一对多关系，一个定额可以有多个工资记录
 
 ## 数据完整性规则
 
@@ -342,12 +370,12 @@ CREATE TABLE salary_records (
 2. **唯一性约束**：
    - 用户名（username）必须唯一
    - 工序名称（processes.name）必须唯一
-   - 同一工序在同一日期只能有一个生效定额
+   - 同一工序、工段、工序类别、电机型号在同一日期只能有一个生效定额
 3. **检查约束**：
-   - 工序类别（processes.category）只能是：'精加工'、'装配喷漆'、'绕嵌排'
+   - 无（原工序类别检查约束已移除）
 4. **业务规则**：
    - 工资记录金额 = 数量 × 单价
-   - 记录日期格式必须为YYYY-MM
+   - 记录日期为DATE类型
 
 ## 索引策略
 
@@ -356,7 +384,7 @@ CREATE TABLE salary_records (
 3. **唯一索引**：
    - users.username
    - processes.name
-   - quotas(process_code, effective_date)
+   - quotas(process_code, cat1_code, cat2_code, model_name, effective_date)
 
 ## 数据示例
 
@@ -368,20 +396,20 @@ VALUES ('root', '加密密码', '系统管理员', 'admin', FALSE);
 
 ### 工序数据示例
 ```sql
-INSERT INTO processes (process_code, name, category, description)
-VALUES ('P001', '车床加工', '精加工', '使用车床进行精密加工');
+INSERT INTO processes (process_code, name, description)
+VALUES ('P001', '车床加工', '使用车床进行精密加工');
 ```
 
 ### 定额数据示例
 ```sql
-INSERT INTO quotas (process_code, unit_price, effective_date, created_by)
-VALUES ('P001', 25.50, '2024-01-01', 1);
+INSERT INTO quotas (process_code, cat1_code, cat2_code, model_name, unit_price, effective_date, created_by)
+VALUES ('P001', 'C101', 'C201', 'A100', 25.50, '2024-01-01', 1);
 ```
 
 ### 工资记录数据示例
 ```sql
 INSERT INTO salary_records (worker_code, quota_id, quantity, unit_price, amount, record_date, created_by)
-VALUES ('W001', 1, 100.00, 25.50, 2550.00, '2024-01', 1);
+VALUES ('W001', 1, 100.00, 25.50, 2550.00, '2024-01-01', 1);
 ```
 
 ## 维护说明

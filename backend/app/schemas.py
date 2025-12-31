@@ -66,7 +66,6 @@ class ProcessBase(BaseModel):
     """工序基础模型"""
     process_code: str = Field(..., min_length=1, max_length=20)
     name: str = Field(..., min_length=1, max_length=100)
-    category: str = Field(..., pattern="^(精加工|装配喷漆|绕嵌排)$", description="工序类别：精加工/装配喷漆/绕嵌排")
     description: Optional[str] = Field(None, max_length=500)
 
 class ProcessCreate(ProcessBase):
@@ -76,7 +75,6 @@ class ProcessCreate(ProcessBase):
 class ProcessUpdate(BaseModel):
     """更新工序模型"""
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    category: Optional[str] = Field(None, pattern="^(精加工|装配喷漆|绕嵌排)$", description="工序类别：精加工/装配喷漆/绕嵌排")
     description: Optional[str] = Field(None, max_length=500)
 
 class ProcessInDB(ProcessBase):
@@ -95,6 +93,9 @@ class Process(ProcessInDB):
 class QuotaBase(BaseModel):
     """定额基础模型"""
     process_code: str = Field(..., min_length=1, max_length=20)
+    cat1_code: str = Field(..., min_length=1, max_length=4)
+    cat2_code: str = Field(..., min_length=1, max_length=4)
+    model_name: str = Field(..., min_length=1, max_length=20)
     unit_price: Decimal = Field(..., ge=0, decimal_places=2)
     effective_date: date
 
@@ -104,6 +105,9 @@ class QuotaCreate(QuotaBase):
 
 class QuotaUpdate(BaseModel):
     """更新定额模型"""
+    cat1_code: Optional[str] = Field(None, min_length=1, max_length=4)
+    cat2_code: Optional[str] = Field(None, min_length=1, max_length=4)
+    model_name: Optional[str] = Field(None, min_length=1, max_length=20)
     unit_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
     effective_date: Optional[date] = None
 
@@ -127,7 +131,7 @@ class SalaryRecordBase(BaseModel):
     worker_code: str = Field(..., min_length=1, max_length=20)
     quota_id: int
     quantity: Decimal = Field(..., ge=0, decimal_places=2)
-    record_date: str = Field(..., pattern="^\d{4}-\d{2}$")
+    record_date: date
 
 class SalaryRecordCreate(SalaryRecordBase):
     """创建工资记录模型"""
@@ -136,7 +140,7 @@ class SalaryRecordCreate(SalaryRecordBase):
 class SalaryRecordUpdate(BaseModel):
     """更新工资记录模型"""
     quantity: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
-    record_date: Optional[str] = Field(None, pattern="^\d{4}-\d{2}$")
+    record_date: Optional[date] = None
 
 class SalaryRecordInDB(SalaryRecordBase):
     """数据库中的工资记录模型"""
