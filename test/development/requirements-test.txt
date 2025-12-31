@@ -1,0 +1,9 @@
+# Python test dependencies for Pyppeteer and pytest
+pytest==8.3.4
+pytest-asyncio==0.24.0
+pytest-xdist==3.6.1
+pyppeteer==1.0.2
+pytest-html==4.1.1
+pytest-cov==5.0.0
+requests==2.32.3
+python-dotenv==1.0.1
