@@ -108,9 +108,9 @@ class ProcessCat2(Base):
     """工序类别表"""
     __tablename__ = "process_cat2"
     
-    cat2_code = Column(String(4), primary_key=True, index=True, comment="工序编码")
-    name = Column(String(50), nullable=False, index=True, comment="工序名称")
-    description = Column(String(100), nullable=True, comment="工序描述")
+    cat2_code = Column(String(4), primary_key=True, index=True, comment="工序类别编码")
+    name = Column(String(50), nullable=False, index=True, comment="工序类别名称")
+    description = Column(String(100), nullable=True, comment="工序类别描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

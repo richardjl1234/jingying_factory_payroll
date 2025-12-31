@@ -1,0 +1,30 @@
+I need to make the database schema changes as below:
+1. model.py, class `Processes`,  (table processes)
+1.1 remove the following constraint: 
+```
+  # 添加检查约束，确保category值只能是指定的枚举值
+    __table_args__ = (
+        CheckConstraint("category IN ('精加工', '装配喷漆', '绕嵌排')", name="_process_category_check"),
+    )
+```
+1.2. remove the field `category` from this table. 
+
+
+2. make the change to table Quotas:
+2.1. add the following 2 new fields: 
+cat1_code, 
+cat2_code, 
+model_name
+
+2.2 add the following two constraints:
+ this processes table have 3 foreign keys:
+ process_cat1.cat1_code, 
+ process_cat2.cat2_code, 
+ motor_models.name
+ when either of a record from above 3 tables is deleted, the records in this table will be deleted. (cacacade deletion)
+
+2.3 update the contraint _process_effective_date_uc
+this will be unique based on those fields: (process_code, cat1_code, cat2_code, model_name, effective_date)
+
+3. update the table salary_records:
+3.1 the field record_date should be in the format DATETIME format. 
