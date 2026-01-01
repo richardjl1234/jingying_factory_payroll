@@ -398,6 +398,19 @@ def create_work_record(db: Session, record: schemas.WorkRecordCreate, created_by
         logger.warning(f"定额不存在: quota_id={record.quota_id}")
         return None
     
+    # 验证工作记录日期是否在定额有效期内
+    if record.record_date < quota.effective_date:
+        error_msg = f"工作记录日期{record.record_date}早于定额生效日期{quota.effective_date}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    
+    if record.record_date > quota.obsolete_date:
+        error_msg = f"工作记录日期{record.record_date}晚于定额作废日期{quota.obsolete_date}"
+        logger.error(error_msg)
+        raise ValueError(error_msg)
+    
+    logger.debug(f"定额验证通过: 工作记录日期{record.record_date}在定额有效期内[{quota.effective_date}, {quota.obsolete_date}]")
+    
     db_record = models.WorkRecord(
         **record.model_dump(),
         created_by=created_by
