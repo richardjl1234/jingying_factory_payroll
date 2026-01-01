@@ -4,9 +4,35 @@
 
 工厂定额和计件工资管理系统是一个用于工厂管理工序定额和工人计件工资的Web应用。该系统支持工序管理、定额设置、工人信息管理、工资记录以及报表统计等功能，帮助工厂实现自动化的工资计算和管理。
 
-## 最近更新 (2025-12-24)
+## 最近更新 (2026-01-01)
 
-### TypeScript迁移与前端优化
+### 定额表新增作废日期字段与业务逻辑优化
+1. **新增 `obsolete_date` 字段**：在定额表 (`quotas`) 中新增作废日期字段
+   - 默认值：`9999-12-31`，表示当前有效的定额
+   - 数据库迁移脚本自动为现有记录添加该字段
+   - 更新数据库结构文档 (`document/DATABASE_SCHEMA.md`)
+
+2. **后端业务逻辑优化**：
+   - **定额创建逻辑 (`create_quota`)**：
+     - 当创建新定额时，系统会自动查找相同组合（工序编码、工段编码、工序类别编码、电机型号）且作废日期为 `9999-12-31` 的现有定额
+     - 如果找到，将现有定额的作废日期更新为新定额生效日期的前一天
+     - 确保同一时间只有一个有效的定额组合
+     - 记录警告日志以便跟踪定额更新历史
+   
+   - **工作记录验证逻辑 (`create_work_record`)**：
+     - 创建工作记录时，验证工作记录日期是否在定额的有效期内（生效日期 ≤ 工作记录日期 ≤ 作废日期）
+     - 如果日期早于定额生效日期或晚于作废日期，抛出 `ValueError` 并阻止记录创建
+     - 提供清晰的错误信息便于调试和用户反馈
+
+3. **前端更新**：
+   - 更新定额管理页面 (`frontend/src/pages/QuotaManagement.jsx`) 显示作废日期字段
+   - 更新TypeScript类型定义 (`frontend/src/types/index.ts`) 包含新字段
+
+4. **测试验证**：
+   - 运行完整测试套件 (`test/development/99_overall_test.sh`) 验证所有功能正常
+   - 所有API测试、前端测试和Puppeteer测试通过
+
+### TypeScript迁移与前端优化 (2025-12-24)
 1. **TypeScript迁移完成**：前端核心基础设施已迁移到TypeScript
    - 核心文件迁移：`App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`, `main.tsx`
    - 删除JavaScript重复文件：`App.jsx`, `Layout.jsx`, `Login.jsx`, `api.js`, `main.jsx`
@@ -360,6 +386,7 @@ npm run build
    - model_name: 电机型号名称
    - unit_price: 单价
    - effective_date: 生效日期
+   - obsolete_date: 作废日期（默认值：9999-12-31，表示当前有效定额）
    - created_by: 创建人
    - created_at: 创建时间
 
