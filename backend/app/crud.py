@@ -378,8 +378,9 @@ def get_work_records(db: Session, worker_code: str = None, record_date: str = No
         try:
             year_month = datetime.strptime(record_date, "%Y-%m")
             # Filter records where record_date's year and month match
+            # MySQL uses DATE_FORMAT instead of SQLite's strftime
             query = query.filter(
-                db.func.strftime("%Y-%m", models.WorkRecord.record_date) == record_date
+                func.date_format(models.WorkRecord.record_date, "%Y-%m") == record_date
             )
         except ValueError:
             logger.warning(f"Invalid record_date format: {record_date}, expected YYYY-MM")
@@ -482,8 +483,9 @@ def get_salary_records(db: Session, worker_code: str = None, record_date: str = 
         try:
             year_month = datetime.strptime(record_date, "%Y-%m")
             # Filter records where record_date's year and month match
+            # MySQL uses DATE_FORMAT instead of SQLite's strftime
             query = query.filter(
-                db.func.strftime("%Y-%m", models.VSalaryRecord.record_date) == record_date
+                func.date_format(models.VSalaryRecord.record_date, "%Y-%m") == record_date
             )
         except ValueError:
             logger.warning(f"Invalid record_date format: {record_date}, expected YYYY-MM")
@@ -499,7 +501,7 @@ def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -
         func.sum(models.VSalaryRecord.amount).label("total_amount")
     ).filter(
         models.VSalaryRecord.worker_code == worker_code,
-        db.func.strftime("%Y-%m", models.VSalaryRecord.record_date) == record_date
+        func.date_format(models.VSalaryRecord.record_date, "%Y-%m") == record_date
     ).first()
     
     total = result.total_amount or Decimal("0.00")
