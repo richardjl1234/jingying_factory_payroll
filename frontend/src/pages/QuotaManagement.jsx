@@ -100,7 +100,8 @@ const QuotaManagement = () => {
       cat2_code: quota.cat2_code,
       model_name: quota.model_name,
       unit_price: quota.unit_price,
-      effective_date: quota.effective_date
+      effective_date: quota.effective_date,
+      obsolete_date: quota.obsolete_date
     });
     setIsModalVisible(true);
   };
@@ -119,6 +120,13 @@ const QuotaManagement = () => {
         effective_date: values.effective_date.format('YYYY-MM-DD'),
         unit_price: parseFloat(values.unit_price) // 将字符串转换为数字
       };
+      
+      // 处理作废日期，如果没有提供则使用默认值
+      if (values.obsolete_date) {
+        formattedValues.obsolete_date = values.obsolete_date.format('YYYY-MM-DD');
+      } else {
+        formattedValues.obsolete_date = '9999-12-31'; // 默认值
+      }
       
       if (isEditMode) {
         // 编辑定额
@@ -219,6 +227,11 @@ const QuotaManagement = () => {
       title: '生效日期',
       dataIndex: 'effective_date',
       key: 'effective_date',
+    },
+    {
+      title: '作废日期',
+      dataIndex: 'obsolete_date',
+      key: 'obsolete_date',
     },
     {
       title: '创建时间',
@@ -362,6 +375,13 @@ const QuotaManagement = () => {
             name="effective_date"
             label="生效日期"
             rules={[{ required: true, message: '请选择生效日期!' }]}
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item
+            name="obsolete_date"
+            label="作废日期"
+            help="默认值'9999-12-31'表示永久有效"
           >
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>

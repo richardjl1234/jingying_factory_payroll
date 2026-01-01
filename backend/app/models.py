@@ -57,6 +57,7 @@ class Quota(Base):
     model_name = Column(String(20), ForeignKey("motor_models.name", ondelete="CASCADE"), nullable=False, index=True)
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     effective_date = Column(Date, nullable=False, comment="生效日期", index=True)
+    obsolete_date = Column(Date, nullable=False, server_default='9999-12-31', comment="作废日期，默认值'9999-12-31'表示永久有效")
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

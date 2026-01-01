@@ -1,11 +1,33 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 from app.database import SessionLocal, engine
 from app import models
 from app.utils.auth import get_password_hash
 
 # 创建数据库表
 models.Base.metadata.create_all(bind=engine)
+
+def add_obsolete_date_column():
+    """为quotas表添加obsolete_date列（如果不存在）"""
+    db = SessionLocal()
+    try:
+        # 检查quotas表是否存在obsolete_date列
+        inspector = inspect(engine)
+        columns = [col['name'] for col in inspector.get_columns('quotas')]
+        
+        if 'obsolete_date' not in columns:
+            print("为quotas表添加obsolete_date列...")
+            # 添加obsolete_date列
+            db.execute(text("ALTER TABLE quotas ADD COLUMN obsolete_date DATE DEFAULT '9999-12-31'"))
+            db.commit()
+            print("obsolete_date列添加成功")
+        else:
+            print("obsolete_date列已存在")
+    except Exception as e:
+        print(f"添加obsolete_date列时出错: {e}")
+        db.rollback()
+    finally:
+        db.close()
 
 def create_salary_records_view():
     """创建工资记录视图"""
@@ -121,6 +143,8 @@ def init_db():
         db.close()
 
 if __name__ == "__main__":
+    # 添加obsolete_date列（如果不存在）
+    add_obsolete_date_column()
     # 创建视图
     create_salary_records_view()
     # 初始化数据库

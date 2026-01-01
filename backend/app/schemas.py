@@ -98,6 +98,7 @@ class QuotaBase(BaseModel):
     model_name: str = Field(..., min_length=1, max_length=20)
     unit_price: Decimal = Field(..., ge=0, decimal_places=2)
     effective_date: date
+    obsolete_date: date = Field(default=date(9999, 12, 31), description="作废日期，默认值'9999-12-31'表示永久有效")
 
 class QuotaCreate(QuotaBase):
     """创建定额模型"""
@@ -110,6 +111,7 @@ class QuotaUpdate(BaseModel):
     model_name: Optional[str] = Field(None, min_length=1, max_length=20)
     unit_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
     effective_date: Optional[date] = None
+    obsolete_date: Optional[date] = None
 
 class QuotaInDB(QuotaBase):
     """数据库中的定额模型"""

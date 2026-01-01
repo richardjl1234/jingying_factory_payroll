@@ -218,7 +218,7 @@ CREATE TABLE motor_models (
 
 ### 7. quotas - 定额表
 
-**描述**：存储工序的单价定额信息，包括生效日期。
+**描述**：存储工序的单价定额信息，包括生效日期和作废日期。
 
 **表结构**：
 ```sql
@@ -230,6 +230,7 @@ CREATE TABLE quotas (
     model_name VARCHAR(20) NOT NULL,
     unit_price NUMERIC(10, 2) NOT NULL,
     effective_date DATE NOT NULL,
+    obsolete_date DATE NOT NULL DEFAULT '9999-12-31',
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -252,6 +253,7 @@ CREATE TABLE quotas (
 | model_name | VARCHAR(20) | NOT NULL, FOREIGN KEY | 电机型号名称，外键引用motor_models表 |
 | unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
 | effective_date | DATE | NOT NULL | 生效日期 |
+| obsolete_date | DATE | NOT NULL DEFAULT '9999-12-31' | 作废日期，默认值'9999-12-31'表示永久有效 |
 | created_by | INTEGER | NULLABLE, FOREIGN KEY | 创建者ID，外键引用users表（用户删除时设为NULL） |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 

@@ -290,6 +290,7 @@ def main():
                         model_name=model.name,
                         unit_price=unit_price,
                         effective_date=effective_date,
+                        obsolete_date=date(9999, 12, 31),  # 默认值
                         created_by=test_user.id
                     )
                     db.add(quota)

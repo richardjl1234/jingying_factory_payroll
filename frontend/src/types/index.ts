@@ -46,6 +46,7 @@ export interface Quota {
   model_name: string;
   unit_price: number;
   effective_date: string;
+  obsolete_date: string;
   created_by?: number;
   created_at?: string;
   process?: Process;
