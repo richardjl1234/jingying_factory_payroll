@@ -305,24 +305,31 @@
 
 ### 6. 工资记录管理接口 (Salary Records)
 
+**技术说明**: 工资记录功能使用双重数据模型设计：
+- **工作记录表 (work_records)**: 存储基础工作数据（工人、定额、数量、日期）
+- **工资记录视图 (v_salary_records)**: 基于工作记录和相关表的视图，自动计算金额并包含格式化显示信息
+- **API端点**: 使用 `/api/salary-records/` 路径，GET请求从视图读取，POST/PUT/DELETE请求操作工作记录表
+
 #### 6.1 获取工资记录列表
 - **URL**: `GET /api/salary-records/`
-- **描述**: 获取所有工资记录列表
+- **描述**: 从工资记录视图获取所有工资记录列表（包含自动计算的金额和格式化显示信息）
 - **认证**: 需要 Bearer Token
 - **查询参数**:
+  - `worker_code`: (可选) 按工号筛选
+  - `record_date`: (可选) 按记录日期筛选
   - `skip`: 跳过记录数 (默认: 0)
   - `limit`: 返回记录数 (默认: 100)
-- **响应**: SalaryRecord 对象数组（包含 worker, quota, creator 信息）
+- **响应**: SalaryRecord 对象数组（包含 worker, quota, creator 信息以及自动计算的金额和格式化显示字段）
 
 #### 6.2 获取单个工资记录
 - **URL**: `GET /api/salary-records/{id}`
-- **描述**: 根据ID获取工资记录信息
+- **描述**: 根据ID从工资记录视图获取工资记录信息
 - **认证**: 需要 Bearer Token
-- **响应**: SalaryRecord 对象
+- **响应**: SalaryRecord 对象（包含自动计算的金额和格式化显示字段）
 
-#### 6.3 创建工资记录
+#### 6.3 创建工作记录
 - **URL**: `POST /api/salary-records/`
-- **描述**: 创建新工资记录
+- **描述**: 创建新工作记录（存储到 work_records 表）
 - **认证**: 需要 Bearer Token
 - **请求体**:
 ```json
@@ -333,11 +340,11 @@
   "record_date": "2024-01-01"
 }
 ```
-- **响应**: 创建的 SalaryRecord 对象
+- **响应**: WorkRecord 对象（工作记录基础信息）
 
-#### 6.4 更新工资记录
+#### 6.4 更新工作记录
 - **URL**: `PUT /api/salary-records/{id}`
-- **描述**: 更新工资记录信息
+- **描述**: 更新工作记录信息
 - **认证**: 需要 Bearer Token
 - **请求体**:
 ```json
@@ -346,17 +353,17 @@
   "record_date": "2024-01-01"
 }
 ```
-- **响应**: 更新后的 SalaryRecord 对象
+- **响应**: WorkRecord 对象（更新后的工作记录基础信息）
 
-#### 6.5 删除工资记录
+#### 6.5 删除工作记录
 - **URL**: `DELETE /api/salary-records/{id}`
-- **描述**: 删除工资记录
+- **描述**: 删除工作记录
 - **认证**: 需要 Bearer Token
 - **响应**:
 ```json
 {
-  "message": "工资记录删除成功",
-  "id": 1
+  "message": "工作记录删除成功",
+  "record_id": 1
 }
 ```
 

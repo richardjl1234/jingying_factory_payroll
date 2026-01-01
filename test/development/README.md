@@ -82,7 +82,7 @@ The test data includes:
 - 5 process category 2 items
 - 5 motor models
 - 15 quotas
-- 50 salary records
+- 50 work records (stored in work_records table, accessible via v_salary_records view)
 
 ## Troubleshooting
 

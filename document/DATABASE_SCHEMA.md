@@ -58,7 +58,7 @@ CREATE TABLE users (
 
 **关系**：
 - 一对多关系：一个用户可以创建多个定额（quotas）
-- 一对多关系：一个用户可以创建多个工资记录（salary_records）
+- 一对多关系：一个用户可以创建多个工作记录（work_records）
 
 ### 2. workers - 工人表
 
@@ -87,7 +87,7 @@ CREATE TABLE workers (
 - `ix_workers_worker_code` (worker_code)
 
 **关系**：
-- 一对多关系：一个工人可以有多个工资记录（salary_records）
+- 一对多关系：一个工人可以有多个工作记录（work_records）
 
 ### 3. processes - 工序表
 
@@ -267,7 +267,7 @@ CREATE TABLE quotas (
 - 多对一关系：定额属于一个工序类别（process_cat2）
 - 多对一关系：定额属于一个电机型号（motor_models）
 - 多对一关系：定额由一个用户创建（users）
-- 一对多关系：一个定额可以有多个工资记录（salary_records）
+- 一对多关系：一个定额可以有多个工作记录（work_records）
 
 ### 8. work_records - 工作记录表
 
@@ -377,7 +377,7 @@ JOIN motor_models mm ON q.model_name = mm.name;
      │                  │                   │
      │                  │                   │
      │           ┌──────┴──────┐            │
-     │           │salary_records│           │
+     │           │ work_records │           │
      │           ├──────────────┤           │
      └──────────►│  worker_code │◄──────────┘
                  │   quota_id   │
@@ -408,13 +408,14 @@ JOIN motor_models mm ON q.model_name = mm.name;
 
 **关系说明**：
 1. **users → quotas**：一对多关系，一个用户可以创建多个定额
-2. **users → salary_records**：一对多关系，一个用户可以创建多个工资记录
-3. **workers → salary_records**：一对多关系，一个工人可以有多个工资记录
+2. **users → work_records**：一对多关系，一个用户可以创建多个工作记录
+3. **workers → work_records**：一对多关系，一个工人可以有多个工作记录
 4. **processes → quotas**：一对多关系，一个工序可以有多个定额
 5. **process_cat1 → quotas**：一对多关系，一个工段可以有多个定额
 6. **process_cat2 → quotas**：一对多关系，一个工序类别可以有多个定额
 7. **motor_models → quotas**：一对多关系，一个电机型号可以有多个定额
-8. **quotas → salary_records**：一对多关系，一个定额可以有多个工资记录
+8. **quotas → work_records**：一对多关系，一个定额可以有多个工作记录
+9. **work_records → v_salary_records**：工作记录表通过视图提供工资计算和格式化显示
 
 ## 数据完整性规则
 
@@ -458,10 +459,16 @@ INSERT INTO quotas (process_code, cat1_code, cat2_code, model_name, unit_price, 
 VALUES ('P001', 'C101', 'C201', 'A100', 25.50, '2024-01-01', 1);
 ```
 
-### 工资记录数据示例
+### 工作记录数据示例
 ```sql
-INSERT INTO salary_records (worker_code, quota_id, quantity, unit_price, amount, record_date, created_by)
-VALUES ('W001', 1, 100.00, 25.50, 2550.00, '2024-01-01', 1);
+INSERT INTO work_records (worker_code, quota_id, quantity, record_date, created_by)
+VALUES ('W001', 1, 100.00, '2024-01-01', 1);
+```
+
+### 工资记录视图数据示例
+```sql
+-- 通过视图查询工资记录（金额自动计算）
+SELECT * FROM v_salary_records WHERE worker_code = 'W001';
 ```
 
 ## 维护说明

@@ -3,10 +3,7 @@
 ## Test Cases
 
 ### Todo
-- [ ] Test Case 9: New Table Test - Implement comprehensive testing for new table functionality
 
-### In Progress
-- [ ] Test Case 7: Quota/Salary Deletion Test - Reimplement from scratch
 
 ### Completed
 - [x] Basic Login Test

@@ -136,6 +136,9 @@ new_payroll/
 │   │   │   ├── user.py     # 用户管理API
 │   │   │   ├── worker.py   # 工人管理API
 │   │   │   ├── process.py  # 工序管理API
+│   │   │   ├── process_cat1.py  # 工段类别API
+│   │   │   ├── process_cat2.py  # 工序类别API
+│   │   │   ├── motor_model.py   # 电机型号API
 │   │   │   ├── quota.py    # 定额管理API
 │   │   │   ├── salary.py   # 工资记录API
 │   │   │   ├── report.py   # 报表API
@@ -197,26 +200,40 @@ new_payroll/
 - 工人信息的增删改查
 - 工号管理
 
-### 3. 工序管理
-- 工序分类管理（精加工、装配喷漆、绕嵌排）
-- 工序信息维护
+### 3. 工段类别管理
+- 工段分类信息维护（如：精加工、装配喷漆、绕嵌排等）
+- 工段编码和名称管理
 
-### 4. 定额管理
-- 工序定额设置
-- 生效日期管理
+### 4. 工序类别管理
+- 工序分类信息维护
+- 工序类别编码和名称管理
+
+### 5. 电机型号管理
+- 电机型号信息维护
+- 电机型号名称和别名管理
+
+### 6. 工序管理
+- 工序信息维护
+- 工序编码、名称和描述管理
+
+### 7. 定额管理
+- 工序定额设置（关联工序、工段、工序类别、电机型号）
+- 单价和生效日期管理
 - 定额历史记录
 
-### 5. 工资记录
-- 工人工资记录录入
-- 按月份统计
-- 工资计算自动化
+### 8. 工资记录
+- 工人工作记录录入（数量、日期）
+- 工资自动计算（数量 × 单价）
+- 按日期统计和查询
 
-### 6. 报表功能
-- 工资报表生成
-- 统计分析
-- 数据导出
+### 9. 报表功能
+- 工人工资报表生成
+- 工序工作量报表
+- 工资汇总报表
+- 数据导出功能
 
-### 7. 统计功能
+### 10. 统计功能
+- 系统数据统计（用户数、工人数、工序数等）
 - 工序定额统计
 - 工人工资统计
 - 生产效率分析
@@ -314,25 +331,61 @@ npm run build
 3. **processes** - 工序表
    - process_code: 工序编码
    - name: 工序名称
-   - category: 工序类别
    - description: 描述
+   - created_at: 创建时间
 
-4. **quotas** - 定额表
+4. **process_cat1** - 工段类别表
+   - cat1_code: 工段编码
+   - name: 工段名称
+   - description: 工段描述
+   - created_at: 创建时间
+
+5. **process_cat2** - 工序类别表
+   - cat2_code: 工序类别编码
+   - name: 工序类别名称
+   - description: 工序类别描述
+   - created_at: 创建时间
+
+6. **motor_models** - 电机型号表
+   - name: 电机型号名称
+   - aliases: 电机型号别名
+   - description: 电机型号描述
+   - created_at: 创建时间
+
+7. **quotas** - 定额表
    - id: 定额ID
    - process_code: 工序编码
+   - cat1_code: 工段编码
+   - cat2_code: 工序类别编码
+   - model_name: 电机型号名称
    - unit_price: 单价
    - effective_date: 生效日期
    - created_by: 创建人
+   - created_at: 创建时间
 
-5. **salary_records** - 工资记录表
+8. **work_records** - 工作记录表
+   - id: 记录ID
+   - worker_code: 工号
+   - quota_id: 定额ID
+   - quantity: 数量
+   - record_date: 记录日期（YYYY-MM-DD）
+   - created_by: 创建人
+   - created_at: 创建时间
+
+9. **v_salary_records** - 工资记录视图
    - id: 记录ID
    - worker_code: 工号
    - quota_id: 定额ID
    - quantity: 数量
    - unit_price: 单价
-   - amount: 金额
-   - record_date: 记录日期（YYYY-MM）
+   - amount: 金额（自动计算：quantity × unit_price）
+   - record_date: 记录日期
    - created_by: 创建人
+   - created_at: 创建时间
+   - model_display: 电机型号显示
+   - cat1_display: 工段类别显示
+   - cat2_display: 工序类别显示
+   - process_display: 工序显示
 
 ## 使用说明
 
