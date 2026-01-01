@@ -21,7 +21,7 @@ async def browser():
     """Create a Pyppeteer browser instance for each test."""
     # Launch browser with non-headless mode to see the browser
     browser = await launch(
-        headless=False,  # Changed to False to see the browser
+        headless=True,  # Changed to False to see the browser
         args=[
             '--no-sandbox',
             '--disable-setuid-sandbox',

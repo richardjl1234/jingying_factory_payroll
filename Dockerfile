@@ -32,7 +32,7 @@ COPY .env /app/
 
 # 设置环境变量
 ENV PYTHONPATH=/app
-ENV DATABASE_URL=sqlite:///./payroll.db
+ENV DATABASE_URL=mysql+pymysql://jingying_motor:Q!2we34rt56yu78i@localhost/payroll
 
 # 暴露端口
 EXPOSE 8000

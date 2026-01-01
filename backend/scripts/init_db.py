@@ -33,13 +33,23 @@ def create_salary_records_view():
     """创建工资记录视图"""
     db = SessionLocal()
     try:
-        # 检查视图是否已存在
+        # 检查v_salary_records是否已存在（可能是表或视图）
+        # 首先检查是否是视图
         view_exists = db.execute(
-            text("SELECT name FROM sqlite_master WHERE type='view' AND name='v_salary_records'")
+            text("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.VIEWS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'v_salary_records'")
         ).fetchone()
         
-        if not view_exists:
-            # 创建视图
+        # 检查是否是表
+        table_exists = db.execute(
+            text("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'v_salary_records' AND TABLE_TYPE = 'BASE TABLE'")
+        ).fetchone()
+        
+        if view_exists:
+            print("工资记录视图已存在")
+        elif table_exists:
+            print("v_salary_records已作为表存在，跳过视图创建（模型已创建表）")
+        else:
+            # 创建视图 - 使用MySQL的CONCAT函数代替SQLite的||操作符
             create_view_sql = """
             CREATE VIEW v_salary_records AS
             SELECT 
@@ -53,13 +63,13 @@ def create_salary_records_view():
                 wr.created_by,
                 wr.created_at,
                 -- 电机型号: 型号名称 (别名)
-                mm.name || ' (' || COALESCE(mm.aliases, '') || ')' AS model_display,
+                CONCAT(mm.name, ' (', COALESCE(mm.aliases, ''), ')') AS model_display,
                 -- 工段类别: 编码 (名称)
-                pc1.cat1_code || ' (' || pc1.name || ')' AS cat1_display,
+                CONCAT(pc1.cat1_code, ' (', pc1.name, ')') AS cat1_display,
                 -- 工序类别: 编码 (名称)
-                pc2.cat2_code || ' (' || pc2.name || ')' AS cat2_display,
+                CONCAT(pc2.cat2_code, ' (', pc2.name, ')') AS cat2_display,
                 -- 工序名称: 编码 (名称)
-                p.process_code || ' (' || p.name || ')' AS process_display
+                CONCAT(p.process_code, ' (', p.name, ')') AS process_display
             FROM work_records wr
             JOIN quotas q ON wr.quota_id = q.id
             JOIN processes p ON q.process_code = p.process_code
@@ -70,47 +80,13 @@ def create_salary_records_view():
             db.execute(text(create_view_sql))
             db.commit()
             print("工资记录视图创建成功!")
-        else:
-            print("工资记录视图已存在")
     except Exception as e:
         print(f"创建工资记录视图时出错: {e}")
-        # 如果视图创建失败，尝试删除并重新创建
-        try:
-            print("尝试删除现有视图并重新创建...")
-            db.execute(text("DROP VIEW IF EXISTS v_salary_records"))
-            db.commit()
-            create_view_sql = """
-            CREATE VIEW v_salary_records AS
-            SELECT 
-                wr.id,
-                wr.worker_code,
-                wr.quota_id,
-                wr.quantity,
-                q.unit_price,
-                (wr.quantity * q.unit_price) AS amount,
-                wr.record_date,
-                wr.created_by,
-                wr.created_at,
-                -- 电机型号: 型号名称 (别名)
-                mm.name || ' (' || COALESCE(mm.aliases, '') || ')' AS model_display,
-                -- 工段类别: 编码 (名称)
-                pc1.cat1_code || ' (' || pc1.name || ')' AS cat1_display,
-                -- 工序类别: 编码 (名称)
-                pc2.cat2_code || ' (' || pc2.name || ')' AS cat2_display,
-                -- 工序名称: 编码 (名称)
-                p.process_code || ' (' || p.name || ')' AS process_display
-            FROM work_records wr
-            JOIN quotas q ON wr.quota_id = q.id
-            JOIN processes p ON q.process_code = p.process_code
-            JOIN process_cat1 pc1 ON q.cat1_code = pc1.cat1_code
-            JOIN process_cat2 pc2 ON q.cat2_code = pc2.cat2_code
-            JOIN motor_models mm ON q.model_name = mm.name
-            """
-            db.execute(text(create_view_sql))
-            db.commit()
-            print("工资记录视图重新创建成功!")
-        except Exception as e2:
-            print(f"重新创建视图失败: {e2}")
+        # 如果视图创建失败，可能是表已存在，这没关系
+        if "already exists" in str(e):
+            print("v_salary_records已存在（可能是表），跳过视图创建")
+        else:
+            print(f"未知错误: {e}")
     finally:
         db.close()
 

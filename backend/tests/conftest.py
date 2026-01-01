@@ -7,11 +7,9 @@ from app.main import app
 from app.database import get_db, Base
 from app import models
 
-# 创建测试数据库引擎
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_payroll.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+# 创建测试数据库引擎 - 使用MySQL测试数据库
+SQLALCHEMY_DATABASE_URL = "mysql+pymysql://jingying_motor:Q!2we34rt56yu78i@localhost/payroll_test"
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 # 创建测试会话本地类
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

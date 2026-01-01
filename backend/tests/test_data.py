@@ -14,12 +14,9 @@ from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app import models
 
-# 数据库连接配置
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_payroll.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, 
-    connect_args={"check_same_thread": False}
-)
+# 数据库连接配置 - 使用MySQL测试数据库
+SQLALCHEMY_DATABASE_URL = "mysql+pymysql://jingying_motor:Q!2we34rt56yu78i@localhost/payroll_test"
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 # 创建会话本地类
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
