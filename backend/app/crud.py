@@ -278,7 +278,25 @@ def get_latest_quota(db: Session, process_code: str, effective_date: date = None
 
 def create_quota(db: Session, quota: schemas.QuotaCreate, created_by: int) -> models.Quota:
     """创建定额"""
-    logger.debug(f"创建定额: process_code={quota.process_code}, unit_price={quota.unit_price}, effective_date={quota.effective_date}, created_by={created_by}")
+    logger.debug(f"创建定额: process_code={quota.process_code}, cat1_code={quota.cat1_code}, cat2_code={quota.cat2_code}, model_name={quota.model_name}, unit_price={quota.unit_price}, effective_date={quota.effective_date}, created_by={created_by}")
+    
+    # 1. 查找是否存在相同组合且obsolete_date为'9999-12-31'的记录
+    existing_quota = db.query(models.Quota).filter(
+        models.Quota.process_code == quota.process_code,
+        models.Quota.cat1_code == quota.cat1_code,
+        models.Quota.cat2_code == quota.cat2_code,
+        models.Quota.model_name == quota.model_name,
+        models.Quota.obsolete_date == '9999-12-31'
+    ).first()
+    
+    if existing_quota:
+        # 2. 如果存在，更新其obsolete_date为当前定额的effective_date的前一天
+        from datetime import timedelta
+        new_obsolete_date = quota.effective_date - timedelta(days=1)
+        existing_quota.obsolete_date = new_obsolete_date
+        logger.warning(f"更新现有定额的作废日期: 定额ID={existing_quota.id}, 新作废日期={new_obsolete_date}, 组合(process_code={quota.process_code}, cat1_code={quota.cat1_code}, cat2_code={quota.cat2_code}, model_name={quota.model_name})")
+    
+    # 3. 创建新的定额
     db_quota = models.Quota(
         **quota.model_dump(),
         created_by=created_by
