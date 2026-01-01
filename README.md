@@ -264,6 +264,64 @@ new_payroll/
 - 工人工资统计
 - 生产效率分析
 
+## 安全配置
+
+### 🔐 数据库凭证安全最佳实践
+
+系统已实现安全的数据库凭证管理，遵循以下最佳实践：
+
+1. **环境变量管理**：敏感信息存储在环境变量中，不硬编码在代码中
+2. **Git忽略**：`.env` 文件已添加到 `.gitignore`，防止敏感信息泄露
+3. **安全脚本**：提供交互式配置脚本，安全输入密码
+4. **Docker安全**：Docker容器支持运行时环境变量注入
+
+### 环境变量配置
+
+#### 方法一：使用配置脚本（推荐）
+```bash
+cd backend
+python setup_env.py
+```
+脚本将引导您安全地配置：
+- 数据库连接信息（主机、端口、用户名、密码）
+- 安全密钥（自动生成）
+- 其他必要配置
+
+#### 方法二：手动配置
+1. 复制示例文件：
+```bash
+cp backend/.env.example backend/.env
+```
+
+2. 编辑 `.env` 文件，设置您的配置：
+```env
+# Database Configuration
+DATABASE_URL=mysql+pymysql://username:password@localhost:3306/database_name
+
+# Security Configuration
+SECRET_KEY=your-secure-secret-key-here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Project Configuration
+PROJECT_ROOT=/path/to/project
+```
+
+#### 方法三：Docker环境变量
+运行Docker容器时传递环境变量：
+```bash
+docker run -d -p 8000:8000 \
+  -e DATABASE_URL="mysql+pymysql://username:password@host:port/database" \
+  -e SECRET_KEY="your-secret-key" \
+  payroll-system
+```
+
+### 检查环境配置
+```bash
+cd backend
+python setup_env.py check
+```
+
 ## 安装与运行
 
 ### 后端安装
@@ -292,12 +350,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-5. 初始化数据库
+5. 配置环境变量（使用上述任一方法）
+
+6. 初始化数据库
 ```bash
 python scripts/init_db.py
 ```
 
-6. 运行后端服务
+7. 运行后端服务
 ```bash
 python run.py
 ```

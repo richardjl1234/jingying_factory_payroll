@@ -25,17 +25,18 @@ COPY backend/ /app/backend/
 # 复制前端构建好的静态资源
 COPY frontend/dist/ /app/frontend/dist/
 
-# 复制根目录的文件
-COPY .env /app/
-
-
+# 复制环境变量示例文件
+COPY backend/.env.example /app/backend/.env.example
 
 # 设置环境变量
 ENV PYTHONPATH=/app
-ENV DATABASE_URL=mysql+pymysql://jingying_motor:Q!2we34rt56yu78i@localhost/payroll
 
 # 暴露端口
 EXPOSE 8000
 
-# 启动命令
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8000/api/health', timeout=2)" || exit 1
+
+# 启动命令 - 使用环境变量
 CMD ["python", "backend/run.py"]
