@@ -1,6 +1,9 @@
 
+# to run the frontend 
 npm run dev
 npm run build
+
+
 
 # to start the backend server
 cd e:/jianglei/trae/new_payroll
@@ -9,3 +12,8 @@ cd e:/jianglei/trae/new_payroll
 cd backend
 venv\Scripts\activate
 python run.py
+
+
+# to get the public ip address
+curl ifconfig.me
+
