@@ -1,84 +1,84 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+"""
+Process management routes for Flask application
+"""
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.database import db
+from app import crud
 
-from .. import crud, schemas
-from ..database import get_db
-from ..dependencies import get_current_active_user
+process_bp = Blueprint('process', __name__)
 
-# 创建路由
-router = APIRouter(
-    prefix="/processes",
-    tags=["processes"],
-    responses={404: {"description": "Not found"}},
-)
 
-@router.get("/", response_model=list[schemas.Process])
-def read_processes(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """获取工序列表"""
-    return crud.get_processes(db, skip=skip, limit=limit)
+def process_to_dict(process):
+    return {
+        "process_code": process.process_code,
+        "name": process.name,
+        "description": process.description,
+        "created_at": process.created_at.isoformat() if process.created_at else None,
+        "updated_at": process.updated_at.isoformat() if process.updated_at else None
+    }
 
-@router.get("/{process_code}", response_model=schemas.Process)
-def read_process(
-    process_code: str,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """根据工序编码获取工序信息"""
-    process = crud.get_process_by_code(db, process_code=process_code)
+
+@process_bp.route('/processes/', methods=['GET'])
+@jwt_required()
+def get_processes():
+    skip = request.args.get('skip', 0, type=int)
+    limit = request.args.get('limit', 100, type=int)
+    processes = crud.get_processes(db.session, skip=skip, limit=limit)
+    return jsonify([process_to_dict(p) for p in processes])
+
+
+@process_bp.route('/processes/<process_code>', methods=['GET'])
+@jwt_required()
+def get_process(process_code):
+    process = crud.get_process_by_code(db.session, process_code=process_code)
     if not process:
-        raise HTTPException(status_code=404, detail="Process not found")
-    return process
+        return jsonify({"detail": "Process not found"}), 404
+    return jsonify(process_to_dict(process))
 
-@router.post("/", response_model=schemas.Process, status_code=status.HTTP_201_CREATED)
-def create_process(
-    process: schemas.ProcessCreate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """创建新工序"""
-    # 检查工序编码是否已存在
-    if crud.get_process_by_code(db, process_code=process.process_code):
-        raise HTTPException(status_code=400, detail="Process code already exists")
-    
-    # 检查工序名称是否已存在
-    if crud.get_process_by_name(db, process_name=process.name):
-        raise HTTPException(status_code=400, detail="Process name already exists")
-    
-    return crud.create_process(db=db, process=process)
 
-@router.put("/{process_code}", response_model=schemas.Process)
-def update_process(
-    process_code: str,
-    process_update: schemas.ProcessUpdate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """更新工序信息"""
-    # 检查工序名称是否已存在（如果更新了名称）
+@process_bp.route('/processes/', methods=['POST'])
+@jwt_required()
+def create_process():
+    data = request.get_json()
+    process_code = data.get('process_code')
+    name = data.get('name')
+    description = data.get('description')
+    
+    if not process_code or not name:
+        return jsonify({"detail": "Process code and name are required"}), 400
+    
+    if crud.get_process_by_code(db.session, process_code=process_code):
+        return jsonify({"detail": "Process code already exists"}), 400
+    
+    if crud.get_process_by_name(db.session, process_name=name):
+        return jsonify({"detail": "Process name already exists"}), 400
+    
+    from app.schemas import ProcessCreate
+    process = crud.create_process(db.session, ProcessCreate(process_code=process_code, name=name, description=description))
+    return jsonify(process_to_dict(process)), 201
+
+
+@process_bp.route('/processes/<process_code>', methods=['PUT'])
+@jwt_required()
+def update_process(process_code):
+    data = request.get_json()
+    from app.schemas import ProcessUpdate
+    process_update = ProcessUpdate(**data)
     if process_update.name:
-        existing_process = crud.get_process_by_name(db, process_name=process_update.name)
-        if existing_process and existing_process.process_code != process_code:
-            raise HTTPException(status_code=400, detail="Process name already exists")
-    
-    process = crud.update_process(db, process_code=process_code, process_update=process_update)
+        existing = crud.get_process_by_name(db.session, process_update.name)
+        if existing and existing.process_code != process_code:
+            return jsonify({"detail": "Process name already exists"}), 400
+    process = crud.update_process(db.session, process_code=process_code, process_update=process_update)
     if not process:
-        raise HTTPException(status_code=404, detail="Process not found")
-    
-    return process
+        return jsonify({"detail": "Process not found"}), 404
+    return jsonify(process_to_dict(process))
 
-@router.delete("/{process_code}")
-def delete_process(
-    process_code: str,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """删除工序"""
-    process = crud.delete_process(db, process_code=process_code)
-    if not process:
-        raise HTTPException(status_code=404, detail="Process not found")
-    return {"message": "工序删除成功", "process_code": process_code}
+
+@process_bp.route('/processes/<process_code>', methods=['DELETE'])
+@jwt_required()
+def delete_process(process_code):
+    result = crud.delete_process(db.session, process_code=process_code)
+    if not result:
+        return jsonify({"detail": "Process not found"}), 404
+    return jsonify({"message": "工序删除成功", "process_code": process_code})

@@ -1,71 +1,95 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+"""
+Worker management routes for Flask application
+"""
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.database import db
+from app import crud
 
-from .. import crud, schemas
-from ..database import get_db
-from ..dependencies import get_current_active_user
+worker_bp = Blueprint('worker', __name__)
 
-# 创建路由
-router = APIRouter(
-    prefix="/workers",
-    tags=["workers"],
-    responses={404: {"description": "Not found"}},
-)
 
-@router.get("/", response_model=list[schemas.Worker])
-def read_workers(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """获取工人列表"""
-    return crud.get_workers(db, skip=skip, limit=limit)
+def worker_to_dict(worker):
+    """Convert Worker model to dictionary"""
+    return {
+        "worker_code": worker.worker_code,
+        "name": worker.name,
+        "created_at": worker.created_at.isoformat() if worker.created_at else None,
+        "updated_at": worker.updated_at.isoformat() if worker.updated_at else None
+    }
 
-@router.get("/{worker_code}", response_model=schemas.Worker)
-def read_worker(
-    worker_code: str,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """根据工号获取工人信息"""
-    worker = crud.get_worker_by_code(db, worker_code=worker_code)
+
+@worker_bp.route('/workers/', methods=['GET'])
+@jwt_required()
+def get_workers():
+    """Get worker list"""
+    skip = request.args.get('skip', 0, type=int)
+    limit = request.args.get('limit', 100, type=int)
+    
+    workers = crud.get_workers(db.session, skip=skip, limit=limit)
+    return jsonify([worker_to_dict(worker) for worker in workers])
+
+
+@worker_bp.route('/workers/<worker_code>', methods=['GET'])
+@jwt_required()
+def get_worker(worker_code):
+    """Get worker by code"""
+    worker = crud.get_worker_by_code(db.session, worker_code=worker_code)
     if not worker:
-        raise HTTPException(status_code=404, detail="Worker not found")
-    return worker
+        return jsonify({"detail": "Worker not found"}), 404
+    return jsonify(worker_to_dict(worker))
 
-@router.post("/", response_model=schemas.Worker, status_code=status.HTTP_201_CREATED)
-def create_worker(
-    worker: schemas.WorkerCreate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """创建新工人"""
-    if crud.get_worker_by_code(db, worker_code=worker.worker_code):
-        raise HTTPException(status_code=400, detail="Worker code already exists")
-    return crud.create_worker(db=db, worker=worker)
 
-@router.put("/{worker_code}", response_model=schemas.Worker)
-def update_worker(
-    worker_code: str,
-    worker_update: schemas.WorkerUpdate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """更新工人信息"""
-    worker = crud.update_worker(db, worker_code=worker_code, worker_update=worker_update)
+@worker_bp.route('/workers/', methods=['POST'])
+@jwt_required()
+def create_worker():
+    """Create new worker"""
+    data = request.get_json()
+    
+    worker_code = data.get('worker_code')
+    name = data.get('name')
+    
+    if not worker_code or not name:
+        return jsonify({"detail": "Worker code and name are required"}), 400
+    
+    if len(worker_code) < 1 or len(worker_code) > 20:
+        return jsonify({"detail": "Worker code must be between 1 and 20 characters"}), 400
+    
+    if len(name) < 1 or len(name) > 50:
+        return jsonify({"detail": "Name must be between 1 and 50 characters"}), 400
+    
+    if crud.get_worker_by_code(db.session, worker_code=worker_code):
+        return jsonify({"detail": "Worker code already exists"}), 400
+    
+    from app.schemas import WorkerCreate
+    worker_data = WorkerCreate(worker_code=worker_code, name=name)
+    worker = crud.create_worker(db.session, worker=worker_data)
+    
+    return jsonify(worker_to_dict(worker)), 201
+
+
+@worker_bp.route('/workers/<worker_code>', methods=['PUT'])
+@jwt_required()
+def update_worker(worker_code):
+    """Update worker info"""
+    data = request.get_json()
+    
+    from app.schemas import WorkerUpdate
+    worker_update = WorkerUpdate(**data)
+    
+    worker = crud.update_worker(db.session, worker_code=worker_code, worker_update=worker_update)
     if not worker:
-        raise HTTPException(status_code=404, detail="Worker not found")
-    return worker
+        return jsonify({"detail": "Worker not found"}), 404
+    
+    return jsonify(worker_to_dict(worker))
 
-@router.delete("/{worker_code}")
-def delete_worker(
-    worker_code: str,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """删除工人"""
-    worker = crud.delete_worker(db, worker_code=worker_code)
-    if not worker:
-        raise HTTPException(status_code=404, detail="Worker not found")
-    return {"message": "工人删除成功", "worker_code": worker_code}
+
+@worker_bp.route('/workers/<worker_code>', methods=['DELETE'])
+@jwt_required()
+def delete_worker(worker_code):
+    """Delete worker"""
+    result = crud.delete_worker(db.session, worker_code=worker_code)
+    if not result:
+        return jsonify({"detail": "Worker not found"}), 404
+    
+    return jsonify({"message": "工人删除成功", "worker_code": worker_code})

@@ -1,41 +1,39 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+"""
+Statistics routes for Flask application
+"""
+from flask import Blueprint, jsonify
 from sqlalchemy import func
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.database import db
+from app.models import User
 
-from .. import models
-from ..database import get_db
-from ..dependencies import get_report_user
+stats_bp = Blueprint('stats', __name__)
 
-# 创建路由
-router = APIRouter(
-    prefix="/stats",
-    tags=["statistics"],
-    responses={404: {"description": "Not found"}},
-)
 
-@router.get("/")
-def get_statistics(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_report_user)
-):
+def check_report_user():
+    user = db.session.query(User).get(int(get_jwt_identity()))
+    if not user or user.role not in ['admin', 'report', 'statistician']:
+        return False, jsonify({"detail": "Not enough permissions"}), 403
+    return True, user
+
+
+@stats_bp.route('/api/stats/', methods=['GET'])
+@jwt_required()
+def get_statistics():
     """获取系统统计数据"""
-    # 获取各表的记录数
-    user_count = db.query(func.count(models.User.id)).scalar()
-    worker_count = db.query(func.count(models.Worker.worker_code)).scalar()
-    process_cat1_count = db.query(func.count(models.ProcessCat1.cat1_code)).scalar()
-    process_cat2_count = db.query(func.count(models.ProcessCat2.cat2_code)).scalar()
-    model_count = db.query(func.count(models.MotorModel.name)).scalar()
-    process_count = db.query(func.count(models.Process.process_code)).scalar()
-    quota_count = db.query(func.count(models.Quota.id)).scalar()
-    salary_record_count = db.query(func.count(models.WorkRecord.id)).scalar()
+    ok, result = check_report_user()
+    if not ok:
+        return result
     
-    return {
-        "user_count": user_count,
-        "worker_count": worker_count,
-        "process_cat1_count": process_cat1_count,
-        "process_cat2_count": process_cat2_count,
-        "model_count": model_count,
-        "process_count": process_count,
-        "quota_count": quota_count,
-        "salary_record_count": salary_record_count
-    }
+    from app import models
+    return jsonify({
+        "user_count": db.session.query(func.count(models.User.id)).scalar() or 0,
+        "worker_count": db.session.query(func.count(models.Worker.worker_code)).scalar() or 0,
+        "process_cat1_count": db.session.query(func.count(models.ProcessCat1.cat1_code)).scalar() or 0,
+        "process_cat2_count": db.session.query(func.count(models.ProcessCat2.cat2_code)).scalar() or 0,
+        "model_count": db.session.query(func.count(models.MotorModel.name)).scalar() or 0,
+        "process_count": db.session.query(func.count(models.Process.process_code)).scalar() or 0,
+        "quota_count": db.session.query(func.count(models.Quota.id)).scalar() or 0,
+        "salary_record_count": db.session.query(func.count(models.WorkRecord.id)).scalar() or 0,
+        "report_count": 0  # Placeholder: no report table exists yet
+    })

@@ -143,6 +143,7 @@ export const statsAPI = {
     process_count: number;
     quota_count: number;
     salary_record_count: number;
+    report_count: number;
   }> => api.get('/stats/')
 };
 

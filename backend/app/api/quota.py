@@ -1,98 +1,86 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+"""
+Quota management routes for Flask application
+"""
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.database import db
+from app import crud
+from datetime import datetime
 
-from .. import crud, schemas
-from ..database import get_db
-from ..dependencies import get_current_active_user
+quota_bp = Blueprint('quota', __name__)
 
-# 创建路由
-router = APIRouter(
-    prefix="/quotas",
-    tags=["quotas"],
-    responses={404: {"description": "Not found"}},
-)
 
-@router.get("/", response_model=list[schemas.Quota])
-def read_quotas(
-    process_code: str = None,
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """获取定额列表"""
-    return crud.get_quotas(db, process_code=process_code, skip=skip, limit=limit)
+def quota_to_dict(quota):
+    return {
+        "id": quota.id,
+        "process_code": quota.process_code,
+        "cat1_code": quota.cat1_code,
+        "cat2_code": quota.cat2_code,
+        "model_name": quota.model_name,
+        "unit_price": float(quota.unit_price) if quota.unit_price else None,
+        "effective_date": quota.effective_date.isoformat() if quota.effective_date else None,
+        "obsolete_date": quota.obsolete_date.isoformat() if quota.obsolete_date else None,
+        "created_by": quota.created_by,
+        "created_at": quota.created_at.isoformat() if quota.created_at else None
+    }
 
-@router.get("/{quota_id}", response_model=schemas.Quota)
-def read_quota(
-    quota_id: int,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """根据ID获取定额信息"""
-    quota = crud.get_quota_by_id(db, quota_id=quota_id)
+
+@quota_bp.route('/quotas/', methods=['GET'])
+@jwt_required()
+def get_quotas():
+    process_code = request.args.get('process_code')
+    skip = request.args.get('skip', 0, type=int)
+    limit = request.args.get('limit', 100, type=int)
+    quotas = crud.get_quotas(db.session, process_code=process_code, skip=skip, limit=limit)
+    return jsonify([quota_to_dict(q) for q in quotas])
+
+
+@quota_bp.route('/quotas/<int:quota_id>', methods=['GET'])
+@jwt_required()
+def get_quota(quota_id):
+    quota = crud.get_quota_by_id(db.session, quota_id=quota_id)
     if not quota:
-        raise HTTPException(status_code=404, detail="Quota not found")
-    return quota
+        return jsonify({"detail": "Quota not found"}), 404
+    return jsonify(quota_to_dict(quota))
 
-@router.post("/", response_model=schemas.Quota, status_code=status.HTTP_201_CREATED)
-def create_quota(
-    quota: schemas.QuotaCreate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """创建新定额"""
-    # 检查工序是否存在
-    if not crud.get_process_by_code(db, process_code=quota.process_code):
-        raise HTTPException(status_code=400, detail="Process not found")
-    
-    # 检查工段类别是否存在
-    if not crud.get_process_cat1_by_code(db, cat1_code=quota.cat1_code):
-        raise HTTPException(status_code=400, detail="Process category 1 not found")
-    
-    # 检查工序类别是否存在
-    if not crud.get_process_cat2_by_code(db, cat2_code=quota.cat2_code):
-        raise HTTPException(status_code=400, detail="Process category 2 not found")
-    
-    # 检查电机型号是否存在
-    if not crud.get_motor_model_by_name(db, name=quota.model_name):
-        raise HTTPException(status_code=400, detail="Motor model not found")
-    
-    return crud.create_quota(db=db, quota=quota, created_by=current_user.id)
 
-@router.put("/{quota_id}", response_model=schemas.Quota)
-def update_quota(
-    quota_id: int,
-    quota_update: schemas.QuotaUpdate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """更新定额信息"""
-    quota = crud.update_quota(db, quota_id=quota_id, quota_update=quota_update)
+@quota_bp.route('/quotas/latest/<process_code>', methods=['GET'])
+@jwt_required()
+def get_latest_quota(process_code):
+    quota = crud.get_latest_quota(db.session, process_code=process_code)
     if not quota:
-        raise HTTPException(status_code=404, detail="Quota not found")
-    return quota
+        return jsonify({"detail": "No quota found"}), 404
+    return jsonify(quota_to_dict(quota))
 
-@router.delete("/{quota_id}")
-def delete_quota(
-    quota_id: int,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """删除定额"""
-    quota = crud.delete_quota(db, quota_id=quota_id)
-    if not quota:
-        raise HTTPException(status_code=404, detail="Quota not found")
-    return {"message": "定额删除成功", "quota_id": quota_id}
 
-@router.get("/latest/{process_code}", response_model=schemas.Quota)
-def get_latest_quota(
-    process_code: str,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """获取指定工序的最新定额"""
-    quota = crud.get_latest_quota(db, process_code=process_code)
+@quota_bp.route('/quotas/', methods=['POST'])
+@jwt_required()
+def create_quota():
+    data = request.get_json()
+    if not all([data.get('process_code'), data.get('cat1_code'), data.get('cat2_code'), data.get('model_name'), data.get('unit_price'), data.get('effective_date')]):
+        return jsonify({"detail": "All fields are required"}), 400
+    
+    from app.schemas import QuotaCreate
+    quota_data = QuotaCreate(**data)
+    quota = crud.create_quota(db.session, quota=quota_data, created_by=get_jwt_identity())
+    return jsonify(quota_to_dict(quota)), 201
+
+
+@quota_bp.route('/quotas/<int:quota_id>', methods=['PUT'])
+@jwt_required()
+def update_quota(quota_id):
+    from app.schemas import QuotaUpdate
+    data = request.get_json()
+    quota = crud.update_quota(db.session, quota_id=quota_id, quota_update=QuotaUpdate(**data))
     if not quota:
-        raise HTTPException(status_code=404, detail="No quota found for this process")
-    return quota
+        return jsonify({"detail": "Quota not found"}), 404
+    return jsonify(quota_to_dict(quota))
+
+
+@quota_bp.route('/quotas/<int:quota_id>', methods=['DELETE'])
+@jwt_required()
+def delete_quota(quota_id):
+    result = crud.delete_quota(db.session, quota_id=quota_id)
+    if not result:
+        return jsonify({"detail": "Quota not found"}), 404
+    return jsonify({"message": "定额删除成功", "quota_id": quota_id})

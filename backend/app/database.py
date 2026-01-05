@@ -1,49 +1,50 @@
+"""
+Database configuration for Flask application
+"""
 import logging
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
+from config import Config
 from dotenv import load_dotenv
 import os
 
-logger = logging.getLogger(__name__)
-
-# 加载环境变量
-logger.debug("加载环境变量...")
 load_dotenv()
 
-# 获取数据库URL - 必须从环境变量设置，无默认值
+logger = logging.getLogger(__name__)
+
+# Create SQLAlchemy instance
+db = SQLAlchemy()
+
+# Create declarative base for models
+Base = declarative_base()
+
+# Get database URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is not set")
-    
-logger.debug(f"数据库URL: {DATABASE_URL}")
 
-# 创建数据库引擎
-logger.debug("创建数据库引擎...")
+# Create engine for model creation
 engine = create_engine(DATABASE_URL)
-logger.debug(f"数据库引擎创建完成: {engine}")
-
-# 创建会话本地类
-logger.debug("创建会话本地类...")
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-logger.debug("会话本地类创建完成")
 
-# 创建基础类
-Base = declarative_base()
-logger.debug("基础类创建完成")
 
-# 依赖项：获取数据库会话
+def init_db(app):
+    """Initialize database with Flask app"""
+    db.init_app(app)
+    
+    with app.app_context():
+        # Create all tables
+        from app import models
+        models.Base.metadata.create_all(bind=engine)
+        logger.debug("Database tables created successfully")
+
+
 def get_db():
-    """获取数据库会话"""
-    logger.debug("获取数据库会话...")
-    db = SessionLocal()
-    try:
-        logger.debug("数据库会话已创建，准备yield")
-        yield db
-        logger.debug("数据库会话使用完成")
-    except Exception as e:
-        logger.error(f"数据库会话发生错误: {e}", exc_info=True)
-        raise
-    finally:
-        logger.debug("关闭数据库会话")
-        db.close()
+    """Get database session for use in route handlers"""
+    return db.session
+
+
+def close_db(exception=None):
+    """Close database session"""
+    db.session.remove()

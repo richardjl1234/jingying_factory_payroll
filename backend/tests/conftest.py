@@ -1,126 +1,61 @@
+"""
+Test configuration for Flask application
+"""
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from fastapi.testclient import TestClient
-
-from app.main import app
-from app.database import get_db, Base
-from app import models
-
-# 创建测试数据库引擎 - 使用MySQL测试数据库
-SQLALCHEMY_DATABASE_URL = "mysql+pymysql://jingying_motor:Q!2we34rt56yu78i@localhost/payroll_test"
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-
-# 创建测试会话本地类
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from flask import Flask
+from app import create_app
+from app.database import db
+from app.models import User
+from app.utils.auth import get_password_hash
 
 
 @pytest.fixture(scope="function")
-def test_db():
-    """创建测试数据库和会话"""
-    # 创建所有表
-    Base.metadata.create_all(bind=engine)
+def app():
+    """Create application for testing"""
+    app = create_app('default')
+    app.config['TESTING'] = True
+    app.config['WTF_CSRF_ENABLED'] = False
     
-    # 创建数据库会话
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        # 关闭会话并删除所有表
-        db.close()
-        Base.metadata.drop_all(bind=engine)
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.session.remove()
+        db.drop_all()
 
 
 @pytest.fixture(scope="function")
-def client(test_db):
-    """创建测试客户端"""
-    # 依赖覆盖：使用测试数据库会话
-    def override_get_db():
-        try:
-            yield test_db
-        finally:
-            test_db.close()
-    
-    app.dependency_overrides[get_db] = override_get_db
-    
-    # 创建测试客户端
-    with TestClient(app) as c:
-        yield c
-    
-    # 清除依赖覆盖
-    app.dependency_overrides.clear()
+def client(app):
+    """Create test client"""
+    return app.test_client()
 
 
 @pytest.fixture(scope="function")
-def test_user(test_db):
-    """创建测试用户"""
-    from app.utils.auth import get_password_hash
-    
-    user = models.User(
-        username="testuser",
-        name="Test User",
-        role="admin",
-        password=get_password_hash("testpass123"),
-        need_change_password=False
-    )
-    
-    test_db.add(user)
-    test_db.commit()
-    test_db.refresh(user)
-    
-    return user
+def test_user(app):
+    """Create test user"""
+    with app.app_context():
+        user = User(
+            username="testuser",
+            name="Test User",
+            role="admin",
+            password=get_password_hash("testpass123"),
+            need_change_password=False
+        )
+        db.session.add(user)
+        db.session.commit()
+        db.session.refresh(user)
+        return user
 
 
 @pytest.fixture(scope="function")
-def test_worker(test_db):
-    """创建测试工人"""
-    worker = models.Worker(
-        worker_code="TEST001",
-        name="Test Worker",
-        gender="男",
-        age=30,
-        department="生产部",
-        position="操作工",
-        phone="13800138000",
-        status="在职"
-    )
+def auth_headers(test_user):
+    """Create authorization headers for test user"""
+    from flask_jwt_extended import create_access_token
+    from datetime import timedelta
     
-    test_db.add(worker)
-    test_db.commit()
-    test_db.refresh(worker)
-    
-    return worker
-
-
-@pytest.fixture(scope="function")
-def test_process(test_db):
-    """创建测试工序"""
-    process = models.Process(
-        process_code="TESTP01",
-        name="测试工序",
-        category="精加工"
-    )
-    
-    test_db.add(process)
-    test_db.commit()
-    test_db.refresh(process)
-    
-    return process
-
-
-@pytest.fixture(scope="function")
-def test_quota(test_db, test_process):
-    """创建测试定额"""
-    from decimal import Decimal
-    
-    quota = models.Quota(
-        process_code=test_process.code,
-        unit_price=Decimal("10.50"),
-        effective_date="2023-01-01"
-    )
-    
-    test_db.add(quota)
-    test_db.commit()
-    test_db.refresh(quota)
-    
-    return quota
+    app = create_app('default')
+    with app.app_context():
+        access_token = create_access_token(
+            identity=test_user.id,
+            expires_delta=timedelta(minutes=30)
+        )
+        return {"Authorization": f"Bearer {access_token}"}

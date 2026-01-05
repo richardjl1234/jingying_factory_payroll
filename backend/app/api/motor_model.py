@@ -1,80 +1,68 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from typing import List
+"""
+Motor model routes for Flask application
+"""
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required
+from app.database import db
+from app import crud
 
-from .. import crud, schemas
-from ..schemas import MotorModelSchema, MotorModelSchemaCreate, MotorModelSchemaUpdate
-from ..database import get_db
-from ..dependencies import get_current_active_user
+motor_model_bp = Blueprint('motor_model', __name__)
 
-# 创建路由
-router = APIRouter(
-    prefix="/motor-models",
-    tags=["motor-models"],
-    responses={404: {"description": "Not found"}},
-)
 
-@router.get("/test")
-def test_endpoint():
-    """测试端点"""
-    return {"message": "motor-models endpoint is working"}
+def model_to_dict(model):
+    return {
+        "name": model.name,
+        "aliases": model.aliases,
+        "description": model.description,
+        "created_at": model.created_at.isoformat() if model.created_at else None,
+        "updated_at": model.updated_at.isoformat() if model.updated_at else None
+    }
 
-@router.get("/", response_model=list[MotorModelSchema])
-def read_motor_model_list(
-    skip: int = 0,
-    limit: int = 100,
-    db: Session = Depends(get_db)
-):
-    """获取电机型号列表"""
-    return crud.get_motor_model_list(db, skip=skip, limit=limit)
 
-@router.get("/{name}", response_model=MotorModelSchema)
-def read_motor_model(
-    name: str,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """根据电机型号名称获取电机型号信息"""
-    motor_model = crud.get_motor_model_by_name(db, name=name)
-    if not motor_model:
-        raise HTTPException(status_code=404, detail="Motor model not found")
-    return motor_model
+@motor_model_bp.route('/motor-models/test', methods=['GET'])
+def test():
+    return jsonify({"message": "motor-models endpoint is working"})
 
-@router.post("/", response_model=MotorModelSchema, status_code=status.HTTP_201_CREATED)
-def create_motor_model(
-    motor_model: MotorModelSchemaCreate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """创建新电机型号"""
-    # 检查电机型号名称是否已存在
-    if crud.get_motor_model_by_name(db, name=motor_model.name):
-        raise HTTPException(status_code=400, detail="Motor model name already exists")
-    
-    return crud.create_motor_model(db=db, motor_model=motor_model)
 
-@router.put("/{name}", response_model=MotorModelSchema)
-def update_motor_model(
-    name: str,
-    motor_model_update: MotorModelSchemaUpdate,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """更新电机型号信息"""
-    motor_model = crud.update_motor_model(db, name=name, motor_model_update=motor_model_update)
-    if not motor_model:
-        raise HTTPException(status_code=404, detail="Motor model not found")
-    
-    return motor_model
+@motor_model_bp.route('/motor-models/', methods=['GET'])
+@jwt_required()
+def get_list():
+    skip = request.args.get('skip', 0, type=int)
+    limit = request.args.get('limit', 100, type=int)
+    return jsonify([model_to_dict(m) for m in crud.get_motor_model_list(db.session, skip=skip, limit=limit)])
 
-@router.delete("/{name}")
-def delete_motor_model(
-    name: str,
-    db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_active_user)
-):
-    """删除电机型号"""
-    motor_model = crud.delete_motor_model(db, name=name)
-    if not motor_model:
-        raise HTTPException(status_code=404, detail="Motor model not found")
-    return {"message": "电机型号删除成功", "name": name}
+
+@motor_model_bp.route('/motor-models/<name>', methods=['GET'])
+@jwt_required()
+def get_model(name):
+    model = crud.get_motor_model_by_name(db.session, name=name)
+    if not model:
+        return jsonify({"detail": "Motor model not found"}), 404
+    return jsonify(model_to_dict(model))
+
+
+@motor_model_bp.route('/motor-models/', methods=['POST'])
+@jwt_required()
+def create_model():
+    data = request.get_json()
+    from app.schemas import MotorModelSchemaCreate
+    model = crud.create_motor_model(db.session, MotorModelSchemaCreate(**data))
+    return jsonify(model_to_dict(model)), 201
+
+
+@motor_model_bp.route('/motor-models/<name>', methods=['PUT'])
+@jwt_required()
+def update_model(name):
+    from app.schemas import MotorModelSchemaUpdate
+    model = crud.update_motor_model(db.session, name=name, motor_model_update=MotorModelSchemaUpdate(**request.get_json()))
+    if not model:
+        return jsonify({"detail": "Motor model not found"}), 404
+    return jsonify(model_to_dict(model))
+
+
+@motor_model_bp.route('/motor-models/<name>', methods=['DELETE'])
+@jwt_required()
+def delete_model(name):
+    if not crud.delete_motor_model(db.session, name=name):
+        return jsonify({"detail": "Motor model not found"}), 404
+    return jsonify({"message": "电机型号删除成功", "name": name})
