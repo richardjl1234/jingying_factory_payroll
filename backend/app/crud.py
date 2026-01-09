@@ -473,7 +473,17 @@ def get_salary_record_by_id(db: Session, record_id: int) -> Optional[models.VSal
 
 def get_salary_records(db: Session, worker_code: str = None, record_date: str = None, skip: int = 0, limit: int = 100) -> List[models.VSalaryRecord]:
     """获取工资记录列表（视图）"""
-    logger.debug(f"获取工资记录列表（视图）: worker_code={worker_code}, record_date={record_date}, skip={skip}, limit={limit}")
+    logger.info(f"[CRUD] get_salary_records called with: worker_code={worker_code}, record_date={record_date}, skip={skip}, limit={limit}")
+    
+    # First, check if the view exists and is accessible
+    try:
+        from sqlalchemy import text
+        view_check = db.execute(text("SELECT COUNT(*) FROM v_salary_records LIMIT 1")).fetchone()
+        logger.info(f"[CRUD] View v_salary_records check: {view_check[0]} records accessible")
+    except Exception as e:
+        logger.error(f"[CRUD] View v_salary_records access error: {str(e)}")
+        raise
+    
     query = db.query(models.VSalaryRecord)
     if worker_code:
         query = query.filter(models.VSalaryRecord.worker_code == worker_code)
@@ -491,7 +501,10 @@ def get_salary_records(db: Session, worker_code: str = None, record_date: str = 
             logger.warning(f"Invalid record_date format: {record_date}, expected YYYY-MM")
             # If invalid format, treat as exact date (YYYY-MM-DD)
             query = query.filter(models.VSalaryRecord.record_date == record_date)
-    return query.order_by(desc(models.VSalaryRecord.id)).offset(skip).limit(limit).all()
+    
+    result = query.order_by(desc(models.VSalaryRecord.id)).offset(skip).limit(limit).all()
+    logger.info(f"[CRUD] get_salary_records returning {len(result)} records")
+    return result
 
 def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -> Decimal:
     """获取工人月度工资汇总"""

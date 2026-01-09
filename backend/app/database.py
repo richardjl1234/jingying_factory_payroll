@@ -12,15 +12,15 @@ logger.debug("加载环境变量...")
 load_dotenv()
 
 # 获取数据库URL - 必须从环境变量设置，无默认值
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable is not set")
+MYSQL_DB_URL = os.getenv("MYSQL_DB_URL")
+if not MYSQL_DB_URL:
+    raise ValueError("MYSQL_DB_URL environment variable is not set")
     
-logger.debug(f"数据库URL: {DATABASE_URL}")
+logger.debug(f"数据库URL: {MYSQL_DB_URL}")
 
 # 创建数据库引擎
 logger.debug("创建数据库引擎...")
-engine = create_engine(DATABASE_URL)
+engine = create_engine(MYSQL_DB_URL)
 logger.debug(f"数据库引擎创建完成: {engine}")
 
 # 创建会话本地类

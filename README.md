@@ -270,57 +270,46 @@ new_payroll/
 
 系统已实现安全的数据库凭证管理，遵循以下最佳实践：
 
-1. **环境变量管理**：敏感信息存储在环境变量中，不硬编码在代码中
-2. **Git忽略**：`.env` 文件已添加到 `.gitignore`，防止敏感信息泄露
-3. **安全脚本**：提供交互式配置脚本，安全输入密码
+1. **系统环境变量**：敏感信息存储在系统环境变量中，不硬编码在代码中
+2. **环境变量文件**：使用 `~/shared/jianglei/payroll/env_local.sh` 集中管理环境变量
+3. **Git忽略**：`.env` 文件已添加到 `.gitignore`，防止敏感信息泄露
 4. **Docker安全**：Docker容器支持运行时环境变量注入
 
 ### 环境变量配置
 
-#### 方法一：使用配置脚本（推荐）
+系统使用系统环境变量进行配置，不再依赖 `.env` 文件。
+
+#### 设置环境变量（必需）
+在启动应用之前，必须先设置环境变量。执行以下命令：
 ```bash
-cd backend
-python setup_env.py
-```
-脚本将引导您安全地配置：
-- 数据库连接信息（主机、端口、用户名、密码）
-- 安全密钥（自动生成）
-- 其他必要配置
-
-#### 方法二：手动配置
-1. 复制示例文件：
-```bash
-cp backend/.env.example backend/.env
+source ~/shared/jianglei/payroll/env_local.sh
 ```
 
-2. 编辑 `.env` 文件，设置您的配置：
-```env
-# Database Configuration
-DATABASE_URL=mysql+pymysql://username:password@localhost:3306/database_name
+**注意**：每次打开新的终端窗口都需要重新执行此命令。
 
-# Security Configuration
-SECRET_KEY=your-secure-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+#### 必需的环境变量
+确保以下环境变量已在系统中设置：
+- `MYSQL_DB_URL` - MySQL数据库连接URL
+- `SECRET_KEY` - JWT密钥
+- `ALGORITHM` - JWT算法（默认：HS256）
+- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token过期时间（默认：30）
 
-# Project Configuration
-PROJECT_ROOT=/path/to/project
-```
-
-#### 方法三：Docker环境变量
+#### Docker环境变量
 运行Docker容器时传递环境变量：
 ```bash
 docker run -d -p 8000:8000 \
-  -e DATABASE_URL="mysql+pymysql://username:password@host:port/database" \
+  -e MYSQL_DB_URL="mysql+pymysql://username:password@host:port/database" \
   -e SECRET_KEY="your-secret-key" \
   payroll-system
 ```
 
-### 检查环境配置
+### 验证环境配置
+运行应用前，请确保环境变量已正确设置：
 ```bash
-cd backend
-python setup_env.py check
+echo $MYSQL_DB_URL
+echo $SECRET_KEY
 ```
+如果以上命令返回空值，请先执行 `source ~/shared/jianglei/payroll/env_local.sh`。
 
 ## 安装与运行
 
@@ -350,7 +339,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-5. 配置环境变量（使用上述任一方法）
+5. 设置环境变量（必需）
+```bash
+source ~/shared/jianglei/payroll/env_local.sh
+```
 
 6. 初始化数据库
 ```bash
@@ -634,6 +626,9 @@ node test_login.js
 # 克隆代码
 git clone https://gitee.com/richardjl/payroll-system.git
 cd payroll-system
+
+# 设置环境变量（必需）
+source ~/shared/jianglei/payroll/env_local.sh
 
 # 启动后端
 cd backend

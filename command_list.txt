@@ -17,3 +17,6 @@ python run.py
 # to get the public ip address
 curl ifconfig.me
 
+
+virtualenv --always-copy venv_linux
+source venv_linux/bin/activate

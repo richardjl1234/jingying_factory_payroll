@@ -22,13 +22,23 @@ def read_salary_records(
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """获取工资记录列表（从视图读取）"""
-    return crud.get_salary_records(
-        db, 
-        worker_code=worker_code, 
-        record_date=record_date, 
-        skip=skip, 
-        limit=limit
-    )
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[SalaryRecords] User {current_user.username} requesting salary records with params: worker_code={worker_code}, record_date={record_date}, skip={skip}, limit={limit}")
+    
+    try:
+        records = crud.get_salary_records(
+            db, 
+            worker_code=worker_code, 
+            record_date=record_date, 
+            skip=skip, 
+            limit=limit
+        )
+        logger.info(f"[SalaryRecords] Retrieved {len(records)} records from database")
+        return records
+    except Exception as e:
+        logger.error(f"[SalaryRecords] Error retrieving salary records: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取工资记录失败: {str(e)}")
 
 @router.get("/{record_id}", response_model=schemas.SalaryRecord)
 def read_salary_record(

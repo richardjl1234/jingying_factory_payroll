@@ -52,19 +52,25 @@ write_test_output() {
     echo "$formatted_message" >> "$REPORT_FILE"
 }
 
-# Function to check if Python is available
-check_python_available() {
-    if command -v python3 &>/dev/null; then
-        local python_version=$(python3 --version 2>&1)
-        write_test_output "Python found: $python_version" "green"
-        return 0
-    elif command -v python &>/dev/null; then
-        local python_version=$(python --version 2>&1)
-        write_test_output "Python found: $python_version" "green"
+# Function to get Python command from virtual environment
+get_python_cmd() {
+    local venv_dir="$TEST_DIR/venv"
+    
+    # Check if virtual environment exists
+    if [ -d "$venv_dir" ] && [ -f "$venv_dir/bin/python" ]; then
+        echo "$venv_dir/bin/python"
         return 0
     else
-        write_test_output "Python not found or not in PATH" "red"
-        return 1
+        # Fallback to system Python
+        if command -v python3 &>/dev/null; then
+            echo "python3"
+            return 0
+        elif command -v python &>/dev/null; then
+            echo "python"
+            return 0
+        else
+            return 1
+        fi
     fi
 }
 
@@ -77,13 +83,12 @@ run_backend_tests() {
         return 1
     }
     
-    # Determine Python command to use
+    # Get Python command from virtual environment
     local python_cmd
-    if command -v python3 &>/dev/null; then
-        python_cmd="python3"
-    else
-        python_cmd="python"
-    fi
+    python_cmd=$(get_python_cmd) || {
+        write_test_output "Python not found" "red"
+        return 1
+    }
     
     write_test_output "Using Python command: $python_cmd" "green"
     
@@ -149,23 +154,15 @@ main() {
     write_test_output "Test Directory: $TEST_DIR" "white"
     write_test_output "============================================================" "white"
     
-    # Step 1: Check Python availability
+    # Run backend API tests
     write_test_output "" "white"
-    write_test_output "1. Checking Python environment..." "yellow"
-    if ! check_python_available; then
-        write_test_output "Python is required but not found. Please install Python and add it to PATH." "red"
-        return 1
-    fi
-    
-    # Step 2: Run backend API tests
-    write_test_output "" "white"
-    write_test_output "2. Running backend API tests..." "yellow"
+    write_test_output "Running backend API tests..." "yellow"
     local tests_passed=false
     if run_backend_tests; then
         tests_passed=true
     fi
     
-    # Step 3: Generate final report
+    # Generate final report
     generate_final_report "$tests_passed"
     
     if [ "$tests_passed" = true ]; then

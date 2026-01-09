@@ -45,49 +45,26 @@ write_color_output() {
     esac
 }
 
-# Function to check if Python is available
-check_python_available() {
-    if command -v python3 &>/dev/null; then
-        local python_version=$(python3 --version 2>&1)
-        write_color_output "Python found: $python_version" "green"
-        return 0
-    elif command -v python &>/dev/null; then
-        local python_version=$(python --version 2>&1)
-        write_color_output "Python found: $python_version" "green"
+# Function to get Python command from virtual environment
+get_python_cmd() {
+    local venv_dir="$BACKEND_DIR/venv"
+    
+    # Check if virtual environment exists
+    if [ -d "$venv_dir" ] && [ -f "$venv_dir/bin/python" ]; then
+        echo "$venv_dir/bin/python"
         return 0
     else
-        write_color_output "Python not found or not in PATH" "red"
-        return 1
-    fi
-}
-
-# Function to check if required Python packages are installed
-check_python_packages() {
-    local packages=("sqlalchemy" "fastapi" "pydantic" "passlib" "python-jose" "python-multipart")
-    local all_installed=true
-    
-    for package in "${packages[@]}"; do
-        if python3 -c "import $package" 2>/dev/null; then
-            write_color_output "Package '$package' is installed" "green"
-        else
-            write_color_output "Package '$package' is NOT installed" "red"
-            all_installed=false
-        fi
-    done
-    
-    if [ "$all_installed" = false ]; then
-        write_color_output "Some required packages are missing. Installing..." "yellow"
-        cd "$BACKEND_DIR" && pip install -r requirements.txt >/dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            write_color_output "Packages installed successfully" "green"
+        # Fallback to system Python
+        if command -v python3 &>/dev/null; then
+            echo "python3"
+            return 0
+        elif command -v python &>/dev/null; then
+            echo "python"
             return 0
         else
-            write_color_output "Failed to install packages" "red"
             return 1
         fi
     fi
-    
-    return 0
 }
 
 # Function to run Python script
@@ -109,18 +86,27 @@ run_python_script() {
         return 1
     }
     
+    # Get Python command from virtual environment
+    local python_cmd
+    python_cmd=$(get_python_cmd) || {
+        write_color_output "Python not found" "red"
+        return 1
+    }
+    
+    write_color_output "Using Python: $python_cmd" "green"
+    
     # Set Python environment variables
     export PYTHONPATH="$working_dir:$PYTHONPATH"
     export PYTHONIOENCODING="utf-8"
     
     # Run the Python script
     local output
-    if command -v python3 &>/dev/null; then
-        output=$(python3 "$script_path" 2>&1)
-    else
-        output=$(python "$script_path" 2>&1)
-    fi
-    local exit_code=$?
+    local exit_code
+    
+    set +e
+    output=$("$python_cmd" "$script_path" 2>&1)
+    exit_code=$?
+    set -e
     
     # Print output
     while IFS= read -r line; do
@@ -149,34 +135,28 @@ main() {
     write_color_output "Test Directory: $TEST_DIR" "white"
     write_color_output "============================================================" "white"
     
-    # Step 1: Check Python availability
+    # Check Python environment
     write_color_output "" "white"
     write_color_output "1. Checking Python environment..." "yellow"
-    if ! check_python_available; then
-        write_color_output "Python is required but not found. Please install Python and add it to PATH." "red"
+    local python_cmd
+    python_cmd=$(get_python_cmd) || {
+        write_color_output "Python not found in virtual environment or system" "red"
         return 1
-    fi
+    }
+    write_color_output "Using Python: $python_cmd" "green"
     
-    # Step 2: Check Python packages
+    # Initialize database
     write_color_output "" "white"
-    write_color_output "2. Checking Python packages..." "yellow"
-    if ! check_python_packages; then
-        write_color_output "Failed to install required Python packages" "red"
-        return 1
-    fi
-    
-    # Step 3: Initialize database
-    write_color_output "" "white"
-    write_color_output "3. Initializing database..." "yellow"
+    write_color_output "2. Initializing database..." "yellow"
     local init_db_script="$BACKEND_SCRIPTS_DIR/init_db.py"
     if ! run_python_script "$init_db_script" "$BACKEND_DIR"; then
         write_color_output "Database initialization failed" "red"
         return 1
     fi
     
-    # Step 4: Generate test data
+    # Generate test data
     write_color_output "" "white"
-    write_color_output "4. Generating test data..." "yellow"
+    write_color_output "3. Generating test data..." "yellow"
     local generate_test_data_script="$BACKEND_SCRIPTS_DIR/generate_test_data.py"
     if ! run_python_script "$generate_test_data_script" "$BACKEND_DIR"; then
         write_color_output "Test data generation failed" "red"

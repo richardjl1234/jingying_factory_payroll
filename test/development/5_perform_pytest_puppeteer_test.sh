@@ -56,35 +56,25 @@ write_test_output() {
     echo "$formatted_message" >> "$REPORT_FILE"
 }
 
-# Function to check if Python is available
-check_python_available() {
-    if command -v python3 &>/dev/null; then
-        local python_version=$(python3 --version 2>&1)
-        write_test_output "Python found: $python_version" "green"
-        return 0
-    elif command -v python &>/dev/null; then
-        local python_version=$(python --version 2>&1)
-        write_test_output "Python found: $python_version" "green"
+# Function to get Python command from virtual environment
+get_python_cmd() {
+    local venv_dir="$TEST_DIR/venv"
+    
+    # Check if virtual environment exists
+    if [ -d "$venv_dir" ] && [ -f "$venv_dir/bin/python" ]; then
+        echo "$venv_dir/bin/python"
         return 0
     else
-        write_test_output "Python not found or not in PATH" "red"
-        return 1
-    fi
-}
-
-# Function to check if pip is available
-check_pip_available() {
-    if command -v pip3 &>/dev/null; then
-        local pip_version=$(pip3 --version 2>&1 | head -n1)
-        write_test_output "pip found: $pip_version" "green"
-        return 0
-    elif command -v pip &>/dev/null; then
-        local pip_version=$(pip --version 2>&1 | head -n1)
-        write_test_output "pip found: $pip_version" "green"
-        return 0
-    else
-        write_test_output "pip not found or not in PATH" "red"
-        return 1
+        # Fallback to system Python
+        if command -v python3 &>/dev/null; then
+            echo "python3"
+            return 0
+        elif command -v python &>/dev/null; then
+            echo "python"
+            return 0
+        else
+            return 1
+        fi
     fi
 }
 
@@ -92,108 +82,34 @@ check_pip_available() {
 setup_python_environment() {
     write_test_output "Setting up Python environment..." "yellow"
     
-    # Check if we're already in a virtual environment
-    if [ -n "$VIRTUAL_ENV" ]; then
-        write_test_output "Already in virtual environment: $VIRTUAL_ENV" "green"
-        local python_path=$(which python3 2>/dev/null || which python 2>/dev/null)
+    local venv_dir="$TEST_DIR/venv"
+    
+    # Check if virtual environment exists
+    if [ -d "$venv_dir" ] && [ -f "$venv_dir/bin/python" ]; then
+        write_test_output "Found virtual environment at: $venv_dir" "green"
+        local python_path=$(get_python_cmd)
         write_test_output "Using Python from: $python_path" "green"
         return 0
-    fi
-    
-    # Check for existing virtual environment in test directory
-    local venv_dir="$TEST_DIR/venv"
-    if [ -d "$venv_dir" ] && [ -f "$venv_dir/bin/activate" ]; then
-        write_test_output "Found existing virtual environment at: $venv_dir" "green"
-        source "$venv_dir/bin/activate"
-        local python_path=$(which python3 2>/dev/null || which python 2>/dev/null)
-        write_test_output "Activated virtual environment, using Python from: $python_path" "green"
-        return 0
-    fi
-    
-    # Create new virtual environment
-    write_test_output "Creating new virtual environment..." "yellow"
-    if python3 -m venv "$venv_dir" 2>/dev/null; then
-        write_test_output "Virtual environment created at: $venv_dir" "green"
-        source "$venv_dir/bin/activate"
-        local python_path=$(which python3 2>/dev/null || which python 2>/dev/null)
-        write_test_output "Activated virtual environment, using Python from: $python_path" "green"
-        return 0
     else
-        write_test_output "Failed to create virtual environment, using system Python" "yellow"
-        # Fallback to system Python
-        local python_path=$(which python3 2>/dev/null || which python 2>/dev/null)
-        if [ -n "$python_path" ]; then
-            write_test_output "Using system Python from: $python_path" "green"
-            return 0
-        else
-            write_test_output "Python not found in PATH" "red"
-            return 1
-        fi
-    fi
-}
-
-# Function to install required Python packages
-install_python_packages() {
-    write_test_output "Installing required Python packages..." "yellow"
-    
-    # Check if requirements-test.txt exists
-    local requirements_file="$TEST_DIR/requirements-test.txt"
-    
-    if [ -f "$requirements_file" ]; then
-        write_test_output "Found requirements file: $requirements_file" "green"
-        
-        # Upgrade pip first
-        pip install --upgrade pip >/dev/null 2>&1 || {
-            write_test_output "Failed to upgrade pip" "yellow"
-        }
-        
-        # Install packages
-        local output
-        if output=$(pip install -r "$requirements_file" 2>&1); then
-            write_test_output "Python packages installed successfully" "green"
-            # Print installation summary
-            echo "$output" | tail -20 | while IFS= read -r line; do
-                write_test_output "$line" "white"
-            done
-            return 0
-        else
-            write_test_output "Failed to install Python packages" "red"
-            # Print error output
-            while IFS= read -r line; do
-                write_test_output "$line" "white"
-            done <<< "$output"
-            return 1
-        fi
-    else
-        write_test_output "Requirements file not found: $requirements_file" "red"
-        write_test_output "Creating default requirements file..." "yellow"
-        
-        # Create default requirements file
-        cat > "$requirements_file" << EOF
-# Python test dependencies for Pyppeteer and pytest
-pytest==8.3.4
-pytest-asyncio==0.24.0
-pytest-xdist==3.6.1
-pyppeteer==1.0.2
-asyncio==3.4.3
-nest-asyncio==1.6.0
-pytest-html==4.1.1
-pytest-cov==5.0.0
-requests==2.32.3
-python-dotenv==1.0.1
-EOF
-        
-        write_test_output "Created default requirements file" "green"
-        
-        # Try installing again
-        install_python_packages
-        return $?
+        write_test_output "Virtual environment not found at: $venv_dir" "red"
+        write_test_output "Please create the virtual environment first:" "yellow"
+        write_test_output "  cd $TEST_DIR" "yellow"
+        write_test_output "  python3 -m venv venv" "yellow"
+        write_test_output "  source venv/bin/activate" "yellow"
+        write_test_output "  pip install -r requirements-test.txt" "yellow"
+        return 1
     fi
 }
 
 # Function to run pytest tests
 run_pytest_tests() {
     write_test_output "Running pytest tests..." "yellow"
+    
+    local python_cmd
+    python_cmd=$(get_python_cmd) || {
+        write_test_output "Python not found" "red"
+        return 1
+    }
     
     local test_files=(
         "test_login_pyppeteer.py"
@@ -224,7 +140,7 @@ run_pytest_tests() {
             # Temporarily disable set -e to capture exit code properly
             set +e
             # Run test with timeout (120 seconds) and capture both stdout and stderr
-            timeout 120 python -m pytest "$test_path" -v --tb=short > "$temp_output_file" 2>&1
+            timeout 120 $python_cmd -m pytest "$test_path" -v --tb=short > "$temp_output_file" 2>&1
             local exit_code=$?
             set -e
             
@@ -359,10 +275,6 @@ cleanup_test_artifacts() {
     mkdir -p "$TEST_DIR/screenshots"
     mkdir -p "$TEST_DIR/debug"
     
-    # Clean up old screenshots (optional - keep for now)
-    # find "$TEST_DIR/screenshots" -name "*.png" -mtime +7 -delete 2>/dev/null || true
-    # find "$TEST_DIR/debug" -name "*.json" -mtime +7 -delete 2>/dev/null || true
-    
     write_test_output "Test artifacts directories ready" "green"
 }
 
@@ -377,43 +289,22 @@ main() {
     write_test_output "Test Directory: $TEST_DIR" "white"
     write_test_output "============================================================" "white"
     
-    # Step 1: Check Python availability
+    # Step 1: Setup Python environment
     write_test_output "" "white"
-    write_test_output "1. Checking Python environment..." "yellow"
-    if ! check_python_available; then
-        write_test_output "Python is required but not found. Please install Python and add it to PATH." "red"
-        return 1
-    fi
-    
-    if ! check_pip_available; then
-        write_test_output "pip is required but not found. Please install pip." "red"
-        return 1
-    fi
-    
-    # Step 2: Setup Python environment
-    write_test_output "" "white"
-    write_test_output "2. Setting up Python environment..." "yellow"
+    write_test_output "1. Setting up Python environment..." "yellow"
     if ! setup_python_environment; then
         write_test_output "Failed to setup Python environment" "red"
         return 1
     fi
     
-    # Step 3: Install Python packages
+    # Step 2: Cleanup test artifacts
     write_test_output "" "white"
-    write_test_output "3. Installing Python packages..." "yellow"
-    if ! install_python_packages; then
-        write_test_output "Failed to install required Python packages" "red"
-        return 1
-    fi
-    
-    # Step 4: Cleanup test artifacts
-    write_test_output "" "white"
-    write_test_output "4. Preparing test artifacts directories..." "yellow"
+    write_test_output "2. Preparing test artifacts directories..." "yellow"
     cleanup_test_artifacts
     
-    # Step 5: Run pytest tests
+    # Step 3: Run pytest tests
     write_test_output "" "white"
-    write_test_output "5. Running pytest tests..." "yellow"
+    write_test_output "3. Running pytest tests..." "yellow"
     local test_output
     test_output=$(run_pytest_tests)
     
@@ -426,7 +317,7 @@ main() {
         fi
     done <<< "$test_output"
     
-    # Step 6: Generate final report and get actual pass/fail status
+    # Step 4: Generate final report and get actual pass/fail status
     local actual_all_passed
     actual_all_passed=$(generate_final_report "$all_passed" "${test_results[@]}")
     

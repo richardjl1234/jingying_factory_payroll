@@ -70,22 +70,17 @@ start_backend_service() {
         return 1
     }
     
-    # Check if virtual environment exists (Windows style - not usable on Linux)
-    # On Linux, we'll use system Python or check for conda environment
+    # Use virtual environment from backend directory
+    local venv_dir="$BACKEND_DIR/venv"
     local python_cmd="python3"
     
-    # Check if we're in a conda environment
-    if [ -n "$CONDA_DEFAULT_ENV" ]; then
-        write_color_output "Using conda environment: $CONDA_DEFAULT_ENV" "green"
+    # Check if virtual environment exists
+    if [ -d "$venv_dir" ] && [ -f "$venv_dir/bin/python" ]; then
+        python_cmd="$venv_dir/bin/python"
+        write_color_output "Using virtual environment: $venv_dir" "green"
     else
-        # Check if required packages are installed
-        if ! python3 -c "import fastapi" 2>/dev/null; then
-            write_color_output "FastAPI not found. Installing required packages..." "yellow"
-            pip install fastapi uvicorn sqlalchemy pydantic python-multipart python-jose[cryptography] python-dotenv passlib[bcrypt] >/dev/null 2>&1 || {
-                write_color_output "Failed to install Python packages" "red"
-                return 1
-            }
-        fi
+        write_color_output "Virtual environment not found at: $venv_dir" "yellow"
+        write_color_output "Using system Python: $python_cmd" "yellow"
     fi
     
     # Start backend service in background with nohup to survive shell exit
