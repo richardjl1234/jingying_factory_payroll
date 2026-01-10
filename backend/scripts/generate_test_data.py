@@ -227,29 +227,29 @@ def main():
         # 3.3 生成型号数据
         print("\n生成型号数据...")
         model_data = [
-            {"name": "A100", "aliases": "A系列, A-100", "description": "A100型号描述"},
-            {"name": "B200", "aliases": "B系列, B-200", "description": "B200型号描述"},
-            {"name": "C300", "aliases": "C系列, C-300", "description": "C300型号描述"},
-            {"name": "D400", "aliases": "D系列, D-400", "description": "D400型号描述"},
-            {"name": "E500", "aliases": "E系列, E-500", "description": "E500型号描述"}
+            {"model_code": "A100", "name": "A系列电机", "description": "A100型号描述"},
+            {"model_code": "B200", "name": "B系列电机", "description": "B200型号描述"},
+            {"model_code": "C300", "name": "C系列电机", "description": "C300型号描述"},
+            {"model_code": "D400", "name": "D系列电机", "description": "D400型号描述"},
+            {"model_code": "E500", "name": "E系列电机", "description": "E500型号描述"}
         ]
         models_list = []
         
         for model_info in model_data:
             # 检查是否已存在该型号
-            existing_model = db.query(models.MotorModel).filter(models.MotorModel.name == model_info["name"]).first()
+            existing_model = db.query(models.MotorModel).filter(models.MotorModel.model_code == model_info["model_code"]).first()
             if not existing_model:
                 model = models.MotorModel(
+                    model_code=model_info["model_code"],
                     name=model_info["name"],
-                    aliases=model_info["aliases"],
                     description=model_info["description"]
                 )
                 db.add(model)
                 models_list.append(model)
-                print(f"生成型号: {model_info['name']} - {model_info['aliases']}")
+                print(f"生成型号: {model_info['model_code']} - {model_info['name']}")
             else:
                 models_list.append(existing_model)
-                print(f"型号已存在: {model_info['name']} - {existing_model.aliases}")
+                print(f"型号已存在: {model_info['model_code']} - {existing_model.name}")
         
         db.commit()
         print(f"\n工段类别数据生成完成，共生成 {len(process_cat1s)} 个工段类别")
@@ -278,7 +278,7 @@ def main():
                     models.Quota.process_code == process.process_code,
                     models.Quota.cat1_code == cat1.cat1_code,
                     models.Quota.cat2_code == cat2.cat2_code,
-                    models.Quota.model_name == model.name,
+                    models.Quota.model_code == model.model_code,
                     models.Quota.effective_date == effective_date
                 ).first()
                 
@@ -287,7 +287,7 @@ def main():
                         process_code=process.process_code,
                         cat1_code=cat1.cat1_code,
                         cat2_code=cat2.cat2_code,
-                        model_name=model.name,
+                        model_code=model.model_code,
                         unit_price=unit_price,
                         effective_date=effective_date,
                         obsolete_date=date(9999, 12, 31),  # 默认值
@@ -295,10 +295,10 @@ def main():
                     )
                     db.add(quota)
                     quotas.append(quota)
-                    print(f"生成定额: {process.process_code} - {cat1.cat1_code} - {cat2.cat2_code} - {model.name} - {effective_date} - ¥{unit_price}")
+                    print(f"生成定额: {process.process_code} - {cat1.cat1_code} - {cat2.cat2_code} - {model.model_code} - {effective_date} - ¥{unit_price}")
                 else:
                     quotas.append(existing_quota)
-                    print(f"定额已存在: {process.process_code} - {cat1.cat1_code} - {cat2.cat2_code} - {model.name} - {effective_date}")
+                    print(f"定额已存在: {process.process_code} - {cat1.cat1_code} - {cat2.cat2_code} - {model.model_code} - {effective_date}")
         
         db.commit()
         print(f"\n定额数据生成完成，共生成 {len(quotas)} 个定额")

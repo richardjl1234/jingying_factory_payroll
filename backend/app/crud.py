@@ -278,14 +278,14 @@ def get_latest_quota(db: Session, process_code: str, effective_date: date = None
 
 def create_quota(db: Session, quota: schemas.QuotaCreate, created_by: int) -> models.Quota:
     """创建定额"""
-    logger.debug(f"创建定额: process_code={quota.process_code}, cat1_code={quota.cat1_code}, cat2_code={quota.cat2_code}, model_name={quota.model_name}, unit_price={quota.unit_price}, effective_date={quota.effective_date}, created_by={created_by}")
+    logger.debug(f"创建定额: process_code={quota.process_code}, cat1_code={quota.cat1_code}, cat2_code={quota.cat2_code}, model_code={quota.model_code}, unit_price={quota.unit_price}, effective_date={quota.effective_date}, created_by={created_by}")
     
     # 1. 查找是否存在相同组合且obsolete_date为'9999-12-31'的记录
     existing_quota = db.query(models.Quota).filter(
         models.Quota.process_code == quota.process_code,
         models.Quota.cat1_code == quota.cat1_code,
         models.Quota.cat2_code == quota.cat2_code,
-        models.Quota.model_name == quota.model_name,
+        models.Quota.model_code == quota.model_code,
         models.Quota.obsolete_date == '9999-12-31'
     ).first()
     
@@ -294,7 +294,7 @@ def create_quota(db: Session, quota: schemas.QuotaCreate, created_by: int) -> mo
         from datetime import timedelta
         new_obsolete_date = quota.effective_date - timedelta(days=1)
         existing_quota.obsolete_date = new_obsolete_date
-        logger.warning(f"更新现有定额的作废日期: 定额ID={existing_quota.id}, 新作废日期={new_obsolete_date}, 组合(process_code={quota.process_code}, cat1_code={quota.cat1_code}, cat2_code={quota.cat2_code}, model_name={quota.model_name})")
+        logger.warning(f"更新现有定额的作废日期: 定额ID={existing_quota.id}, 新作废日期={new_obsolete_date}, 组合(process_code={quota.process_code}, cat1_code={quota.cat1_code}, cat2_code={quota.cat2_code}, model_code={quota.model_code})")
     
     # 3. 创建新的定额
     db_quota = models.Quota(
@@ -658,15 +658,10 @@ def delete_process_cat2(db: Session, cat2_code: str) -> Optional[dict]:
 
 # 电机型号相关CRUD
 
-def get_motor_model_by_name(db: Session, name: str) -> Optional[models.MotorModel]:
-    """根据电机型号名称获取电机型号"""
-    logger.debug(f"根据电机型号名称获取电机型号: name={name}")
-    return db.query(models.MotorModel).filter(models.MotorModel.name == name).first()
-
-def get_motor_model_by_alias(db: Session, alias: str) -> Optional[models.MotorModel]:
-    """根据电机型号别名获取电机型号"""
-    logger.debug(f"根据电机型号别名获取电机型号: alias={alias}")
-    return db.query(models.MotorModel).filter(models.MotorModel.aliases.contains(alias)).first()
+def get_motor_model_by_code(db: Session, model_code: str) -> Optional[models.MotorModel]:
+    """根据电机型号编码获取电机型号"""
+    logger.debug(f"根据电机型号编码获取电机型号: model_code={model_code}")
+    return db.query(models.MotorModel).filter(models.MotorModel.model_code == model_code).first()
 
 def get_motor_model_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.MotorModel]:
     """获取电机型号列表"""
@@ -675,21 +670,21 @@ def get_motor_model_list(db: Session, skip: int = 0, limit: int = 100) -> List[m
 
 def create_motor_model(db: Session, motor_model: schemas.MotorModelSchemaCreate) -> models.MotorModel:
     """创建电机型号"""
-    logger.debug(f"创建电机型号: name={motor_model.name}, aliases={motor_model.aliases}")
+    logger.debug(f"创建电机型号: model_code={motor_model.model_code}, name={motor_model.name}")
     db_motor_model = models.MotorModel(**motor_model.model_dump())
     logger.debug(f"创建电机型号对象: {db_motor_model}")
     db.add(db_motor_model)
     db.commit()
     db.refresh(db_motor_model)
-    logger.info(f"电机型号创建成功: name={motor_model.name}")
+    logger.info(f"电机型号创建成功: model_code={motor_model.model_code}")
     return db_motor_model
 
-def update_motor_model(db: Session, name: str, motor_model_update: schemas.MotorModelSchemaUpdate) -> Optional[models.MotorModel]:
+def update_motor_model(db: Session, model_code: str, motor_model_update: schemas.MotorModelSchemaUpdate) -> Optional[models.MotorModel]:
     """更新电机型号"""
-    logger.debug(f"更新电机型号: name={name}, update_data={motor_model_update.model_dump(exclude_unset=True)}")
-    db_motor_model = get_motor_model_by_name(db, name)
+    logger.debug(f"更新电机型号: model_code={model_code}, update_data={motor_model_update.model_dump(exclude_unset=True)}")
+    db_motor_model = get_motor_model_by_code(db, model_code)
     if not db_motor_model:
-        logger.warning(f"电机型号不存在: name={name}")
+        logger.warning(f"电机型号不存在: model_code={model_code}")
         return None
     
     update_data = motor_model_update.model_dump(exclude_unset=True)
@@ -699,25 +694,25 @@ def update_motor_model(db: Session, name: str, motor_model_update: schemas.Motor
     
     db.commit()
     db.refresh(db_motor_model)
-    logger.info(f"电机型号更新成功: name={name}")
+    logger.info(f"电机型号更新成功: model_code={model_code}")
     return db_motor_model
 
-def delete_motor_model(db: Session, name: str) -> Optional[dict]:
+def delete_motor_model(db: Session, model_code: str) -> Optional[dict]:
     """删除电机型号"""
-    logger.debug(f"删除电机型号: name={name}")
-    db_motor_model = get_motor_model_by_name(db, name)
+    logger.debug(f"删除电机型号: model_code={model_code}")
+    db_motor_model = get_motor_model_by_code(db, model_code)
     if not db_motor_model:
-        logger.warning(f"电机型号不存在: name={name}")
+        logger.warning(f"电机型号不存在: model_code={model_code}")
         return None
     
     # 保存电机型号信息用于返回
     motor_model_info = {
-        "name": db_motor_model.name,
-        "aliases": db_motor_model.aliases
+        "model_code": db_motor_model.model_code,
+        "name": db_motor_model.name
     }
     
     logger.debug(f"删除电机型号对象: {db_motor_model}")
     db.delete(db_motor_model)
     db.commit()
-    logger.info(f"电机型号删除成功: name={name}")
+    logger.info(f"电机型号删除成功: model_code={model_code}")
     return motor_model_info

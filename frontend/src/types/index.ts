@@ -43,7 +43,7 @@ export interface Quota {
   process_code: string;
   cat1_code: string;
   cat2_code: string;
-  model_name: string;
+  model_code: string;
   unit_price: number;
   effective_date: string;
   obsolete_date: string;

@@ -48,7 +48,7 @@ const MotorModelManagement = () => {
   const handleSubmit = async (values) => {
     try {
       if (editingRecord) {
-        await motorModelAPI.updateMotorModel(editingRecord.name, values);
+        await motorModelAPI.updateMotorModel(editingRecord.model_code, values);
         message.success('电机型号更新成功');
       } else {
         await motorModelAPI.createMotorModel(values);
@@ -67,14 +67,15 @@ const MotorModelManagement = () => {
   const handleEdit = (record) => {
     setEditingRecord(record);
     form.setFieldsValue({
-      aliases: record.aliases,
+      model_code: record.model_code,
+      name: record.name,
       description: record.description
     });
     setModalVisible(true);
   };
 
   // 删除记录
-  const handleDelete = async (motorModelName) => {
+  const handleDelete = async (modelCode) => {
     Modal.confirm({
       title: '确认删除电机型号',
       content: (
@@ -94,7 +95,7 @@ const MotorModelManagement = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          await motorModelAPI.deleteMotorModel(motorModelName);
+          await motorModelAPI.deleteMotorModel(modelCode);
           message.success('电机型号删除成功');
           fetchData();
         } catch (error) {
@@ -120,16 +121,16 @@ const MotorModelManagement = () => {
 
   const columns = [
     {
+      title: '电机型号编码',
+      dataIndex: 'model_code',
+      key: 'model_code',
+      width: 120,
+    },
+    {
       title: '电机型号名称',
       dataIndex: 'name',
       key: 'name',
       width: 120,
-    },
-    {
-      title: '电机型号别名',
-      dataIndex: 'aliases',
-      key: 'aliases',
-      ellipsis: true,
     },
     {
       title: '描述',
@@ -161,7 +162,7 @@ const MotorModelManagement = () => {
             type="link" 
             danger 
             icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record.name)}
+            onClick={() => handleDelete(record.model_code)}
           >
             删除
           </Button>
@@ -183,7 +184,7 @@ const MotorModelManagement = () => {
         <Table
           columns={columns}
           dataSource={data}
-          rowKey="name"
+          rowKey="model_code"
           loading={loading}
           pagination={{
             pageSize: 10,
@@ -208,23 +209,26 @@ const MotorModelManagement = () => {
         >
           {!editingRecord && (
             <Form.Item
-              label="电机型号名称"
-              name="name"
+              label="电机型号编码"
+              name="model_code"
               rules={[
-                { required: true, message: '请输入电机型号名称' },
-                { min: 1, max: 20, message: '电机型号名称长度应为1-20个字符' }
+                { required: true, message: '请输入电机型号编码' },
+                { min: 1, max: 10, message: '电机型号编码长度应为1-10个字符' }
               ]}
             >
-              <Input placeholder="请输入电机型号名称" />
+              <Input placeholder="请输入电机型号编码" />
             </Form.Item>
           )}
           
           <Form.Item
-            label="电机型号别名"
-            name="aliases"
-            rules={[{ max: 100, message: '电机型号别名长度不能超过100个字符' }]}
+            label="电机型号名称"
+            name="name"
+            rules={[
+              { required: true, message: '请输入电机型号名称' },
+              { min: 1, max: 40, message: '电机型号名称长度应为1-40个字符' }
+            ]}
           >
-            <Input placeholder="请输入电机型号别名（可选）" />
+            <Input placeholder="请输入电机型号名称" />
           </Form.Item>
           
           <Form.Item

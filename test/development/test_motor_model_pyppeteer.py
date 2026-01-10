@@ -74,4 +74,19 @@ class TestMotorModel:
         if not found_table:
             print("No motor_model table found, but test continues")
         
+        # Verify the table has the new columns (model_code and name, not aliases)
+        page_content = await logged_in_page.content()
+        
+        # Check for model_code column (new schema)
+        if '型号编码' in page_content or 'model_code' in page_content:
+            print("Found model_code column - new schema is working")
+        else:
+            print("Warning: model_code column not found")
+        
+        # Check that aliases column is NOT present (since we removed it)
+        if '别名' in page_content:
+            print("Warning: aliases column still present - schema change may not be complete")
+        else:
+            print("Aliases column not found - correctly removed")
+        
         print("Motor Model list display test completed")

@@ -192,29 +192,30 @@ CREATE TABLE process_cat2 (
 **表结构**：
 ```sql
 CREATE TABLE motor_models (
-    name VARCHAR(20) NOT NULL,
-    aliases VARCHAR(100),
+    model_code VARCHAR(10) NOT NULL,
+    name VARCHAR(40) NOT NULL,
     description VARCHAR(100),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME,
-    PRIMARY KEY (name)
+    PRIMARY KEY (model_code)
 );
 ```
 
 **字段说明**：
 | 字段名 | 数据类型 | 约束 | 说明 |
 |--------|----------|------|------|
-| name | VARCHAR(20) | PRIMARY KEY | 电机型号名称，主键 |
-| aliases | VARCHAR(100) | NULLABLE | 电机型号别名 |
+| model_code | VARCHAR(10) | PRIMARY KEY | 电机型号编码，主键 |
+| name | VARCHAR(40) | NOT NULL | 电机型号名称 |
 | description | VARCHAR(100) | NULLABLE | 电机型号描述 |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 | updated_at | DATETIME | NULLABLE | 更新时间 |
 
 **索引**：
+- `ix_motor_models_model_code` (model_code)
 - `ix_motor_models_name` (name)
 
 **关系**：
-- 一对多关系：一个电机型号可以有多个工序（processes）
+- 一对多关系：一个电机型号可以有多个定额（quotas）
 
 ### 7. quotas - 定额表
 
@@ -227,18 +228,18 @@ CREATE TABLE quotas (
     process_code VARCHAR(20) NOT NULL,
     cat1_code VARCHAR(4) NOT NULL,
     cat2_code VARCHAR(30) NOT NULL,
-    model_name VARCHAR(20) NOT NULL,
+    model_code VARCHAR(10) NOT NULL,
     unit_price NUMERIC(10, 2) NOT NULL,
     effective_date DATE NOT NULL,
     obsolete_date DATE NOT NULL DEFAULT '9999-12-31',
     created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
-    CONSTRAINT _process_effective_date_uc UNIQUE (process_code, cat1_code, cat2_code, model_name, effective_date),
+    CONSTRAINT _process_effective_date_uc UNIQUE (process_code, cat1_code, cat2_code, model_code, effective_date),
     FOREIGN KEY(process_code) REFERENCES processes (process_code),
     FOREIGN KEY(cat1_code) REFERENCES process_cat1 (cat1_code) ON DELETE CASCADE,
     FOREIGN KEY(cat2_code) REFERENCES process_cat2 (cat2_code) ON DELETE CASCADE,
-    FOREIGN KEY(model_name) REFERENCES motor_models (name) ON DELETE CASCADE,
+    FOREIGN KEY(model_code) REFERENCES motor_models (model_code) ON DELETE CASCADE,
     FOREIGN KEY(created_by) REFERENCES users (id) ON DELETE SET NULL
 );
 ```
@@ -250,7 +251,7 @@ CREATE TABLE quotas (
 | process_code | VARCHAR(20) | NOT NULL, FOREIGN KEY | 工序编码，外键引用processes表 |
 | cat1_code | VARCHAR(4) | NOT NULL, FOREIGN KEY | 工段编码，外键引用process_cat1表 |
 | cat2_code | VARCHAR(30) | NOT NULL, FOREIGN KEY | 工序类别编码，外键引用process_cat2表 |
-| model_name | VARCHAR(20) | NOT NULL, FOREIGN KEY | 电机型号名称，外键引用motor_models表 |
+| model_code | VARCHAR(10) | NOT NULL, FOREIGN KEY | 电机型号编码，外键引用motor_models表 |
 | unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
 | effective_date | DATE | NOT NULL | 生效日期 |
 | obsolete_date | DATE | NOT NULL DEFAULT '9999-12-31' | 作废日期，默认值'9999-12-31'表示永久有效 |
@@ -328,8 +329,8 @@ SELECT
     wr.record_date,
     wr.created_by,
     wr.created_at,
-    -- 电机型号: 型号名称 (别名)
-    mm.name || ' (' || COALESCE(mm.aliases, '') || ')' AS model_display,
+    -- 电机型号: 编码 (名称)
+    mm.model_code || ' (' || mm.name || ')' AS model_display,
     -- 工段类别: 编码 (名称)
     pc1.cat1_code || ' (' || pc1.name || ')' AS cat1_display,
     -- 工序类别: 编码 (名称)
@@ -341,7 +342,7 @@ JOIN quotas q ON wr.quota_id = q.id
 JOIN processes p ON q.process_code = p.process_code
 JOIN process_cat1 pc1 ON q.cat1_code = pc1.cat1_code
 JOIN process_cat2 pc2 ON q.cat2_code = pc2.cat2_code
-JOIN motor_models mm ON q.model_name = mm.name;
+JOIN motor_models mm ON q.model_code = mm.model_code;
 ```
 
 **字段说明**：
@@ -457,8 +458,8 @@ VALUES ('P001', '车床加工', '使用车床进行精密加工');
 
 ### 定额数据示例
 ```sql
-INSERT INTO quotas (process_code, cat1_code, cat2_code, model_name, unit_price, effective_date, created_by)
-VALUES ('P001', 'C101', 'C201', 'A100', 25.50, '2024-01-01', 1);
+INSERT INTO quotas (process_code, cat1_code, cat2_code, model_code, unit_price, effective_date, created_by)
+VALUES ('P001', 'C101', 'C201', 'M001', 25.50, '2024-01-01', 1);
 ```
 
 ### 工作记录数据示例

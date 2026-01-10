@@ -24,7 +24,7 @@ def get_statistics(
     worker_count = db.query(func.count(models.Worker.worker_code)).scalar()
     process_cat1_count = db.query(func.count(models.ProcessCat1.cat1_code)).scalar()
     process_cat2_count = db.query(func.count(models.ProcessCat2.cat2_code)).scalar()
-    model_count = db.query(func.count(models.MotorModel.name)).scalar()
+    model_count = db.query(func.count(models.MotorModel.model_code)).scalar()
     process_count = db.query(func.count(models.Process.process_code)).scalar()
     quota_count = db.query(func.count(models.Quota.id)).scalar()
     salary_record_count = db.query(func.count(models.WorkRecord.id)).scalar()

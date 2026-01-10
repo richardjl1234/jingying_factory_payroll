@@ -98,7 +98,7 @@ const QuotaManagement = () => {
       process_code: quota.process_code,
       cat1_code: quota.cat1_code,
       cat2_code: quota.cat2_code,
-      model_name: quota.model_name,
+      model_code: quota.model_code,
       unit_price: quota.unit_price,
       effective_date: quota.effective_date,
       obsolete_date: quota.obsolete_date
@@ -183,11 +183,11 @@ const QuotaManagement = () => {
     },
     {
       title: '电机型号',
-      dataIndex: 'model_name',
-      key: 'model_name',
-      render: (name) => {
-        const model = motorModelList.find(m => m.name === name);
-        return model ? `${name} (${model.aliases || ''})` : name;
+      dataIndex: 'model_code',
+      key: 'model_code',
+      render: (code) => {
+        const model = motorModelList.find(m => m.model_code === code);
+        return model ? `${code} (${model.name})` : code;
       }
     },
     {
@@ -344,14 +344,14 @@ const QuotaManagement = () => {
             </Select>
           </Form.Item>
           <Form.Item
-            name="model_name"
+            name="model_code"
             label="电机型号"
             rules={[{ required: true, message: '请选择电机型号!' }]}
           >
             <Select placeholder="请选择电机型号">
               {motorModelList.map(model => (
-                <Option key={model.name} value={model.name}>
-                  {model.name} ({model.aliases || '无别名'})
+                <Option key={model.model_code} value={model.model_code}>
+                  {model.model_code} ({model.name})
                 </Option>
               ))}
             </Select>

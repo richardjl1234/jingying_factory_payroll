@@ -55,7 +55,7 @@ def create_quota(
         raise HTTPException(status_code=400, detail="Process category 2 not found")
     
     # 检查电机型号是否存在
-    if not crud.get_motor_model_by_name(db, name=quota.model_name):
+    if not crud.get_motor_model_by_code(db, model_code=quota.model_code):
         raise HTTPException(status_code=400, detail="Motor model not found")
     
     return crud.create_quota(db=db, quota=quota, created_by=current_user.id)

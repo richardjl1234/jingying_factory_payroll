@@ -67,8 +67,8 @@ def create_salary_records_view():
             wr.record_date,
             wr.created_by,
             wr.created_at,
-            -- 电机型号: 型号名称 (别名)
-            CONCAT(mm.name, ' (', COALESCE(mm.aliases, ''), ')') AS model_display,
+            -- 电机型号: 型号编码 (型号名称)
+            CONCAT(mm.model_code, ' (', mm.name, ')') AS model_display,
             -- 工段类别: 编码 (名称)
             CONCAT(pc1.cat1_code, ' (', pc1.name, ')') AS cat1_display,
             -- 工序类别: 编码 (名称)
@@ -80,7 +80,7 @@ def create_salary_records_view():
         JOIN processes p ON q.process_code = p.process_code
         JOIN process_cat1 pc1 ON q.cat1_code = pc1.cat1_code
         JOIN process_cat2 pc2 ON q.cat2_code = pc2.cat2_code
-        JOIN motor_models mm ON q.model_name = mm.name
+        JOIN motor_models mm ON q.model_code = mm.model_code
         """
         db.execute(text(create_view_sql))
         db.commit()

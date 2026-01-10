@@ -95,7 +95,7 @@ class QuotaBase(BaseModel):
     process_code: str = Field(..., min_length=1, max_length=20)
     cat1_code: str = Field(..., min_length=1, max_length=4)
     cat2_code: str = Field(..., min_length=1, max_length=30)
-    model_name: str = Field(..., min_length=1, max_length=20)
+    model_code: str = Field(..., min_length=1, max_length=10)
     unit_price: Decimal = Field(..., ge=0, decimal_places=2)
     effective_date: date
     obsolete_date: date = Field(default=date(9999, 12, 31), description="作废日期，默认值'9999-12-31'表示永久有效")
@@ -108,7 +108,7 @@ class QuotaUpdate(BaseModel):
     """更新定额模型"""
     cat1_code: Optional[str] = Field(None, min_length=1, max_length=4)
     cat2_code: Optional[str] = Field(None, min_length=1, max_length=30)
-    model_name: Optional[str] = Field(None, min_length=1, max_length=20)
+    model_code: Optional[str] = Field(None, min_length=1, max_length=10)
     unit_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
     effective_date: Optional[date] = None
     obsolete_date: Optional[date] = None
@@ -306,8 +306,8 @@ class ProcessCat2(ProcessCat2InDB):
 # 电机型号相关模型
 class MotorModelSchemaBase(BaseModel):
     """电机型号基础模型"""
-    name: str = Field(..., min_length=1, max_length=20)
-    aliases: Optional[str] = Field(None, max_length=100)
+    model_code: str = Field(..., min_length=1, max_length=10)
+    name: str = Field(..., min_length=1, max_length=40)
     description: Optional[str] = Field(None, max_length=100)
 
 class MotorModelSchemaCreate(MotorModelSchemaBase):
@@ -316,7 +316,7 @@ class MotorModelSchemaCreate(MotorModelSchemaBase):
 
 class MotorModelSchemaUpdate(BaseModel):
     """更新电机型号模型"""
-    aliases: Optional[str] = Field(None, max_length=100)
+    name: Optional[str] = Field(None, min_length=1, max_length=40)
     description: Optional[str] = Field(None, max_length=100)
 
 class MotorModelSchemaInDB(MotorModelSchemaBase):
