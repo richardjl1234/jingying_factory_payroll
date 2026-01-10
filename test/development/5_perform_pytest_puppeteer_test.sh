@@ -6,6 +6,12 @@
 # Usage:
 # 1. Navigate to the test/development directory
 # 2. Run: ./5_perform_pytest_puppeteer_test.sh
+#
+# Environment Variables:
+#   HEADLESS - Control browser headless mode (default: True)
+#     - True/1/yes: Run in headless mode (no browser UI)
+#     - False/0/no: Run in non-headless mode (show browser UI)
+#     Example: HEADLESS=False ./5_perform_pytest_puppeteer_test.sh
 
 set -e  # Stop on errors
 
@@ -283,11 +289,19 @@ main() {
     # Initialize report file
     > "$REPORT_FILE"
     
+    # Check HEADLESS environment variable (default: True)
+    local headless_mode="${HEADLESS:-True}"
+    export HEADLESS="$headless_mode"
+    
     write_test_output "Starting PyTest Puppeteer Test Script" "white"
     write_test_output "Project Root: $ROOT_DIR" "white"
     write_test_output "Backend Directory: $BACKEND_DIR" "white"
     write_test_output "Test Directory: $TEST_DIR" "white"
     write_test_output "============================================================" "white"
+    write_test_output "" "white"
+    write_test_output "Headless Mode: $headless_mode (controlled by HEADLESS environment variable)" "blue"
+    write_test_output "Usage: HEADLESS=False ./5_perform_pytest_puppeteer_test.sh  # Run in non-headless mode" "blue"
+    write_test_output "" "white"
     
     # Step 1: Setup Python environment
     write_test_output "" "white"

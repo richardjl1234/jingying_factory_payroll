@@ -1,11 +1,16 @@
 #!/bin/bash
 
-# Initialize Database and Add Test Data
-# This script initializes the database and adds test data using Python scripts.
+# Add Test Data
+# This script adds test data using Python scripts.
 #
 # Usage:
 # 1. Navigate to the test/development directory
-# 2. Run: ./2_init_database_add_test_data.sh
+# 2. Run: ./2_2_add_test_data.sh
+#
+# What this script does:
+# - Adds sample workers, processes, quotas, and salary records
+# - Creates motor models and process categories data
+# - Creates test user (username: test, password: test123)
 
 set -e  # Stop on errors
 
@@ -22,6 +27,11 @@ BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 TEST_DIR="$SCRIPT_DIR"
 BACKEND_SCRIPTS_DIR="$BACKEND_DIR/scripts"
+
+# Load environment variables
+if [ -f "$ROOT_DIR/.env" ]; then
+    export $(cat "$ROOT_DIR/.env" | grep -v '^#' | xargs)
+fi
 
 # Function to write colored output
 write_color_output() {
@@ -128,15 +138,26 @@ run_python_script() {
 
 # Main script execution
 main() {
-    write_color_output "Starting Database Initialization Script" "white"
+    write_color_output "Starting Test Data Generation Script" "white"
     write_color_output "Project Root: $ROOT_DIR" "white"
     write_color_output "Backend Directory: $BACKEND_DIR" "white"
     write_color_output "Backend Scripts Directory: $BACKEND_SCRIPTS_DIR" "white"
     write_color_output "Test Directory: $TEST_DIR" "white"
     write_color_output "============================================================" "white"
     
-    # Check Python environment
+    # Print database URL (sanitized)
     write_color_output "" "white"
+    write_color_output "Database Configuration:" "yellow"
+    if [ -n "$MYSQL_DB_URL" ]; then
+        # Mask the password in the URL for security
+        local sanitized_url=$(echo "$MYSQL_DB_URL" | sed 's/:[^:]*@/:****@/')
+        write_color_output "  Database URL: $sanitized_url" "green"
+    else
+        write_color_output "  Database URL: NOT SET (check .env file)" "red"
+    fi
+    write_color_output "" "white"
+    
+    # Check Python environment
     write_color_output "1. Checking Python environment..." "yellow"
     local python_cmd
     python_cmd=$(get_python_cmd) || {
@@ -145,18 +166,9 @@ main() {
     }
     write_color_output "Using Python: $python_cmd" "green"
     
-    # Initialize database
-    write_color_output "" "white"
-    write_color_output "2. Initializing database..." "yellow"
-    local init_db_script="$BACKEND_SCRIPTS_DIR/init_db.py"
-    if ! run_python_script "$init_db_script" "$BACKEND_DIR"; then
-        write_color_output "Database initialization failed" "red"
-        return 1
-    fi
-    
     # Generate test data
     write_color_output "" "white"
-    write_color_output "3. Generating test data..." "yellow"
+    write_color_output "2. Generating test data..." "yellow"
     local generate_test_data_script="$BACKEND_SCRIPTS_DIR/generate_test_data.py"
     if ! run_python_script "$generate_test_data_script" "$BACKEND_DIR"; then
         write_color_output "Test data generation failed" "red"
@@ -164,8 +176,8 @@ main() {
     fi
     
     write_color_output "" "white"
-    write_color_output "Database initialization completed successfully!" "green"
-    write_color_output "Database has been initialized with:" "white"
+    write_color_output "Test data added successfully!" "green"
+    write_color_output "Database has been populated with:" "white"
     write_color_output "  - Root user: root / root123" "white"
     write_color_output "  - Test user: test / test123" "white"
     write_color_output "  - Sample workers, processes, quotas, and salary records" "white"
