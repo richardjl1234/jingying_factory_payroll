@@ -534,7 +534,347 @@ def read_quotas(...):
 class QuotaCreate(BaseModel):
     process_code: str = Field(..., min_length=1, max_length=20, pattern=r'^[A-Za-z0-9_-]+$')
     cat1_code: str = Field(..., min_length=1, max_length=4, pattern=r'^[A-Za-z0-9]+$')
-    cat2_code: str = Field(..., min_length=1, max_length=4, pattern=r'^[A-Za-z0-9]+$')
+    cat2_code: str = Field(..., min_length=1, max_length=30, pattern=r'^[A-Za-z0-9]+
+    model_name: str = Field(..., min_length=1, max_length=20)
+    unit_price: Decimal = Field(..., ge=0, decimal_places=2, description="单价必须为正数，保留两位小数")
+    effective_date: date = Field(..., description="生效日期不能早于今天")
+    obsolete_date: date = Field(default=date(9999, 12, 31))
+
+    @validator('effective_date')
+    def effective_date_not_past(cls, v):
+        if v < date.today():
+            raise ValueError('生效日期不能早于今天')
+        return v
+```
+
+---
+
+### 2.4 第四阶段：测试增强（1-2周）
+
+#### 2.4.1 测试覆盖率提升
+
+**当前测试覆盖**:
+- 认证功能: 5个用例
+- 工序管理: 6个用例
+- 总计: 11个用例
+
+**目标测试覆盖**:
+- 全部API端点测试
+- 核心业务逻辑测试
+- 边界条件测试
+- 错误处理测试
+
+**测试用例模板**:
+```python
+# tests/test_quota.py
+
+class TestQuotaAPI:
+    """定额API测试类"""
+    
+    @pytest.fixture
+    def setup_data(self, db_session):
+        """测试数据准备"""
+        process = Process(process_code="P001", name="测试工序")
+        db_session.add(process)
+        db_session.commit()
+        return {"process": process}
+    
+    def test_create_quota_success(self, client, setup_data):
+        """测试创建定额成功"""
+        quota_data = {
+            "process_code": "P001",
+            "cat1_code": "C1",
+            "cat2_code": "C2",
+            "model_name": "M1",
+            "unit_price": 10.50,
+            "effective_date": "2024-01-01"
+        }
+        response = client.post("/api/quotas/", json=quota_data)
+        assert response.status_code == 201
+        assert response.json()["unit_price"] == "10.50"
+    
+    def test_create_quota_invalid_date(self, client, setup_data):
+        """测试创建定额 - 无效日期"""
+        quota_data = {
+            "process_code": "P001",
+            "cat1_code": "C1",
+            "cat2_code": "C2",
+            "model_name": "M1",
+            "unit_price": 10.50,
+            "effective_date": "2020-01-01"  # 过去日期
+        }
+        response = client.post("/api/quotas/", json=quota_data)
+        assert response.status_code == 422
+    
+    def test_get_quotas_pagination(self, client, setup_data):
+        """测试获取定额列表 - 分页"""
+        # 创建多个定额
+        for i in range(15):
+            create_quota_helper(client, ...)
+        
+        # 测试分页
+        response = client.get("/api/quotas/?page=1&size=10")
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["items"]) == 10
+        assert data["total"] == 15
+        assert data["pages"] == 2
+```
+
+#### 2.4.2 前端测试
+
+**添加前端测试**:
+```bash
+cd frontend
+npm install --save-dev @testing-library/react @testing-library/jest-dom
+npm install --save-dev jest @types/jest
+```
+
+**测试示例**:
+```typescript
+// pages/__tests__/QuotaManagement.test.tsx
+
+import { render, screen, fireEvent } from '@testing-library/react';
+import QuotaManagement from '../QuotaManagement';
+
+// Mock API calls
+jest.mock('../services/api', () => ({
+  quotaAPI: {
+    getQuotas: jest.fn().mockResolvedValue([]),
+    createQuota: jest.fn().mockResolvedValue({ id: 1 }),
+  },
+  processAPI: {
+    getProcesses: jest.fn().mockResolvedValue([]),
+  },
+  // ... 其他mock
+}));
+
+describe('QuotaManagement', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('renders quota management page', () => {
+    render(<QuotaManagement />);
+    expect(screen.getByText('定额管理')).toBeInTheDocument();
+  });
+
+  test('opens add quota modal', () => {
+    render(<QuotaManagement />);
+    fireEvent.click(screen.getByText('添加定额'));
+    expect(screen.getByText('添加定额')).toBeInTheDocument();
+  });
+});
+```
+
+---
+
+### 2.5 第五阶段：运维优化（1周）
+
+#### 2.5.1 日志规范化
+
+**当前日志配置**: 基本日志轮转
+
+**优化方案**:
+```python
+# backend/run.py - 增强日志配置
+
+import logging
+from logging.handlers import RotatingFileHandler
+import json
+from datetime import datetime
+
+class JSONFormatter(logging.Formatter):
+    """JSON格式日志"""
+    def format(self, record):
+        log_record = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": record.levelname,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
+        return json.dumps(log_record)
+
+def setup_logging():
+    """配置日志"""
+    handler = RotatingFileHandler(
+        'logs/app.log',
+        maxBytes=10*1024*1024,  # 10MB
+        backupCount=5,
+        encoding='utf-8'
+    )
+    handler.setFormatter(JSONFormatter())
+    logging.basicConfig(
+        level=logging.INFO,
+        handlers=[handler]
+    )
+```
+
+#### 2.5.2 性能监控
+
+**添加健康检查端点增强**:
+```python
+# backend/app/main.py
+
+@app.get("/api/health")
+def health_check():
+    """健康检查端点"""
+    db_status = "healthy"
+    try:
+        db_session.execute(text("SELECT 1"))
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+    
+    return {
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "timestamp": time.time(),
+        "components": {
+            "database": db_status,
+            "api": "healthy"
+        }
+    }
+```
+
+---
+
+## 3. 执行路线图
+
+### 3.1 阶段时间线
+
+```mermaid
+gantt
+    title 系统增强时间线
+    dateFormat  YYYY-MM-DD
+    section 第一阶段：类型安全
+    类型定义同步           :a1, 2024-01-01, 5d
+    页面迁移 (10个文件)     :a2, after a1, 15d
+    删除旧JSX文件          :a3, after a2, 2d
+    
+    section 第二阶段：API优化
+    标准化分页响应          :b1, 2024-01-20, 5d
+    数据库迁移(Alembic)     :b2, after b1, 5d
+    API版本控制             :b3, after b2, 3d
+    
+    section 第三阶段：安全增强
+    CORS配置收紧            :c1, 2024-02-01, 2d
+    请求限流                :c2, after c1, 3d
+    输入验证增强            :c3, after c2, 2d
+    
+    section 第四阶段：测试
+    后端单元测试            :d1, 2024-02-08, 7d
+    前端测试                :d2, after d1, 5d
+    
+    section 第五阶段：运维
+    日志规范化              :e1, 2024-02-15, 3d
+    性能监控                :e2, after e1, 2d
+```
+
+### 3.2 优先级排序
+
+| 优先级 | 任务 | 预计工时 | 风险 |
+|--------|------|----------|------|
+| **P0** | 类型定义同步 | 1天 | 低 |
+| **P0** | 页面迁移 (高优先级) | 3天 | 中 |
+| **P1** | 标准化分页 | 3天 | 低 |
+| **P1** | CORS安全配置 | 0.5天 | 低 |
+| **P2** | 数据库迁移 | 3天 | 中 |
+| **P2** | 请求限流 | 2天 | 低 |
+| **P3** | API版本控制 | 2天 | 中 |
+| **P3** | 测试覆盖率 | 5天 | 低 |
+| **P3** | 日志规范化 | 2天 | 低 |
+
+---
+
+## 4. 风险评估与缓解
+
+### 4.1 技术风险
+
+| 风险 | 影响 | 概率 | 缓解措施 |
+|------|------|------|----------|
+| TypeScript迁移导致回归 | 高 | 中 | 逐步迁移，每个页面测试后再删除旧文件 |
+| 数据库迁移数据丢失 | 高 | 低 | 备份数据库，测试迁移脚本 |
+| CORS配置错误导致前端无法访问 | 高 | 低 | 先在测试环境验证 |
+
+### 4.2 资源风险
+
+| 风险 | 影响 | 缓解措施 |
+|------|------|----------|
+| 迁移工作量超预期 | 中 | 分阶段执行，每个阶段有明确的验收标准 |
+| 测试时间不足 | 低 | 优先测试核心功能 |
+
+---
+
+## 5. 成功指标
+
+### 5.1 代码质量指标
+
+- [ ] TypeScript覆盖率: 100%（所有前端文件）
+- [ ] 后端测试用例数: ≥50个
+- [ ] 测试覆盖率: ≥80%
+- [ ] TypeScript编译警告: ≤10个
+
+### 5.2 功能指标
+
+- [ ] 所有页面功能测试通过
+- [ ] API分页响应格式统一
+- [ ] CORS配置符合安全要求
+- [ ] 数据库迁移脚本可重复执行
+
+### 5.3 运维指标
+
+- [ ] 日志格式规范化
+- [ ] 健康检查端点完整
+- [ ] 无Pydantic弃用警告
+
+---
+
+## 6. 下一步行动
+
+### 6.1 立即执行（本周）
+
+1. **确认增强计划**
+   - [ ] 用户审核并批准本计划
+   - [ ] 确定是否需要调整优先级
+
+2. **准备环境**
+   - [ ] 创建备份分支: `git checkout -b enhancement/phase1-types`
+   - [ ] 设置测试环境
+
+### 6.2 第一阶段启动
+
+1. 类型定义同步
+2. 页面迁移（按优先级）
+
+---
+
+## 7. 附录
+
+### 7.1 相关文档链接
+
+- [README.md](../README.md)
+- [后端重构总结](../backend/BACKEND_REFACTORING_SUMMARY.md)
+- [TypeScript重构总结](../frontend/TYPESCRIPT_REFACTORING_SUMMARY.md)
+- [数据库结构文档](../document/DATABASE_SCHEMA.md)
+- [API接口文档](../document/API接口文档.md)
+
+### 7.2 技术债务清单
+
+1. ⚠️ Pydantic V1 API弃用警告
+2. ⚠️ React Router类型兼容性问题
+3. ⚠️ 前端类型定义与后端不一致
+4. ⚠️ 数据库仅用create_all()，无Alembic迁移工具
+5. ⚠️ 测试覆盖率不足
+
+---
+
+**文档版本**: 1.0  
+**创建日期**: 2026-01-03  
+**最后更新**: 2026-01-03  
+)
     model_name: str = Field(..., min_length=1, max_length=20)
     unit_price: Decimal = Field(..., ge=0, decimal_places=2, description="单价必须为正数，保留两位小数")
     effective_date: date = Field(..., description="生效日期不能早于今天")

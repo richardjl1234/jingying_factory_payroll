@@ -94,7 +94,7 @@ class QuotaBase(BaseModel):
     """定额基础模型"""
     process_code: str = Field(..., min_length=1, max_length=20)
     cat1_code: str = Field(..., min_length=1, max_length=4)
-    cat2_code: str = Field(..., min_length=1, max_length=4)
+    cat2_code: str = Field(..., min_length=1, max_length=30)
     model_name: str = Field(..., min_length=1, max_length=20)
     unit_price: Decimal = Field(..., ge=0, decimal_places=2)
     effective_date: date
@@ -107,7 +107,7 @@ class QuotaCreate(QuotaBase):
 class QuotaUpdate(BaseModel):
     """更新定额模型"""
     cat1_code: Optional[str] = Field(None, min_length=1, max_length=4)
-    cat2_code: Optional[str] = Field(None, min_length=1, max_length=4)
+    cat2_code: Optional[str] = Field(None, min_length=1, max_length=30)
     model_name: Optional[str] = Field(None, min_length=1, max_length=20)
     unit_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
     effective_date: Optional[date] = None
@@ -277,7 +277,7 @@ class ProcessCat1(ProcessCat1InDB):
 # 工序类别相关模型
 class ProcessCat2Base(BaseModel):
     """工序类别基础模型"""
-    cat2_code: str = Field(..., min_length=1, max_length=4)
+    cat2_code: str = Field(..., min_length=1, max_length=30)
     name: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=100)
 

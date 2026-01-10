@@ -160,7 +160,7 @@ CREATE TABLE process_cat1 (
 **表结构**：
 ```sql
 CREATE TABLE process_cat2 (
-    cat2_code VARCHAR(4) NOT NULL,
+    cat2_code VARCHAR(30) NOT NULL,
     name VARCHAR(50) NOT NULL,
     description VARCHAR(100),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -172,7 +172,7 @@ CREATE TABLE process_cat2 (
 **字段说明**：
 | 字段名 | 数据类型 | 约束 | 说明 |
 |--------|----------|------|------|
-| cat2_code | VARCHAR(4) | PRIMARY KEY | 工序编码，主键 |
+| cat2_code | VARCHAR(30) | PRIMARY KEY | 工序编码，主键 |
 | name | VARCHAR(50) | NOT NULL | 工序名称 |
 | description | VARCHAR(100) | NULLABLE | 工序描述 |
 | created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
@@ -226,7 +226,7 @@ CREATE TABLE quotas (
     id INTEGER NOT NULL,
     process_code VARCHAR(20) NOT NULL,
     cat1_code VARCHAR(4) NOT NULL,
-    cat2_code VARCHAR(4) NOT NULL,
+    cat2_code VARCHAR(30) NOT NULL,
     model_name VARCHAR(20) NOT NULL,
     unit_price NUMERIC(10, 2) NOT NULL,
     effective_date DATE NOT NULL,
@@ -249,7 +249,7 @@ CREATE TABLE quotas (
 | id | INTEGER | PRIMARY KEY, AUTOINCREMENT | 定额ID，主键 |
 | process_code | VARCHAR(20) | NOT NULL, FOREIGN KEY | 工序编码，外键引用processes表 |
 | cat1_code | VARCHAR(4) | NOT NULL, FOREIGN KEY | 工段编码，外键引用process_cat1表 |
-| cat2_code | VARCHAR(4) | NOT NULL, FOREIGN KEY | 工序类别编码，外键引用process_cat2表 |
+| cat2_code | VARCHAR(30) | NOT NULL, FOREIGN KEY | 工序类别编码，外键引用process_cat2表 |
 | model_name | VARCHAR(20) | NOT NULL, FOREIGN KEY | 电机型号名称，外键引用motor_models表 |
 | unit_price | NUMERIC(10, 2) | NOT NULL | 单价，保留两位小数 |
 | effective_date | DATE | NOT NULL | 生效日期 |

@@ -53,7 +53,7 @@ class Quota(Base):
     id = Column(Integer, primary_key=True, index=True)
     process_code = Column(String(20), ForeignKey("processes.process_code"), nullable=False, index=True)
     cat1_code = Column(String(4), ForeignKey("process_cat1.cat1_code", ondelete="CASCADE"), nullable=False, index=True)
-    cat2_code = Column(String(4), ForeignKey("process_cat2.cat2_code", ondelete="CASCADE"), nullable=False, index=True)
+    cat2_code = Column(String(30), ForeignKey("process_cat2.cat2_code", ondelete="CASCADE"), nullable=False, index=True)
     model_name = Column(String(20), ForeignKey("motor_models.name", ondelete="CASCADE"), nullable=False, index=True)
     unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
     effective_date = Column(Date, nullable=False, comment="生效日期", index=True)
@@ -110,7 +110,7 @@ class ProcessCat2(Base):
     """工序类别表"""
     __tablename__ = "process_cat2"
     
-    cat2_code = Column(String(4), primary_key=True, index=True, comment="工序类别编码")
+    cat2_code = Column(String(30), primary_key=True, index=True, comment="工序类别编码")
     name = Column(String(50), nullable=False, index=True, comment="工序类别名称")
     description = Column(String(100), nullable=True, comment="工序类别描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
