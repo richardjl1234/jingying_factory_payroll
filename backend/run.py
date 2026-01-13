@@ -1,12 +1,22 @@
 import os
 import logging
-from datetime import datetime
 from logging.handlers import RotatingFileHandler
 
-# 配置日志
-log_file = f'backend_debug_{datetime.now().strftime("%Y%m%d")}.log'
+# 从环境变量获取日志级别配置
+LOG_LEVEL_MAP = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR
+}
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+log_level = LOG_LEVEL_MAP.get(LOG_LEVEL, logging.INFO)
+
+# 配置日志 - 使用单个日志文件
+log_file = 'backend.log'
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
@@ -34,4 +44,4 @@ if __name__ == "__main__":
     import uvicorn
     logger.info("启动Uvicorn服务器...")
     logger.debug(f"主机: 0.0.0.0, 端口: 8000, 重载模式: True")
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, log_level="debug")
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
