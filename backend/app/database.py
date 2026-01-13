@@ -2,14 +2,9 @@ import logging
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
 import os
 
 logger = logging.getLogger(__name__)
-
-# 加载环境变量
-logger.debug("加载环境变量...")
-load_dotenv()
 
 # 获取数据库URL - 必须从环境变量设置，无默认值
 MYSQL_DB_URL = os.getenv("MYSQL_DB_URL")

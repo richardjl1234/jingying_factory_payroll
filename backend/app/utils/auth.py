@@ -1,11 +1,7 @@
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
 import os
-
-# 加载环境变量
-load_dotenv()
 
 # 获取环境变量
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
