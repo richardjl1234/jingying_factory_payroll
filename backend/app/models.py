@@ -97,7 +97,7 @@ class ProcessCat1(Base):
     __tablename__ = "process_cat1"
     
     cat1_code = Column(String(4), primary_key=True, index=True, comment="工段编码")
-    name = Column(String(50), nullable=False, index=True, comment="工段名称")
+    name = Column(String(50), nullable=False, unique=True, index=True, comment="工段名称")
     description = Column(String(100), nullable=True, comment="工段描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -111,7 +111,7 @@ class ProcessCat2(Base):
     __tablename__ = "process_cat2"
     
     cat2_code = Column(String(30), primary_key=True, index=True, comment="工序类别编码")
-    name = Column(String(50), nullable=False, index=True, comment="工序类别名称")
+    name = Column(String(50), nullable=False, unique=True, index=True, comment="工序类别名称")
     description = Column(String(100), nullable=True, comment="工序类别描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -125,7 +125,7 @@ class MotorModel(Base):
     __tablename__ = "motor_models"
     
     model_code = Column(String(10), primary_key=True, index=True, comment="电机型号编码")
-    name = Column(String(40), nullable=False, index=True, comment="电机型号名称")
+    name = Column(String(40), nullable=False, unique=True, index=True, comment="电机型号名称")
     description = Column(String(100), nullable=True, comment="电机型号描述")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
