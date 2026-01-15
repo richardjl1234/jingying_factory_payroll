@@ -430,53 +430,101 @@ const SalaryRecord = () => {
       title: '记录日期',
       dataIndex: 'record_date',
       key: 'record_date',
-      width: 120,
+      width: 100,
     },
     {
       title: '电机型号',
-      dataIndex: 'model_display',
-      key: 'model_display',
-      width: 120,
-      render: (text: string) => {
-        if (!text) return '-';
-        const match = text.match(/^(.*?)\s*\((.*)\)$/);
-        if (match) {
-          return (
-            <span>
-              {match[1].trim()}
-              <br />
-              <Text type="secondary" style={{ fontSize: 12 }}>({match[2].trim()})</Text>
-            </span>
-          );
+      dataIndex: 'model_code',
+      key: 'model_code',
+      width: 100,
+      render: (text: string, record: SalaryRecord) => {
+        if (!text && record.model_display) {
+          const match = record.model_display.match(/^(.*?)\s*\((.*)\)$/);
+          if (match) {
+            return (
+              <span>
+                {match[1].trim()}
+                <br />
+                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+              </span>
+            );
+          }
+          return record.model_display;
         }
-        return text;
+        return text || '-';
+      }
+    },
+    {
+      title: '工段',
+      dataIndex: 'cat1_code',
+      key: 'cat1_code',
+      width: 100,
+      render: (text: string, record: SalaryRecord) => {
+        if (record.cat1_display) {
+          const match = record.cat1_display.match(/^(.*?)\s*\((.*)\)$/);
+          if (match) {
+            return (
+              <span>
+                {match[1].trim()}
+                <br />
+                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+              </span>
+            );
+          }
+          return record.cat1_display;
+        }
+        return text ? `${text}` : '-';
+      }
+    },
+    {
+      title: '工序类别',
+      dataIndex: 'cat2_code',
+      key: 'cat2_code',
+      width: 100,
+      render: (text: string, record: SalaryRecord) => {
+        if (record.cat2_display) {
+          const match = record.cat2_display.match(/^(.*?)\s*\((.*)\)$/);
+          if (match) {
+            return (
+              <span>
+                {match[1].trim()}
+                <br />
+                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+              </span>
+            );
+          }
+          return record.cat2_display;
+        }
+        return text ? `${text}` : '-';
       }
     },
     {
       title: '工序',
-      dataIndex: 'process_display',
-      key: 'process_display',
-      width: 120,
-      render: (text: string) => {
-        if (!text) return '-';
-        const match = text.match(/^(.*?)\s*\((.*)\)$/);
-        if (match) {
-          return (
-            <span>
-              {match[1].trim()}
-              <br />
-              <Text type="secondary" style={{ fontSize: 12 }}>({match[2].trim()})</Text>
-            </span>
-          );
+      dataIndex: 'process_code',
+      key: 'process_code',
+      width: 100,
+      render: (text: string, record: SalaryRecord) => {
+        if (record.process_display) {
+          const match = record.process_display.match(/^(.*?)\s*\((.*)\)$/);
+          if (match) {
+            return (
+              <span>
+                {match[1].trim()}
+                <br />
+                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+              </span>
+            );
+          }
+          return record.process_display;
         }
-        return text;
+        return text || '-';
       }
     },
     {
       title: '单价',
       dataIndex: 'unit_price',
       key: 'unit_price',
-      width: 100,
+      width: 80,
       align: 'right' as const,
       render: (price: number) => `¥${price?.toFixed(2) || '0.00'}`
     },
@@ -484,7 +532,7 @@ const SalaryRecord = () => {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
-      width: 100,
+      width: 80,
       align: 'right' as const,
       render: (qty: number) => qty?.toFixed(2) || '0.00'
     },
@@ -492,17 +540,17 @@ const SalaryRecord = () => {
       title: '金额',
       dataIndex: 'amount',
       key: 'amount',
-      width: 100,
+      width: 80,
       align: 'right' as const,
       render: (amount: number) => `¥${amount?.toFixed(2) || '0.00'}`
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: 100,
       fixed: 'right' as const,
       render: (_: any, record: SalaryRecord) => (
-        <Space size="middle">
+        <Space size="small">
           <Button 
             type="primary" 
             icon={<EditOutlined />} 
@@ -577,7 +625,7 @@ const SalaryRecord = () => {
         rowKey="id"
         loading={dataLoading}
         pagination={{ pageSize: 10 }}
-        scroll={{ x: 800 }}
+        scroll={{ x: 1100 }}
         size="small"
       />
 
@@ -745,17 +793,35 @@ const SalaryRecord = () => {
                 border: '1px solid #91d5ff'
               }}>
                 <Row gutter={16}>
-                  <Col span={6}>
+                  <Col span={4}>
                     <Text type="secondary">定额ID：</Text>
                     <Text strong>{(quotaResult as QuotaSearchResult).quota_id}</Text>
                   </Col>
-                  <Col span={6}>
+                  <Col span={4}>
                     <Text type="secondary">单价：</Text>
                     <Text strong style={{ color: '#1890ff' }}>¥{(quotaResult as QuotaSearchResult).unit_price.toFixed(2)}</Text>
                   </Col>
-                  <Col span={12}>
+                  <Col span={8}>
                     <Text type="secondary">有效期：</Text>
                     <Text>{(quotaResult as QuotaSearchResult).effective_date} ~ {(quotaResult as QuotaSearchResult).obsolete_date}</Text>
+                  </Col>
+                </Row>
+                <Row gutter={16} style={{ marginTop: 8 }}>
+                  <Col span={6}>
+                    <Text type="secondary">型号：</Text>
+                    <Text>{(quotaResult as QuotaSearchResult).model_code}</Text>
+                  </Col>
+                  <Col span={6}>
+                    <Text type="secondary">工段类别：</Text>
+                    <Text>{(quotaResult as QuotaSearchResult).cat1_name} ({(quotaResult as QuotaSearchResult).cat1_code})</Text>
+                  </Col>
+                  <Col span={6}>
+                    <Text type="secondary">工序类别：</Text>
+                    <Text>{(quotaResult as QuotaSearchResult).cat2_name} ({(quotaResult as QuotaSearchResult).cat2_code})</Text>
+                  </Col>
+                  <Col span={6}>
+                    <Text type="secondary">工序：</Text>
+                    <Text>{(quotaResult as QuotaSearchResult).process_name} ({(quotaResult as QuotaSearchResult).process_code})</Text>
                   </Col>
                 </Row>
               </div>
