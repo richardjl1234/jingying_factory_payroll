@@ -250,6 +250,9 @@ const SalaryRecord = () => {
       // 尝试自动确定定额
       if (selectedModel) {
         findQuotaByCombination(selectedModel.model_code, process);
+      } else if (quotaResult) {
+        // 如果之前有定额信息，保留但更新
+        findQuotaByCombination(quotaResult.model_code, process);
       }
     }
   };
@@ -769,18 +772,47 @@ const SalaryRecord = () => {
                   style={{ width: '100%' }}
                   onSearch={handleProcessSearch}
                   onSelect={handleProcessSelect}
-                  onBlur={() => setShowProcessDropdown(false)}
-                  open={showProcessDropdown}
-                  dropdownMatchSelectWidth={false}
+                  onClear={() => {
+                    setSelectedProcess(null);
+                    setQuotaResult(null);
+                  }}
                   value={selectedProcess ? selectedProcess.combined_code : undefined}
                   allowClear
-                >
-                  {processSearchResults.map((process: QuotaCombination) => (
-                    <Option key={process.quota_id} value={process.quota_id}>
-                      {process.cat1_name}-{process.cat2_name}-{process.process_name} ({process.combined_code})
-                    </Option>
-                  ))}
-                </Select>
+                  filterOption={(input, option) => {
+                    // 使用自定义搜索结果，不使用Ant Design的默认过滤
+                    return processSearchResults.some(r => r.quota_id === option?.value);
+                  }}
+                  notFoundContent={
+                    processSearchResults.length > 0 ? (
+                      <div style={{ maxHeight: 200, overflow: 'auto' }}>
+                        {processSearchResults.slice(0, 50).map((process: QuotaCombination) => (
+                          <div
+                            key={process.quota_id}
+                            style={{
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid #f0f0f0'
+                            }}
+                            onClick={() => handleProcessSelect(process.quota_id)}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                          >
+                            {process.cat1_name}-{process.cat2_name}-{process.process_name} ({process.combined_code})
+                          </div>
+                        ))}
+                        {processSearchResults.length > 50 && (
+                          <div style={{ padding: 8, textAlign: 'center', color: '#999' }}>
+                            还有 {processSearchResults.length - 50} 条结果...
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ padding: 8, textAlign: 'center', color: '#999' }}>
+                        输入关键词搜索工序组合
+                      </div>
+                    )
+                  }
+                />
               </Col>
             </Row>
 
