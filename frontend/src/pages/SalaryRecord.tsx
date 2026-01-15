@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -101,6 +101,13 @@ const SalaryRecord = () => {
   const [processSearchResults, setProcessSearchResults] = useState<QuotaCombination[]>([]);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showProcessDropdown, setShowProcessDropdown] = useState(false);
+  
+  // 搜索输入值
+  const [processSearchValue, setProcessSearchValue] = useState('');
+  
+  // 键盘导航状态
+  const [focusedProcessIndex, setFocusedProcessIndex] = useState<number>(-1);
+  const processDropdownRef = useRef<HTMLDivElement>(null);
 
   // 获取工人列表
   const fetchWorkers = useCallback(async () => {
@@ -216,16 +223,25 @@ const SalaryRecord = () => {
 
   // 工序搜索
   const handleProcessSearch = (value: string) => {
+    setProcessSearchValue(value);
     if (!value) {
       setProcessSearchResults([]);
-      setShowProcessDropdown(false);
+      setFocusedProcessIndex(-1);
       return;
     }
     
     // 顺序匹配算法：用户输入的字符必须按顺序出现在组合中
     const lowerValue = value.toLowerCase();
     
-    const results = dictionaries.quota_combinations.filter((q: QuotaCombination) => {
+    // 如果已选型号，先按型号过滤
+    let baseCombinations = dictionaries.quota_combinations;
+    if (selectedModel) {
+      baseCombinations = baseCombinations.filter(
+        (q: QuotaCombination) => q.model_code === selectedModel.model_code
+      );
+    }
+    
+    const results = baseCombinations.filter((q: QuotaCombination) => {
       const combinedCode = q.combined_code.toLowerCase();
       let charIndex = 0;
       
@@ -238,7 +254,93 @@ const SalaryRecord = () => {
     });
     
     setProcessSearchResults(results);
-    setShowProcessDropdown(results.length > 0);
+    setFocusedProcessIndex(-1);
+  };
+
+  // 高亮显示匹配的字符
+  const highlightMatchedChars = (text: string, searchValue: string): React.ReactNode => {
+    if (!searchValue) return text;
+    
+    const searchLower = searchValue.toLowerCase();
+    const textLower = text.toLowerCase();
+    
+    // 找到所有匹配字符的位置
+    const matches: { start: number; end: number }[] = [];
+    let charIndex = 0;
+    for (const char of searchLower) {
+      const pos = textLower.indexOf(char, charIndex);
+      if (pos === -1) break;
+      matches.push({ start: pos, end: pos + 1 });
+      charIndex = pos + 1;
+    }
+    
+    if (matches.length === 0) return text;
+    
+    // 构建带高亮的文本
+    const parts: { text: string; highlighted: boolean }[] = [];
+    let lastEnd = 0;
+    for (const match of matches) {
+      if (match.start > lastEnd) {
+        parts.push({ text: text.slice(lastEnd, match.start), highlighted: false });
+      }
+      parts.push({ text: text.slice(match.start, match.end), highlighted: true });
+      lastEnd = match.end;
+    }
+    if (lastEnd < text.length) {
+      parts.push({ text: text.slice(lastEnd), highlighted: false });
+    }
+    
+    return (
+      <span>
+        {parts.map((part, i) => (
+          <span key={i} style={part.highlighted ? { backgroundColor: '#ffe58f', fontWeight: 'bold' } : {}}>
+            {part.text}
+          </span>
+        ))}
+      </span>
+    );
+  };
+
+  // 工序下拉框键盘导航
+  const handleProcessDropdownKeyDown = (e: React.KeyboardEvent) => {
+    const totalOptions = processSearchResults.length;
+    if (totalOptions === 0) return;
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift+Tab: 上一项
+        setFocusedProcessIndex(prev => {
+          const newIndex = prev <= 0 ? totalOptions - 1 : prev - 1;
+          // 聚焦到对应元素
+          setTimeout(() => {
+            const elements = processDropdownRef.current?.querySelectorAll('[data-process-index]');
+            const el = elements?.[newIndex] as HTMLElement;
+            el?.focus();
+          }, 0);
+          return newIndex;
+        });
+      } else {
+        // Tab: 下一项
+        setFocusedProcessIndex(prev => {
+          const newIndex = prev >= totalOptions - 1 ? 0 : prev + 1;
+          // 聚焦到对应元素
+          setTimeout(() => {
+            const elements = processDropdownRef.current?.querySelectorAll('[data-process-index]');
+            const el = elements?.[newIndex] as HTMLElement;
+            el?.focus();
+          }, 0);
+          return newIndex;
+        });
+      }
+    } else if (e.key === ' ') {
+      // Space: 选择当前聚焦的选项
+      e.preventDefault();
+      if (focusedProcessIndex >= 0 && focusedProcessIndex < totalOptions) {
+        const process = processSearchResults[focusedProcessIndex];
+        handleProcessSelect(process.quota_id);
+      }
+    }
   };
 
   // 选择工序
@@ -246,7 +348,9 @@ const SalaryRecord = () => {
     const process = dictionaries.quota_combinations.find((q: QuotaCombination) => q.quota_id === quotaId);
     if (process) {
       setSelectedProcess(process);
-      setShowProcessDropdown(false);
+      setProcessSearchResults([]);
+      setProcessSearchValue('');
+      setFocusedProcessIndex(-1);
       // 尝试自动确定定额
       if (selectedModel) {
         findQuotaByCombination(selectedModel.model_code, process);
@@ -766,53 +870,133 @@ const SalaryRecord = () => {
             {/* 工序搜索 */}
             <Row gutter={16} style={{ marginBottom: 16 }}>
               <Col span={12}>
-                <Select
-                  showSearch
-                  placeholder="搜索工序（输入编码组合，如：abcefg036）"
-                  style={{ width: '100%' }}
-                  onSearch={handleProcessSearch}
-                  onSelect={handleProcessSelect}
-                  onClear={() => {
-                    setSelectedProcess(null);
-                    setQuotaResult(null);
-                  }}
-                  value={selectedProcess ? selectedProcess.combined_code : undefined}
-                  allowClear
-                  filterOption={(input, option) => {
-                    // 使用自定义搜索结果，不使用Ant Design的默认过滤
-                    return processSearchResults.some(r => r.quota_id === option?.value);
-                  }}
-                  notFoundContent={
-                    processSearchResults.length > 0 ? (
-                      <div style={{ maxHeight: 200, overflow: 'auto' }}>
-                        {processSearchResults.slice(0, 50).map((process: QuotaCombination) => (
-                          <div
-                            key={process.quota_id}
-                            style={{
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              borderBottom: '1px solid #f0f0f0'
-                            }}
-                            onClick={() => handleProcessSelect(process.quota_id)}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                          >
-                            {process.cat1_name}-{process.cat2_name}-{process.process_name} ({process.combined_code})
-                          </div>
-                        ))}
-                        {processSearchResults.length > 50 && (
-                          <div style={{ padding: 8, textAlign: 'center', color: '#999' }}>
-                            还有 {processSearchResults.length - 50} 条结果...
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ padding: 8, textAlign: 'center', color: '#999' }}>
-                        输入关键词搜索工序组合
-                      </div>
-                    )
-                  }
-                />
+                <div style={{ position: 'relative' }}>
+                  <Input
+                    placeholder={
+                      selectedModel 
+                        ? `已选型号 ${selectedModel.model_code}，搜索工序组合`
+                        : "搜索工序（输入编码组合，如：abcefg036）"
+                    }
+                    value={selectedProcess ? selectedProcess.combined_code : processSearchValue}
+                    onChange={(e) => handleProcessSearch(e.target.value)}
+                    onClear={() => {
+                      setSelectedProcess(null);
+                      setQuotaResult(null);
+                      setProcessSearchValue('');
+                    }}
+                    allowClear
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab' && processSearchResults.length > 0) {
+                        e.preventDefault();
+                        setFocusedProcessIndex(0);
+                        setTimeout(() => {
+                          const firstOption = document.querySelector('[data-process-index="0"]') as HTMLElement;
+                          firstOption?.focus();
+                        }, 10);
+                      }
+                    }}
+                  />
+                  {/* 下拉框 */}
+                  {processSearchResults.length > 0 && (
+                    <div 
+                      ref={processDropdownRef}
+                      style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: 200,
+                        overflow: 'auto',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: 4,
+                        backgroundColor: 'white',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Tab') {
+                          e.preventDefault();
+                          if (e.shiftKey) {
+                            setFocusedProcessIndex(prev => {
+                              const newIndex = prev <= 0 ? processSearchResults.length - 1 : prev - 1;
+                              setTimeout(() => {
+                                const el = document.querySelector(`[data-process-index="${newIndex}"]`) as HTMLElement;
+                                el?.focus();
+                              }, 10);
+                              return newIndex;
+                            });
+                          } else {
+                            setFocusedProcessIndex(prev => {
+                              const newIndex = prev >= processSearchResults.length - 1 ? 0 : prev + 1;
+                              setTimeout(() => {
+                                const el = document.querySelector(`[data-process-index="${newIndex}"]`) as HTMLElement;
+                                el?.focus();
+                              }, 10);
+                              return newIndex;
+                            });
+                          }
+                        } else if (e.key === ' ') {
+                          e.preventDefault();
+                          if (focusedProcessIndex >= 0) {
+                            const process = processSearchResults[focusedProcessIndex];
+                            handleProcessSelect(process.quota_id);
+                          }
+                        } else if (e.key === 'Escape') {
+                          setProcessSearchResults([]);
+                          setProcessSearchValue('');
+                        }
+                      }}
+                    >
+                      {processSearchResults.slice(0, 50).map((process: QuotaCombination, index: number) => (
+                        <div
+                          key={process.quota_id}
+                          data-process-index={index}
+                          tabIndex={0}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f0f0f0',
+                            color: 'rgba(0, 0, 0, 0.85)',
+                            backgroundColor: focusedProcessIndex === index ? '#e6f7ff' : 'transparent',
+                            outline: 'none'
+                          }}
+                          onClick={() => handleProcessSelect(process.quota_id)}
+                          onFocus={() => setFocusedProcessIndex(index)}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = focusedProcessIndex === index ? '#e6f7ff' : 'white';
+                          }}
+                        >
+                          {process.cat1_name}-{process.cat2_name}-{process.process_name} 
+                          ({highlightMatchedChars(process.combined_code, processSearchValue)})
+                        </div>
+                      ))}
+                      {processSearchResults.length > 50 && (
+                        <div style={{ padding: 8, textAlign: 'center', color: '#999' }}>
+                          还有 {processSearchResults.length - 50} 条结果...
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {processSearchResults.length === 0 && processSearchValue && selectedModel && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      padding: '8px 12px',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: 4,
+                      backgroundColor: 'white',
+                      color: '#999',
+                      zIndex: 1000
+                    }}>
+                      没有匹配的工序组合
+                    </div>
+                  )}
+                </div>
               </Col>
             </Row>
 
