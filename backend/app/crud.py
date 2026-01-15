@@ -716,3 +716,161 @@ def delete_motor_model(db: Session, model_code: str) -> Optional[dict]:
     db.commit()
     logger.info(f"电机型号删除成功: model_code={model_code}")
     return motor_model_info
+
+
+# 定额矩阵相关CRUD
+
+def get_quota_filter_combinations(db: Session) -> List[dict]:
+    """
+    获取所有唯一的 (工段类别, 工序类别, 生效日期) 组合
+    按 生效日期, 工段类别, 工序类别 排序
+    """
+    logger.debug("获取定额过滤器组合列表")
+    
+    results = db.query(
+        models.Quota.cat1_code,
+        models.ProcessCat1.name.label('cat1_name'),
+        models.Quota.cat2_code,
+        models.ProcessCat2.name.label('cat2_name'),
+        models.Quota.effective_date
+    ).join(
+        models.ProcessCat1, 
+        models.Quota.cat1_code == models.ProcessCat1.cat1_code, 
+        isouter=True
+    ).join(
+        models.ProcessCat2, 
+        models.Quota.cat2_code == models.ProcessCat2.cat2_code, 
+        isouter=True
+    ).distinct(
+        models.Quota.cat1_code,
+        models.Quota.cat2_code,
+        models.Quota.effective_date
+    ).order_by(
+        models.Quota.effective_date,
+        models.Quota.cat1_code,
+        models.Quota.cat2_code
+    ).all()
+    
+    return [
+        {
+            "cat1_code": r.cat1_code,
+            "cat1_name": r.cat1_name or r.cat1_code,
+            "cat2_code": r.cat2_code,
+            "cat2_name": r.cat2_name or r.cat2_code,
+            "effective_date": str(r.effective_date)
+        }
+        for r in results
+    ]
+
+
+def get_quota_matrix_data(db: Session, cat1_code: str, cat2_code: str, effective_date: str) -> Optional[dict]:
+    """
+    获取指定组合的定额矩阵数据
+    
+    返回:
+        {
+            "cat1": {"code": str, "name": str},
+            "cat2": {"code": str, "name": str},
+            "effective_date": str,
+            "rows": [{"model_code": str, "model_name": str, "prices": {}}],
+            "columns": [{"process_code": str, "process_name": str}]
+        }
+    """
+    logger.debug(f"获取定额矩阵数据: cat1_code={cat1_code}, cat2_code={cat2_code}, effective_date={effective_date}")
+    
+    # 获取所有相关定额记录，同时获取工序名称
+    quotas = db.query(
+        models.Quota,
+        models.Process.name.label('process_name'),
+        models.MotorModel.name.label('model_name')
+    ).join(
+        models.Process,
+        models.Quota.process_code == models.Process.process_code
+    ).join(
+        models.MotorModel,
+        models.Quota.model_code == models.MotorModel.model_code
+    ).filter(
+        models.Quota.cat1_code == cat1_code,
+        models.Quota.cat2_code == cat2_code,
+        models.Quota.effective_date == effective_date
+    ).all()
+    
+    if not quotas:
+        logger.warning(f"未找到定额数据: cat1_code={cat1_code}, cat2_code={cat2_code}, effective_date={effective_date}")
+        return None
+    
+    # 获取名称映射
+    cat1 = get_process_cat1_by_code(db, cat1_code)
+    cat2 = get_process_cat2_by_code(db, cat2_code)
+    
+    # 构建矩阵数据
+    model_codes = set()
+    process_codes = set()
+    price_map = {}  # (model_code, process_code) -> unit_price
+    process_names = {}  # process_code -> process_name
+    model_names = {}  # model_code -> model_name
+    
+    for quota, process_name, model_name in quotas:
+        model_codes.add(quota.model_code)
+        process_codes.add(quota.process_code)
+        price_map[(quota.model_code, quota.process_code)] = float(quota.unit_price)
+        # 保存工序名称（优先使用实际名称，如果为空则使用code）
+        if process_name:
+            process_names[quota.process_code] = process_name
+        else:
+            process_names[quota.process_code] = quota.process_code
+        # 保存型号名称
+        if model_name:
+            model_names[quota.model_code] = model_name
+        else:
+            model_names[quota.model_code] = quota.model_code
+    
+    # 排序型号（按数字前缀排序）
+    def get_model_sort_key(model_code):
+        try:
+            part = model_code.split('-')[0]
+            return int(part)
+        except (ValueError, AttributeError):
+            return 0
+    
+    sorted_models = sorted(model_codes, key=get_model_sort_key)
+    sorted_processes = sorted(process_codes)
+    
+    # 构建响应
+    rows = []
+    for model_code in sorted_models:
+        prices = {}
+        for process_code in sorted_processes:
+            price = price_map.get((model_code, process_code))
+            if price is not None:
+                prices[process_code] = price
+        
+        model_name = model_names.get(model_code, model_code)
+        
+        rows.append({
+            "model_code": model_code,
+            "model_name": model_name,
+            "prices": prices
+        })
+    
+    columns = []
+    for process_code in sorted_processes:
+        process_name = process_names.get(process_code, process_code)
+        columns.append({
+            "process_code": process_code,
+            "process_name": process_name
+        })
+    
+    return {
+        "cat1": {
+            "code": cat1_code,
+            "name": cat1.name if cat1 else cat1_code
+        },
+        "cat2": {
+            "code": cat2_code,
+            "name": cat2.name if cat2 else cat2_code
+        },
+        "effective_date": effective_date,
+        "rows": rows,
+        "columns": columns
+    }

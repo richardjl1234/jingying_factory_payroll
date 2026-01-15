@@ -112,11 +112,40 @@ def test_process(test_db):
 def test_quota(test_db, test_process):
     """创建测试定额"""
     from decimal import Decimal
+    from app import models
+    
+    # 首先需要创建相关的cat1, cat2, motor_model
+    # 创建工段类别
+    cat1 = models.ProcessCat1(
+        cat1_code="C1T",
+        name="测试工段类别"
+    )
+    test_db.add(cat1)
+    
+    # 创建工序类别
+    cat2 = models.ProcessCat2(
+        cat2_code="C2T",
+        name="测试工序类别"
+    )
+    test_db.add(cat2)
+    
+    # 创建电机型号
+    motor_model = models.MotorModel(
+        model_code="100-1",
+        name="测试电机型号100-1"
+    )
+    test_db.add(motor_model)
+    
+    test_db.commit()
     
     quota = models.Quota(
-        process_code=test_process.code,
+        process_code=test_process.process_code,
+        cat1_code="C1T",
+        cat2_code="C2T",
+        model_code="100-1",
         unit_price=Decimal("10.50"),
-        effective_date="2023-01-01"
+        effective_date="2023-01-01",
+        obsolete_date="9999-12-31"
     )
     
     test_db.add(quota)

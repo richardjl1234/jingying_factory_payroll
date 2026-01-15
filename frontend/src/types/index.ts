@@ -104,3 +104,42 @@ export interface PaginatedResponse<T> {
   size: number;
   pages: number;
 }
+
+/**
+ * 定额过滤器组合类型定义
+ */
+export interface QuotaFilterCombination {
+  cat1_code: string;
+  cat1_name: string;
+  cat2_code: string;
+  cat2_name: string;
+  effective_date: string;
+}
+
+/**
+ * 定额矩阵行类型定义
+ */
+export interface QuotaMatrixRow {
+  model_code: string;
+  model_name: string;
+  prices: Record<string, number>;  // process_code -> unit_price
+}
+
+/**
+ * 定额矩阵列类型定义
+ */
+export interface QuotaMatrixColumn {
+  process_code: string;
+  process_name: string;
+}
+
+/**
+ * 定额矩阵响应类型定义
+ */
+export interface QuotaMatrixResponse {
+  cat1: { code: string; name: string };
+  cat2: { code: string; name: string };
+  effective_date: string;
+  rows: QuotaMatrixRow[];
+  columns: QuotaMatrixColumn[];
+}

@@ -330,3 +330,32 @@ class MotorModelSchemaInDB(MotorModelSchemaBase):
 class MotorModelSchema(MotorModelSchemaInDB):
     """返回给客户端的电机型号模型"""
     pass
+
+
+# 定额矩阵相关模型
+class QuotaFilterCombination(BaseModel):
+    """定额过滤器组合模型"""
+    cat1_code: str
+    cat1_name: str
+    cat2_code: str
+    cat2_name: str
+    effective_date: str
+
+class QuotaMatrixRow(BaseModel):
+    """定额矩阵行模型"""
+    model_code: str
+    model_name: str
+    prices: dict  # process_code -> unit_price
+
+class QuotaMatrixColumn(BaseModel):
+    """定额矩阵列模型"""
+    process_code: str
+    process_name: str
+
+class QuotaMatrixResponse(BaseModel):
+    """定额矩阵响应模型"""
+    cat1: dict  # {"code": str, "name": str}
+    cat2: dict  # {"code": str, "name": str}
+    effective_date: str
+    rows: List[QuotaMatrixRow]
+    columns: List[QuotaMatrixColumn]

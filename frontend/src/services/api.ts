@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse } from '../types';
+import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse } from '../types';
 
 // 创建axios实例
 const api = axios.create({
@@ -105,7 +105,23 @@ export const quotaAPI = {
   updateQuota: (id: number, data: Partial<Quota>): Promise<Quota> => 
     api.put(`/quotas/${id}`, data),
   deleteQuota: (id: number): Promise<void> => 
-    api.delete(`/quotas/${id}`)
+    api.delete(`/quotas/${id}`),
+  // 新增：获取过滤器组合列表
+  getFilterCombinations: (): Promise<QuotaFilterCombination[]> => 
+    api.get('/quotas/filter-combinations/'),
+  // 新增：获取生效日期列表
+  getEffectiveDates: (): Promise<string[]> => 
+    api.get('/quotas/effective-dates/'),
+  // 新增：获取工序类别选项（根据工段类别和生效日期）
+  getCat2Options: (params: { cat1_code?: string; effective_date?: string }): Promise<{ value: string; label: string }[]> => 
+    api.get('/quotas/cat2-options/', { params }),
+  // 新增：获取定额矩阵数据
+  getQuotaMatrix: (params: {
+    cat1_code: string;
+    cat2_code: string;
+    effective_date: string;
+  }): Promise<QuotaMatrixResponse> => 
+    api.get('/quotas/matrix/', { params }),
 };
 
 // 工资记录管理API

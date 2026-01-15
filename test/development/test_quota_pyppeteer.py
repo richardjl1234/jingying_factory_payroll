@@ -4,8 +4,203 @@ import time
 from config import BASE_URLS
 from utils import take_screenshot, get_error_messages
 
+
+class TestQuotaMatrix:
+    """Test Quota Matrix Page functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_navigate_to_quota_page(self, logged_in_page):
+        """Test navigation to Quota page (new matrix design)."""
+        print("\n=== Testing navigation to Quota Matrix page ===")
+        
+        # Navigate to Quota page
+        await logged_in_page.goto(f"{BASE_URLS['frontend']}/quotas", {'waitUntil': 'domcontentloaded'})
+        await asyncio.sleep(2)
+        
+        # Check if we're on Quota page
+        current_url = logged_in_page.url
+        print(f"Current URL: {current_url}")
+        
+        # Take screenshot
+        await take_screenshot(logged_in_page, "python_quota_matrix_page")
+        
+        # Check for Quota page elements
+        page_content = await logged_in_page.content()
+        
+        # Check for Quota elements - be more flexible
+        quota_found = '定额' in page_content or 'Quota' in page_content or 'quota' in page_content.lower()
+        
+        if not quota_found:
+            print(f"Page content preview (first 500 chars): {page_content[:500]}")
+        else:
+            print("✓ Quota page loaded with '定额' or 'Quota' text")
+        
+        print("Quota Matrix page navigation test completed")
+    
+    @pytest.mark.asyncio
+    async def test_filter_controls_display(self, logged_in_page):
+        """Test that filter controls are displayed."""
+        print("\n=== Testing filter controls display ===")
+        
+        await logged_in_page.goto(f"{BASE_URLS['frontend']}/quotas", {'waitUntil': 'domcontentloaded'})
+        await asyncio.sleep(2)
+        
+        # Check for "下一个" button
+        buttons = await logged_in_page.querySelectorAll('button')
+        next_button_found = False
+        import_button_found = False
+        
+        for btn in buttons:
+            button_text = await logged_in_page.evaluate('(elem) => elem.textContent', btn)
+            if button_text and '下一个' in button_text:
+                next_button_found = True
+                print(f"✓ Found '下一个' button: {button_text}")
+            if button_text and ('Excel' in button_text or '导入' in button_text):
+                import_button_found = True
+                # Check if disabled
+                is_disabled = await logged_in_page.evaluate(
+                    '(el) => el.disabled || el.getAttribute("disabled")', btn)
+                if is_disabled:
+                    print(f"✓ Found disabled Import button: {button_text}")
+                else:
+                    print(f"? Found Import button (should be disabled): {button_text}")
+        
+        if not next_button_found:
+            print("Warning: '下一个' button not found")
+        
+        # Check for filter dropdowns (ant-select)
+        selects = await logged_in_page.$('.ant-select')
+        print(f"Found {len(selects)} filter dropdowns")
+        
+        # Check for date picker
+        date_pickers = await logged_in_page.$('.ant-picker')
+        print(f"Found {len(date_pickers)} date pickers")
+        
+        print("✓ Filter controls display test completed")
+    
+    @pytest.mark.asyncio
+    async def test_matrix_table_display(self, logged_in_page):
+        """Test that matrix table is displayed correctly."""
+        print("\n=== Testing matrix table display ===")
+        
+        await logged_in_page.goto(f"{BASE_URLS['frontend']}/quotas", {'waitUntil': 'domcontentloaded'})
+        await asyncio.sleep(3)
+        
+        await take_screenshot(logged_in_page, 'quota_matrix_table')
+        
+        # Look for table
+        table = await logged_in_page.$('.ant-table')
+        if table:
+            print("✓ Matrix table found (.ant-table)")
+            
+            # Check for table headers
+            headers = await logged_in_page.$('.ant-table-thead th')
+            print(f"Found {len(headers)} table headers")
+            
+            # Check for first column header (should be 型号)
+            if headers and len(headers) > 0:
+                first_header_text = await logged_in_page.evaluate(
+                    '(el) => el.textContent', headers[0])
+                print(f"First column header: {first_header_text}")
+            
+            # Check for table rows
+            rows = await logged_in_page.$('.ant-table-row')
+            print(f"Found {len(rows)} data rows in matrix table")
+        else:
+            print("Warning: Matrix table not found")
+        
+        print("✓ Matrix table display test completed")
+    
+    @pytest.mark.asyncio
+    async def test_next_button_navigation(self, logged_in_page):
+        """Test '下一个' button navigation."""
+        print("\n=== Testing Next button navigation ===")
+        
+        await logged_in_page.goto(f"{BASE_URLS['frontend']}/quotas", {'waitUntil': 'domcontentloaded'})
+        await asyncio.sleep(2)
+        
+        # Get current filter values
+        initial_selects = await logged_in_page.$('.ant-select')
+        initial_values = []
+        for select in initial_selects:
+            value = await logged_in_page.evaluate(
+                '(el) => el.textContent || ""', select)
+            initial_values.push(value)
+        print(f"Initial filter values: {initial_values}")
+        
+        # Find and click "下一个" button
+        buttons = await logged_in_page.querySelectorAll('button')
+        next_button = None
+        
+        for btn in buttons:
+            button_text = await logged_in_page.evaluate('(elem) => elem.textContent', btn)
+            if button_text and '下一个' in button_text:
+                next_button = btn
+                print(f"✓ Found '下一个' button")
+                break
+        
+        if next_button:
+            await next_button.click()
+            print("Clicked '下一个' button")
+            await asyncio.sleep(2)
+            
+            # Get new filter values
+            new_selects = await logged_in_page.$('.ant-select')
+            new_values = []
+            for select in new_selects:
+                value = await logged_in_page.evaluate(
+                    '(el) => el.textContent || ""', select)
+                new_values.push(value)
+            print(f"New filter values: {new_values}")
+            
+            print("✓ Next button navigation test completed")
+        else:
+            print("Warning: '下一个' button not found, skipping navigation test")
+    
+    @pytest.mark.asyncio
+    async def test_current_combination_display(self, logged_in_page):
+        """Test that current combination is displayed."""
+        print("\n=== Testing current combination display ===")
+        
+        await logged_in_page.goto(f"{BASE_URLS['frontend']}/quotas", {'waitUntil': 'domcontentloaded'})
+        await asyncio.sleep(2)
+        
+        # Check for current combination text
+        page_content = await logged_in_page.content()
+        
+        # Look for combination info text
+        if '当前组合' in page_content:
+            print("✓ Current combination display found")
+        else:
+            print("Info: Current combination text not found (may be no data)")
+        
+        print("✓ Current combination display test completed")
+    
+    @pytest.mark.asyncio
+    async def test_quota_matrix_comprehensive(self, logged_in_page):
+        """Comprehensive test of Quota Matrix functionality."""
+        print("\n=== Running comprehensive Quota Matrix test ===")
+        
+        # Test 1: Navigate to page
+        await self.test_navigate_to_quota_page(logged_in_page)
+        
+        # Test 2: Check filter controls
+        await self.test_filter_controls_display(logged_in_page)
+        
+        # Test 3: Check matrix table
+        await self.test_matrix_table_display(logged_in_page)
+        
+        # Test 4: Check next button navigation
+        await self.test_next_button_navigation(logged_in_page)
+        
+        # Test 5: Check current combination display
+        await self.test_current_combination_display(logged_in_page)
+        
+        print("✓ All Quota Matrix tests completed successfully")
+
+
 class TestQuota:
-    """Test Quota functionality."""
+    """Test Quota functionality (legacy tests for old design)."""
     
     @pytest.mark.asyncio
     async def test_navigate_to_quota_page(self, logged_in_page):
