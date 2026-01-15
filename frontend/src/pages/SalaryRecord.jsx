@@ -1,71 +1,87 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col, InputNumber } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { salaryAPI, workerAPI, quotaAPI } from '../services/api';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 const SalaryRecord = () => {
-  const [salaryRecords, setSalaryRecords] = useState([]);
+  // 状态定义
   const [workers, setWorkers] = useState([]);
-  const [quotas, setQuotas] = useState([]);
+  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(dayjs().format('YYYYMM'));
+  const [records, setRecords] = useState([]);
+  const [summary, setSummary] = useState({ total_quantity: 0, total_amount: 0 });
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
-  const [selectedWorker, setSelectedWorker] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [quotas, setQuotas] = useState([]);
   const [form] = Form.useForm();
 
   // 获取工人列表
-  const fetchWorkers = async () => {
+  const fetchWorkers = useCallback(async () => {
     try {
       const data = await workerAPI.getWorkers();
-      setWorkers(data);
+      setWorkers(data.items || data);
     } catch (error) {
       message.error('获取工人列表失败');
     }
-  };
+  }, []);
 
-  // 获取定额列表
-  const fetchQuotas = async () => {
+  // 获取定额列表（用于添加/编辑记录）
+  const fetchQuotas = useCallback(async () => {
     try {
-      const data = await quotaAPI.getQuotas();
-      setQuotas(data);
+      const data = await quotaAPI.getQuotas({ limit: 1000 });
+      setQuotas(data.items || data);
     } catch (error) {
       message.error('获取定额列表失败');
     }
-  };
+  }, []);
 
-  // 获取工作记录列表
-  const fetchSalaryRecords = async () => {
+  // 获取指定工人指定月份的工作记录
+  const fetchWorkerMonthRecords = useCallback(async () => {
+    if (!selectedWorker || !selectedMonth) {
+      setRecords([]);
+      setSummary({ total_quantity: 0, total_amount: 0 });
+      return;
+    }
+
     try {
-      setLoading(true);
-      const params = {};
-      if (selectedWorker) {
-        params.worker_code = selectedWorker;
-      }
-      if (selectedMonth) {
-        params.record_date = selectedMonth;
-      }
-      const data = await salaryAPI.getSalaryRecords(params);
-      setSalaryRecords(data);
+      setDataLoading(true);
+      const data = await salaryAPI.getWorkerMonthRecords({
+        worker_code: selectedWorker,
+        month: selectedMonth
+      });
+      setRecords(data.records || []);
+      setSummary(data.summary || { total_quantity: 0, total_amount: 0 });
     } catch (error) {
       message.error('获取工作记录失败');
+      setRecords([]);
+      setSummary({ total_quantity: 0, total_amount: 0 });
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
-  };
+  }, [selectedWorker, selectedMonth]);
 
+  // 初始化加载
   useEffect(() => {
     fetchWorkers();
     fetchQuotas();
-  }, []);
+  }, [fetchWorkers, fetchQuotas]);
 
+  // 工人或月份变化时加载数据
   useEffect(() => {
-    fetchSalaryRecords();
-  }, [selectedWorker, selectedMonth]);
+    fetchWorkerMonthRecords();
+  }, [fetchWorkerMonthRecords]);
+
+  // 设置当前月份
+  const handleSetCurrentMonth = () => {
+    setSelectedMonth(dayjs().format('YYYYMM'));
+  };
 
   // 显示添加记录模态框
   const showAddModal = () => {
@@ -83,7 +99,7 @@ const SalaryRecord = () => {
       worker_code: record.worker_code,
       quota_id: record.quota_id,
       quantity: record.quantity,
-      record_date: record.record_date
+      record_date: record.record_date ? dayjs(record.record_date) : null
     });
     setIsModalVisible(true);
   };
@@ -96,24 +112,21 @@ const SalaryRecord = () => {
   // 提交表单
   const handleSubmit = async (values) => {
     try {
-      // 格式化数据
       const formattedValues = {
         ...values,
-        quantity: parseFloat(values.quantity), // 将字符串转换为数字
-        record_date: values.record_date.format('YYYY-MM-DD') // 格式化日期为YYYY-MM-DD格式
+        quantity: parseFloat(values.quantity),
+        record_date: values.record_date.format('YYYY-MM-DD')
       };
       
       if (isEditMode) {
-        // 编辑记录
         await salaryAPI.updateSalaryRecord(currentRecord.id, formattedValues);
         message.success('工作记录更新成功');
       } else {
-        // 添加记录
         await salaryAPI.createSalaryRecord(formattedValues);
         message.success('工作记录添加成功');
       }
       setIsModalVisible(false);
-      fetchSalaryRecords();
+      fetchWorkerMonthRecords();
     } catch (error) {
       message.error(isEditMode ? '工作记录更新失败' : '工作记录添加失败');
     }
@@ -138,7 +151,7 @@ const SalaryRecord = () => {
         try {
           await salaryAPI.deleteSalaryRecord(recordId);
           message.success('工作记录删除成功');
-          fetchSalaryRecords();
+          fetchWorkerMonthRecords();
         } catch (error) {
           message.error('工作记录删除失败');
         }
@@ -146,82 +159,130 @@ const SalaryRecord = () => {
     });
   };
 
+  // 格式化显示名称和代码（换行显示以缩小宽度）
+  const formatDisplay = (name, code) => {
+    if (!name && !code) return '-';
+    if (!name) return code;
+    if (!code) return name;
+    return (
+      <span>
+        {name}
+        <br />
+        <Text type="secondary" style={{ fontSize: 12 }}>({code})</Text>
+      </span>
+    );
+  };
+
   // 表格列配置
   const columns = [
-    {
-      title: '编号',
-      dataIndex: 'id',
-      key: 'id',
-    },
     {
       title: '记录日期',
       dataIndex: 'record_date',
       key: 'record_date',
-    },
-    {
-      title: '工人',
-      dataIndex: 'worker_code',
-      key: 'worker_code',
-      render: (worker_code) => {
-        const worker = workers.find(w => w.worker_code === worker_code);
-        return worker ? `${worker.name} (${worker.worker_code})` : worker_code;
-      }
-    },
-    {
-      title: '定额编号',
-      dataIndex: 'quota_id',
-      key: 'quota_id',
+      width: 120,
     },
     {
       title: '电机型号',
       dataIndex: 'model_display',
       key: 'model_display',
-      render: (model_display) => model_display || '未知型号'
+      width: 120,
+      render: (text) => {
+        if (!text) return '-';
+        // 解析 "name (code)" 格式
+        const match = text.match(/^(.*?)\s*\((.*)\)$/);
+        if (match) {
+          return formatDisplay(match[1].trim(), match[2].trim());
+        }
+        return text;
+      }
     },
     {
       title: '工段类别',
       dataIndex: 'cat1_display',
       key: 'cat1_display',
-      render: (cat1_display) => cat1_display || '未知工段'
+      width: 120,
+      render: (text) => {
+        if (!text) return '-';
+        const match = text.match(/^(.*?)\s*\((.*)\)$/);
+        if (match) {
+          return formatDisplay(match[1].trim(), match[2].trim());
+        }
+        return text;
+      }
     },
     {
       title: '工序类别',
       dataIndex: 'cat2_display',
       key: 'cat2_display',
-      render: (cat2_display) => cat2_display || '未知工序类别'
+      width: 120,
+      render: (text) => {
+        if (!text) return '-';
+        const match = text.match(/^(.*?)\s*\((.*)\)$/);
+        if (match) {
+          return formatDisplay(match[1].trim(), match[2].trim());
+        }
+        return text;
+      }
     },
     {
       title: '工序名称',
       dataIndex: 'process_display',
       key: 'process_display',
-      render: (process_display) => process_display || '未知工序'
+      width: 120,
+      render: (text) => {
+        if (!text) return '-';
+        const match = text.match(/^(.*?)\s*\((.*)\)$/);
+        if (match) {
+          return formatDisplay(match[1].trim(), match[2].trim());
+        }
+        return text;
+      }
     },
     {
       title: '单价',
       dataIndex: 'unit_price',
       key: 'unit_price',
-      render: (price) => `¥${price}`
+      width: 100,
+      align: 'right',
+      render: (price) => `¥${price?.toFixed(2) || '0.00'}`
     },
     {
       title: '数量',
       dataIndex: 'quantity',
       key: 'quantity',
+      width: 100,
+      align: 'right',
+      render: (qty) => qty?.toFixed(2) || '0.00'
     },
     {
       title: '金额',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount) => `¥${amount}`
+      width: 100,
+      align: 'right',
+      render: (amount) => `¥${amount?.toFixed(2) || '0.00'}`
     },
     {
       title: '操作',
       key: 'action',
+      width: 120,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="middle">
-          <Button type="primary" icon={<EditOutlined />} onClick={() => showEditModal(record)} size="small">
+          <Button 
+            type="primary" 
+            icon={<EditOutlined />} 
+            onClick={() => showEditModal(record)} 
+            size="small"
+          >
             编辑
           </Button>
-          <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} size="small">
+          <Button 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={() => handleDelete(record.id)} 
+            size="small"
+          >
             删除
           </Button>
         </Space>
@@ -229,33 +290,33 @@ const SalaryRecord = () => {
     },
   ];
 
-  // 筛选处理
+  // 工人选择变化处理
   const handleWorkerChange = (value) => {
     setSelectedWorker(value);
   };
 
-  const handleMonthChange = (date, dateString) => {
-    setSelectedMonth(dateString);
-  };
-
-  // 定额选择变化处理
-  const handleQuotaChange = (value) => {
-    // 可以在这里添加额外的处理逻辑
-    console.log('Selected quota id:', value);
+  // 月份输入变化处理
+  const handleMonthChange = (e) => {
+    const value = e.target.value;
+    // 验证格式：6位数字
+    if (/^\d{0,6}$/.test(value)) {
+      setSelectedMonth(value);
+    }
   };
 
   return (
-    <div>
+    <div style={{ padding: 24 }}>
       <Title level={2}>工资记录管理</Title>
       
-      {/* 筛选区域 */}
+      {/* 过滤器区域 */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={8}>
+        <Col span={6}>
           <Select
-            placeholder="按工人筛选"
+            placeholder="选择工人"
             style={{ width: '100%' }}
             onChange={handleWorkerChange}
             allowClear
+            value={selectedWorker}
           >
             {workers.map(worker => (
               <Option key={worker.worker_code} value={worker.worker_code}>
@@ -264,29 +325,66 @@ const SalaryRecord = () => {
             ))}
           </Select>
         </Col>
-        <Col span={8}>
-          <DatePicker
-            placeholder="按日期筛选"
-            style={{ width: '100%' }}
+        <Col span={4}>
+          <Input 
+            placeholder="YYYYMM" 
+            value={selectedMonth}
             onChange={handleMonthChange}
-            allowClear
+            maxLength={6}
           />
         </Col>
-        <Col span={8}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={showAddModal}>
+        <Col span={2}>
+          <Button onClick={handleSetCurrentMonth}>
+            当前月份
+          </Button>
+        </Col>
+        <Col span={12}>
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            onClick={showAddModal}
+            disabled={!selectedWorker || !selectedMonth}
+          >
             添加工作记录
           </Button>
         </Col>
       </Row>
       
-      {/* 工作记录列表 */}
+      {/* 工作记录表格 */}
       <Table
         columns={columns}
-        dataSource={salaryRecords}
+        dataSource={records}
         rowKey="id"
-        loading={loading}
+        loading={dataLoading}
         pagination={{ pageSize: 10 }}
+        scroll={{ x: 1200 }}
+        size="small"
       />
+
+      {/* Summary 区域 */}
+      {records.length > 0 && (
+        <div style={{ 
+          marginTop: 16, 
+          padding: 16, 
+          backgroundColor: '#f5f5f5', 
+          borderRadius: 4,
+          display: 'flex',
+          justifyContent: 'space-between'
+        }}>
+          <Text strong>本月汇总：</Text>
+          <Space size="large">
+            <Text>记录数：<Text strong>{records.length}</Text></Text>
+            <Text>总金额：<Text strong style={{ color: '#1890ff', fontSize: 16 }}>¥{summary.total_amount?.toFixed(2) || '0.00'}</Text></Text>
+          </Space>
+        </div>
+      )}
+
+      {/* 空状态提示 */}
+      {!dataLoading && records.length === 0 && selectedWorker && selectedMonth && (
+        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+          <Text type="secondary">暂无工作记录</Text>
+        </div>
+      )}
 
       {/* 添加/编辑工作记录模态框 */}
       <Modal
@@ -294,6 +392,7 @@ const SalaryRecord = () => {
         open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
+        width={600}
       >
         <Form
           form={form}
@@ -318,10 +417,10 @@ const SalaryRecord = () => {
             label="定额编号"
             rules={[{ required: true, message: '请选择定额编号!' }]}
           >
-            <Select placeholder="请选择定额编号" onChange={handleQuotaChange}>
+            <Select placeholder="请选择定额编号">
               {quotas.map(quota => (
                 <Option key={quota.id} value={quota.id}>
-                  {`定额${quota.id} (${quota.process_code} - ¥${quota.unit_price})`}
+                  {`${quota.process_code} - ${quota.model_code} - ¥${quota.unit_price}`}
                 </Option>
               ))}
             </Select>

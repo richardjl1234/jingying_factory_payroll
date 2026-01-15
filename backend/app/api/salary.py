@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date, timedelta
+from typing import List
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from .. import crud, schemas
@@ -93,3 +95,73 @@ def delete_salary_record(
     if not record:
         raise HTTPException(status_code=404, detail="Work record not found")
     return {"message": "工作记录删除成功", "record_id": record_id}
+
+@router.get("/worker-month/")
+def get_worker_month_records(
+    worker_code: str = Query(..., description="工人编码"),
+    month: str = Query(..., description="月份 (YYYYMM格式)"),
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """
+    获取指定工人指定月份的所有工资记录
+    返回工作记录列表和汇总信息
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[WorkerMonthRecords] User {current_user.username} requesting records for worker={worker_code}, month={month}")
+    
+    try:
+        # 解析月份，获取起始日期和结束日期
+        if len(month) != 6 or not month.isdigit():
+            raise HTTPException(status_code=400, detail="月份格式必须为YYYYMM，如 202601")
+        
+        year = int(month[:4])
+        month_num = int(month[4:])
+        
+        if month_num < 1 or month_num > 12:
+            raise HTTPException(status_code=400, detail="月份无效，请输入01-12")
+        
+        start_date = date(year, month_num, 1)
+        
+        # 计算月末日期
+        if month_num == 12:
+            end_date = date(year + 1, 1, 1) - timedelta(days=1)
+        else:
+            end_date = date(year, month_num + 1, 1) - timedelta(days=1)
+        
+        logger.info(f"[WorkerMonthRecords] Query date range: {start_date} to {end_date}")
+        
+        # 查询工资记录
+        records = crud.get_salary_records_by_worker_and_date_range(
+            db, 
+            worker_code=worker_code, 
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        logger.info(f"[WorkerMonthRecords] Retrieved {len(records)} records")
+        
+        # 计算汇总
+        total_quantity = sum(float(r.quantity) for r in records)
+        total_amount = sum(float(r.amount) for r in records)
+        
+        # 获取工人名称
+        worker = crud.get_worker_by_code(db, worker_code=worker_code)
+        worker_name = worker.name if worker else worker_code
+        
+        return {
+            "worker_code": worker_code,
+            "worker_name": worker_name,
+            "month": month,
+            "records": records,
+            "summary": {
+                "total_quantity": round(total_quantity, 2),
+                "total_amount": round(total_amount, 2)
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[WorkerMonthRecords] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取工资记录失败: {str(e)}")

@@ -86,6 +86,20 @@ export interface SalaryRecord {
 }
 
 /**
+ * 工人月度工资记录响应
+ */
+export interface WorkerMonthRecordsResponse {
+  worker_code: string;
+  worker_name: string;
+  month: string;
+  records: SalaryRecord[];
+  summary: {
+    total_quantity: number;
+    total_amount: number;
+  };
+}
+
+/**
  * 登录响应类型定义
  */
 export interface LoginResponse {

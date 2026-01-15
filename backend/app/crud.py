@@ -521,6 +521,25 @@ def get_worker_salary_summary(db: Session, worker_code: str, record_date: str) -
     logger.debug(f"工人月度工资汇总结果: worker_code={worker_code}, total_amount={total}")
     return total
 
+def get_salary_records_by_worker_and_date_range(
+    db: Session, 
+    worker_code: str, 
+    start_date: date,
+    end_date: date
+) -> List[models.VSalaryRecord]:
+    """根据工人编码和日期范围获取工资记录"""
+    logger.debug(f"根据工人和日期范围获取工资记录: worker_code={worker_code}, start_date={start_date}, end_date={end_date}")
+    
+    query = db.query(models.VSalaryRecord).filter(
+        models.VSalaryRecord.worker_code == worker_code,
+        models.VSalaryRecord.record_date >= start_date,
+        models.VSalaryRecord.record_date <= end_date
+    )
+    
+    result = query.order_by(models.VSalaryRecord.record_date).all()
+    logger.debug(f"查询到 {len(result)} 条工资记录")
+    return result
+
 
 # 工段类别相关CRUD
 

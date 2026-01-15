@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse } from '../types';
+import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse, WorkerMonthRecordsResponse } from '../types';
 
 // 创建axios实例
 const api = axios.create({
@@ -135,7 +135,10 @@ export const salaryAPI = {
   updateSalaryRecord: (id: number, data: Partial<WorkRecord>): Promise<WorkRecord> => 
     api.put(`/salary-records/${id}`, data),
   deleteSalaryRecord: (id: number): Promise<void> => 
-    api.delete(`/salary-records/${id}`)
+    api.delete(`/salary-records/${id}`),
+  // 获取指定工人指定月份的工作记录
+  getWorkerMonthRecords: (params: { worker_code: string; month: string }): Promise<WorkerMonthRecordsResponse> =>
+    api.get('/salary-records/worker-month/', { params }),
 };
 
 // 报表API
