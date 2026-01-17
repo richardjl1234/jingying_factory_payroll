@@ -280,19 +280,33 @@ new_payroll/
 系统使用系统环境变量进行配置，不再依赖 `.env` 文件。
 
 #### 设置环境变量（必需）
-在启动应用之前，必须先设置环境变量。执行以下命令：
+在启动应用之前，必须先设置环境变量。
+
+**本地开发：**
 ```bash
 source ~/shared/jianglei/payroll/env_local.sh
+```
+
+**云服务器部署：**
+```bash
+source ~/shared/jianglei/payroll/env_cloud.sh
 ```
 
 **注意**：每次打开新的终端窗口都需要重新执行此命令。
 
 #### 必需的环境变量
 确保以下环境变量已在系统中设置：
+
+**后端变量：**
 - `MYSQL_DB_URL` - MySQL数据库连接URL
 - `SECRET_KEY` - JWT密钥
 - `ALGORITHM` - JWT算法（默认：HS256）
 - `ACCESS_TOKEN_EXPIRE_MINUTES` - Token过期时间（默认：30）
+
+**前端变量（VITE_*）：**
+- `VITE_API_BASE_URL` - 前端API基础URL（开发：`/api`，生产：`https://124.220.108.154/api`）
+- `VITE_APP_ENV` - 应用环境（开发：`development`，生产：`production`）
+- `VITE_ENABLE_HTTPS` - 是否启用HTTPS（仅生产环境）
 
 #### Docker环境变量
 运行Docker容器时传递环境变量：
@@ -658,12 +672,8 @@ cd payroll-system
 # 生成SSL证书
 ./generate_ssl_cert.sh
 
-# 准备前端环境
-cat > frontend/.env << 'EOF'
-VITE_API_BASE_URL=/api
-VITE_APP_ENV=production
-VITE_ENABLE_HTTPS=true
-EOF
+# 准备前端环境（使用系统环境变量）
+source ~/shared/jianglei/payroll/env_cloud.sh
 
 # 构建前端
 cd frontend

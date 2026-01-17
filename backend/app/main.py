@@ -3,7 +3,6 @@ from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
-from dotenv import load_dotenv
 import time
 import os
 from jose import jwt
@@ -14,10 +13,6 @@ logger = logging.getLogger(__name__)
 from . import models
 from .database import engine
 from .api import auth, user, worker, process, quota, salary, report, stats, process_cat1, process_cat2, motor_model, column_seq
-
-# 加载环境变量
-logger.debug("加载环境变量...")
-load_dotenv()
 
 # 创建数据库表
 logger.debug("开始创建数据库表...")

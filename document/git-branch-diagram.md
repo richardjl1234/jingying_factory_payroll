@@ -72,7 +72,6 @@ gitGraph
 | `add-more-test-cases-cover-deletion` | Deletion test cases | |
 | `change-database-schema-motor_models` | Motor models schema refactor | |
 | `change-database-schema-process_cat2` | Process cat2 schema change | |
-| `env_config_refactor` | Environment config refactor | |
 | `flask-migration` | Flask migration (abandoned) | |
 | `test_script_refactor1` | Test script refactor | |
 | `cat1-cat2-name-change` | Category name changes | |
