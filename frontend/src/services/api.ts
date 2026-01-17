@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse } from '../types';
+import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse, WorkerMonthRecordsResponse, Dictionaries, QuotaSearchResult } from '../types';
 
 // 创建axios实例
 const api = axios.create({
@@ -135,7 +135,23 @@ export const salaryAPI = {
   updateSalaryRecord: (id: number, data: Partial<WorkRecord>): Promise<WorkRecord> => 
     api.put(`/salary-records/${id}`, data),
   deleteSalaryRecord: (id: number): Promise<void> => 
-    api.delete(`/salary-records/${id}`)
+    api.delete(`/salary-records/${id}`),
+  // 获取指定工人指定月份的工作记录
+  getWorkerMonthRecords: (params: { worker_code: string; month: string }): Promise<WorkerMonthRecordsResponse> =>
+    api.get('/salary-records/worker-month/', { params }),
+  // 获取字典数据
+  getDictionaries: (): Promise<Dictionaries> =>
+    api.get('/salary-records/dictionaries/'),
+  // 查询定额
+  findQuota: (params: {
+    quota_id?: number;
+    model_code?: string;
+    cat1_code?: string;
+    cat2_code?: string;
+    process_code?: string;
+    record_date?: string;
+  }): Promise<QuotaSearchResult> =>
+    api.get('/salary-records/find-quota/', { params }),
 };
 
 // 报表API

@@ -86,6 +86,62 @@ export interface SalaryRecord {
 }
 
 /**
+ * 工人月度工资记录响应
+ */
+export interface WorkerMonthRecordsResponse {
+  worker_code: string;
+  worker_name: string;
+  month: string;
+  records: SalaryRecord[];
+  summary: {
+    total_quantity: number;
+    total_amount: number;
+  };
+}
+
+/**
+ * 字典数据类型
+ */
+export interface Dictionaries {
+  motor_models: { model_code: string; name: string }[];
+  quota_combinations: QuotaCombination[];
+}
+
+/**
+ * 定额组合
+ */
+export interface QuotaCombination {
+  quota_id: number;
+  combined_code: string;
+  model_code: string;
+  model_name: string;
+  cat1_code: string;
+  cat1_name: string;
+  cat2_code: string;
+  cat2_name: string;
+  process_code: string;
+  process_name: string;
+  unit_price: number;
+}
+
+/**
+ * 定额搜索结果
+ */
+export interface QuotaSearchResult {
+  quota_id: number;
+  model_code: string;
+  cat1_code: string;
+  cat1_name: string;
+  cat2_code: string;
+  cat2_name: string;
+  process_code: string;
+  process_name: string;
+  unit_price: number;
+  effective_date: string;
+  obsolete_date: string;
+}
+
+/**
  * 登录响应类型定义
  */
 export interface LoginResponse {
