@@ -834,7 +834,18 @@ def get_quota_matrix_data(db: Session, cat1_code: str, cat2_code: str, effective
             return 0
     
     sorted_models = sorted(model_codes, key=get_model_sort_key)
-    sorted_processes = sorted(process_codes)
+    
+    # 获取列顺序映射
+    seq_map = get_process_sequence_map(db, cat1_code, cat2_code)
+    
+    # 排序工序（按 seq 排序，如果没有配置则排在后面）
+    def get_process_sort_key(process_code):
+        if seq_map and process_code in seq_map:
+            return seq_map[process_code]
+        # 如果没有配置顺序，使用较大的数字排在后面
+        return float('inf')
+    
+    sorted_processes = sorted(process_codes, key=get_process_sort_key)
     
     # 构建响应
     rows = []
@@ -858,7 +869,8 @@ def get_quota_matrix_data(db: Session, cat1_code: str, cat2_code: str, effective
         process_name = process_names.get(process_code, process_code)
         columns.append({
             "process_code": process_code,
-            "process_name": process_name
+            "process_name": process_name,
+            "seq": seq_map.get(process_code)  # 包含 seq 字段
         })
     
     return {
@@ -874,3 +886,82 @@ def get_quota_matrix_data(db: Session, cat1_code: str, cat2_code: str, effective
         "rows": rows,
         "columns": columns
     }
+
+
+# 列顺序相关CRUD
+
+def get_column_seq_by_id(db: Session, id: int) -> Optional[models.ColumnSeq]:
+    """根据ID获取列顺序"""
+    logger.debug(f"根据ID获取列顺序: id={id}")
+    return db.query(models.ColumnSeq).filter(models.ColumnSeq.id == id).first()
+
+def get_column_seq_by_combination(db: Session, cat1_code: str, cat2_code: str) -> List[models.ColumnSeq]:
+    """根据工段类别和工序类别获取列顺序列表"""
+    logger.debug(f"获取列顺序列表: cat1_code={cat1_code}, cat2_code={cat2_code}")
+    return db.query(models.ColumnSeq).filter(
+        models.ColumnSeq.cat1_code == cat1_code,
+        models.ColumnSeq.cat2_code == cat2_code
+    ).order_by(models.ColumnSeq.seq).all()
+
+def get_column_seq_list(db: Session, skip: int = 0, limit: int = 100) -> List[models.ColumnSeq]:
+    """获取列顺序列表"""
+    logger.debug(f"获取列顺序列表: skip={skip}, limit={limit}")
+    return db.query(models.ColumnSeq).offset(skip).limit(limit).all()
+
+def create_column_seq(db: Session, column_seq: schemas.ColumnSeqCreate) -> models.ColumnSeq:
+    """创建列顺序"""
+    logger.debug(f"创建列顺序: cat1_code={column_seq.cat1_code}, cat2_code={column_seq.cat2_code}, process_code={column_seq.process_code}, seq={column_seq.seq}")
+    db_column_seq = models.ColumnSeq(**column_seq.model_dump())
+    db.add(db_column_seq)
+    db.commit()
+    db.refresh(db_column_seq)
+    logger.info(f"列顺序创建成功: id={db_column_seq.id}")
+    return db_column_seq
+
+def update_column_seq(db: Session, id: int, column_seq_update: schemas.ColumnSeqUpdate) -> Optional[models.ColumnSeq]:
+    """更新列顺序"""
+    logger.debug(f"更新列顺序: id={id}, update_data={column_seq_update.model_dump(exclude_unset=True)}")
+    db_column_seq = get_column_seq_by_id(db, id)
+    if not db_column_seq:
+        logger.warning(f"列顺序不存在: id={id}")
+        return None
+    
+    update_data = column_seq_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(db_column_seq, field, value)
+    
+    db.commit()
+    db.refresh(db_column_seq)
+    logger.info(f"列顺序更新成功: id={id}")
+    return db_column_seq
+
+def delete_column_seq(db: Session, id: int) -> Optional[dict]:
+    """删除列顺序"""
+    logger.debug(f"删除列顺序: id={id}")
+    db_column_seq = get_column_seq_by_id(db, id)
+    if not db_column_seq:
+        logger.warning(f"列顺序不存在: id={id}")
+        return None
+    
+    # 保存信息用于返回
+    column_seq_info = {
+        "id": db_column_seq.id,
+        "cat1_code": db_column_seq.cat1_code,
+        "cat2_code": db_column_seq.cat2_code,
+        "process_code": db_column_seq.process_code
+    }
+    
+    db.delete(db_column_seq)
+    db.commit()
+    logger.info(f"列顺序删除成功: id={id}")
+    return column_seq_info
+
+def get_process_sequence_map(db: Session, cat1_code: str, cat2_code: str) -> dict:
+    """
+    获取工序顺序映射
+    
+    返回: {process_code: seq}
+    如果没有配置顺序，返回空字典
+    """
+    column_seqs = get_column_seq_by_combination(db, cat1_code, cat2_code)
+    return {cs.process_code: cs.seq for cs in column_seqs}

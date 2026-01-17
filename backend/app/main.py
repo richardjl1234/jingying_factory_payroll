@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 from . import models
 from .database import engine
-from .api import auth, user, worker, process, quota, salary, report, stats, process_cat1, process_cat2, motor_model
+from .api import auth, user, worker, process, quota, salary, report, stats, process_cat1, process_cat2, motor_model, column_seq
 
 # 加载环境变量
 logger.debug("加载环境变量...")
@@ -113,6 +113,8 @@ app.include_router(process_cat2.router, prefix="/api")
 logger.debug("包含process_cat2路由完成")
 app.include_router(motor_model.router, prefix="/api")
 logger.debug("包含motor_model路由完成")
+app.include_router(column_seq.router, prefix="/api")
+logger.debug("包含column_seq路由完成")
 logger.debug("所有API路由包含完成")
 
 # 健康检查端点

@@ -15,6 +15,7 @@
 7. **quotas** - 定额表
 8. **work_records** - 工作记录表
 9. **v_salary_records** - 工资记录视图
+10. **column_seq** - 定额表列顺序表
 
 ## 表结构详情
 
@@ -366,6 +367,62 @@ JOIN motor_models mm ON q.model_code = mm.model_code;
 - 基于work_records、quotas、processes、process_cat1、process_cat2、motor_models表的连接视图
 - 提供工资计算功能，金额自动计算
 - 包含格式化显示字段便于前端展示
+
+### 10. column_seq - 定额表列顺序表
+
+**描述**：存储定额表列的顺序配置，用于控制定额管理页面中工序列的显示顺序。
+
+**表结构**：
+```sql
+CREATE TABLE column_seq (
+    id INTEGER NOT NULL AUTO_INCREMENT,
+    cat1_code VARCHAR(4) NOT NULL,
+    cat2_code VARCHAR(30) NOT NULL,
+    process_code VARCHAR(20) NOT NULL,
+    seq INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY _cat1_cat2_process_uc (cat1_code, cat2_code, process_code),
+    INDEX ix_column_seq_cat1 (cat1_code),
+    INDEX ix_column_seq_cat2 (cat2_code),
+    INDEX ix_column_seq_process (process_code)
+);
+```
+
+**字段说明**：
+| 字段名 | 数据类型 | 约束 | 说明 |
+|--------|----------|------|------|
+| id | INTEGER | PRIMARY KEY, AUTOINCREMENT | 记录ID，主键 |
+| cat1_code | VARCHAR(4) | NOT NULL, INDEX | 工段编码 |
+| cat2_code | VARCHAR(30) | NOT NULL, INDEX | 工序类别编码 |
+| process_code | VARCHAR(20) | NOT NULL, INDEX | 工序编码 |
+| seq | INTEGER | NOT NULL | 列顺序号（数值越小越靠前） |
+| created_at | DATETIME | DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+**约束**：
+- `_cat1_cat2_process_uc`：唯一约束，确保同一工段类别、工序类别、工序组合只能有一条记录
+
+**索引**：
+- `ix_column_seq_cat1` (cat1_code)
+- `ix_column_seq_cat2` (cat2_code)
+- `ix_column_seq_process` (process_code)
+
+**关系**：
+- 用于配置定额矩阵中工序列的显示顺序
+- 与quotas表的(cat1_code, cat2_code)组合关联
+
+**用途**：
+- 在定额管理页面中，按seq值从小到大排序显示工序列
+- 如果某个工序未配置seq值，则排在已配置seq值的工序之后
+
+**数据示例**：
+```sql
+-- 为 C11 工段类别和 Y2YPEJ2Z 工序类别配置工序顺序
+INSERT INTO column_seq (cat1_code, cat2_code, process_code, seq) VALUES
+('C11', 'Y2YPEJ2Z', 'QZZDZXK', 0),
+('C11', 'Y2YPEJ2Z', 'CJCZTPT', 1),
+('C11', 'Y2YPEJ2Z', 'CJCZTWJ', 2);
+```
 
 ## 实体关系图（ERD）
 

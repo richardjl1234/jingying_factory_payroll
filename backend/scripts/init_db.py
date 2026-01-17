@@ -111,6 +111,45 @@ def create_salary_records_view():
     finally:
         db.close()
 
+def create_column_seq_table():
+    """创建列顺序表（如果不存在）"""
+    db = SessionLocal()
+    try:
+        # 检查表是否存在
+        table_exists = db.execute(
+            text("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'column_seq' AND TABLE_TYPE = 'BASE TABLE'")
+        ).fetchone()
+        
+        if table_exists:
+            print("column_seq表已存在")
+            return
+        
+        # 创建表
+        create_table_sql = """
+        CREATE TABLE column_seq (
+            id INTEGER NOT NULL AUTO_INCREMENT,
+            cat1_code VARCHAR(4) NOT NULL,
+            cat2_code VARCHAR(30) NOT NULL,
+            process_code VARCHAR(20) NOT NULL,
+            seq INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY _cat1_cat2_process_uc (cat1_code, cat2_code, process_code),
+            INDEX ix_column_seq_cat1 (cat1_code),
+            INDEX ix_column_seq_cat2 (cat2_code),
+            INDEX ix_column_seq_process (process_code)
+        )
+        """
+        db.execute(text(create_table_sql))
+        db.commit()
+        print("column_seq表创建成功!")
+        
+    except Exception as e:
+        print(f"创建column_seq表时出错: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
 def init_db():
     """初始化数据库，创建root用户"""
     db = SessionLocal()
@@ -144,5 +183,7 @@ if __name__ == "__main__":
     add_obsolete_date_column()
     # 创建视图
     create_salary_records_view()
+    # 创建列顺序表
+    create_column_seq_table()
     # 初始化数据库
     init_db()

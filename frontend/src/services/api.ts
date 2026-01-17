@@ -189,4 +189,18 @@ export const motorModelAPI = {
   deleteMotorModel: (name: string): Promise<void> => api.delete(`/motor-models/${name}`)
 };
 
+// 列顺序管理API
+export const columnSeqAPI = {
+  getColumnSeqList: (params?: { cat1_code?: string; cat2_code?: string }): Promise<any[]> => 
+    api.get('/column-seq/', { params }),
+  getColumnSeq: (id: number): Promise<any> => 
+    api.get(`/column-seq/${id}`),
+  createColumnSeq: (data: any): Promise<any> => 
+    api.post('/column-seq/', data),
+  updateColumnSeq: (id: number, data: any): Promise<any> => 
+    api.put(`/column-seq/${id}`, data),
+  deleteColumnSeq: (id: number): Promise<void> => 
+    api.delete(`/column-seq/${id}`)
+};
+
 export default api;

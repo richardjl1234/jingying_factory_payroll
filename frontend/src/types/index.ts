@@ -143,3 +143,15 @@ export interface QuotaMatrixResponse {
   rows: QuotaMatrixRow[];
   columns: QuotaMatrixColumn[];
 }
+
+/**
+ * 列顺序类型定义
+ */
+export interface ColumnSeq {
+  id: number;
+  cat1_code: string;
+  cat2_code: string;
+  process_code: string;
+  seq: number;
+  created_at?: string;
+}

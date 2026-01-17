@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, Select, Typography, Space, message, Spin } from 'antd';
-import { RightOutlined, ImportOutlined } from '@ant-design/icons';
+import { RightOutlined, LeftOutlined, ImportOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { quotaAPI, processCat1API } from '../services/api';
 
@@ -194,6 +194,17 @@ const QuotaManagement = () => {
     applyCombination(filterCombinations[nextIndex]);
   };
 
+  // "上一个"按钮点击
+  const handlePrev = () => {
+    if (filterCombinations.length === 0) return;
+    
+    const prevIndex = currentCombinationIndex === 0 
+      ? filterCombinations.length - 1  // 循环到最后一个
+      : currentCombinationIndex - 1;
+    setCurrentCombinationIndex(prevIndex);
+    applyCombination(filterCombinations[prevIndex]);
+  };
+
   // 构建表格列定义
   const getTableColumns = () => {
     if (!matrixData || !matrixData.columns || matrixData.columns.length === 0) {
@@ -220,9 +231,17 @@ const QuotaManagement = () => {
     matrixData.columns.forEach((col) => {
       columns.push({
         title: (
-          <div style={{ textAlign: 'center', backgroundColor: '#FFFFCC', padding: '4px' }}>
+          <div style={{ 
+            textAlign: 'center', 
+            backgroundColor: '#FFFFCC', 
+            padding: '4px',
+            borderBottom: col.seq === undefined ? '2px solid orange' : 'none'
+          }}>
             <div>{col.process_name}</div>
             <div style={{ fontSize: '12px', color: '#666' }}>({col.process_code})</div>
+            {col.seq === undefined && (
+              <div style={{ fontSize: '10px', color: 'orange' }}>未配置顺序</div>
+            )}
           </div>
         ),
         dataIndex: `price_${col.process_code}`,
@@ -285,6 +304,13 @@ const QuotaManagement = () => {
           title="批量Excel导入功能待实现"
         >
           批量Excel导入
+        </Button>
+        <Button 
+          icon={<LeftOutlined />} 
+          onClick={handlePrev}
+          disabled={filterCombinations.length <= 1}
+        >
+          上一个 ({currentCombinationIndex + 1}/{filterCombinations.length})
         </Button>
         <Button 
           type="primary" 

@@ -156,3 +156,20 @@ class VSalaryRecord(Base):
     worker = relationship("Worker", foreign_keys=[worker_code], primaryjoin="VSalaryRecord.worker_code == Worker.worker_code", viewonly=True)
     quota = relationship("Quota", foreign_keys=[quota_id], primaryjoin="VSalaryRecord.quota_id == Quota.id", viewonly=True)
     creator = relationship("User", foreign_keys=[created_by], primaryjoin="VSalaryRecord.created_by == User.id", viewonly=True)
+
+
+class ColumnSeq(Base):
+    """定额表列顺序表"""
+    __tablename__ = "column_seq"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    cat1_code = Column(String(4), nullable=False, comment="工段编码")
+    cat2_code = Column(String(30), nullable=False, comment="工序类别编码")
+    process_code = Column(String(20), nullable=False, comment="工序编码")
+    seq = Column(Integer, nullable=False, comment="列顺序号")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 唯一约束
+    __table_args__ = (
+        UniqueConstraint('cat1_code', 'cat2_code', 'process_code', name='_cat1_cat2_process_uc'),
+    )

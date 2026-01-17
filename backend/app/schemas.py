@@ -351,6 +351,7 @@ class QuotaMatrixColumn(BaseModel):
     """定额矩阵列模型"""
     process_code: str
     process_name: str
+    seq: Optional[int] = None  # 列顺序号
 
 class QuotaMatrixResponse(BaseModel):
     """定额矩阵响应模型"""
@@ -359,3 +360,32 @@ class QuotaMatrixResponse(BaseModel):
     effective_date: str
     rows: List[QuotaMatrixRow]
     columns: List[QuotaMatrixColumn]
+
+
+# 列顺序相关模型
+class ColumnSeqBase(BaseModel):
+    """列顺序基础模型"""
+    cat1_code: str = Field(..., min_length=1, max_length=4, description="工段编码")
+    cat2_code: str = Field(..., min_length=1, max_length=30, description="工序类别编码")
+    process_code: str = Field(..., min_length=1, max_length=20, description="工序编码")
+    seq: int = Field(..., ge=0, description="列顺序号")
+
+class ColumnSeqCreate(ColumnSeqBase):
+    """创建列顺序模型"""
+    pass
+
+class ColumnSeqUpdate(BaseModel):
+    """更新列顺序模型"""
+    seq: Optional[int] = Field(None, ge=0, description="列顺序号")
+
+class ColumnSeqInDB(ColumnSeqBase):
+    """数据库中的列顺序模型"""
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class ColumnSeq(ColumnSeqInDB):
+    """返回给客户端的列顺序模型"""
+    pass
