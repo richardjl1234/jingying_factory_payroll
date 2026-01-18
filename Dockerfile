@@ -51,6 +51,9 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 RUN groupadd --gid 1000 appgroup && \
     useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
+# Create logs directory with proper permissions
+RUN mkdir -p /app/logs && chown -R appuser:appgroup /app/logs
+
 # Copy Python dependencies from builder stage
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 COPY --from=builder /build/requirements.txt /app/requirements.txt

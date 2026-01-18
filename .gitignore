@@ -50,3 +50,6 @@ backend/scripts/backup_tests/
 backend/backend_debug_*.log
 
 ngrok.exe
+
+cloudbaserc.json
+ssl/**

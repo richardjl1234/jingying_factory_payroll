@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   backend:
     container_name: payroll-backend
@@ -9,7 +7,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ~/shared/jianglei/payroll/env_cloud.sh
+      - ~/shared/jianglei/payroll/env_local.sh
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1

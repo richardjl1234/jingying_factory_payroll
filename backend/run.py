@@ -14,7 +14,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 log_level = LOG_LEVEL_MAP.get(LOG_LEVEL, logging.INFO)
 
 # 配置日志 - 使用单个日志文件
-log_file = 'backend.log'
+log_file = '/app/logs/backend.log'
 logging.basicConfig(
     level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
