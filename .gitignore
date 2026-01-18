@@ -28,6 +28,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Docker deployment files (env_docker.sh contains secrets - keep outside repo)
+env_docker.sh
+
 # Database files
 *.db
 payroll.db

@@ -139,7 +139,7 @@
 
 ### 后端
 - **框架**: FastAPI
-- **数据库**: SQLite (生产环境可替换为MySQL/PostgreSQL)
+- **数据库**: MySQL（通过环境变量 `MYSQL_DB_URL` 配置）
 - **ORM**: SQLAlchemy
 - **认证**: JWT
 - **依赖管理**: pip
@@ -181,7 +181,7 @@ new_payroll/
 │   │   ├── generate_test_data.py # 测试数据生成脚本
 │   │   ├── check_routes.py     # 路由检查脚本
 │   │   └── query_quota_records.py # 定额记录查询脚本
-│   └── payroll.db          # SQLite数据库（自动生成）
+│   └── payroll.db          # 数据库文件（使用MySQL，无需本地文件）
 ├── frontend/               # 前端代码
 │   ├── src/               # 源代码
 │   │   ├── components/    # React组件 (Layout.tsx)
@@ -580,7 +580,7 @@ docker run -d -p 8000:8000 payroll-system
 - **运行命令**：
   ```bash
   docker build -t payroll-backend -f Dockerfile .
-  docker run -d --name payroll-backend -p 8000:8000 -v /path/to/payroll.db:/app/payroll.db payroll-backend
+  docker run -d --name payroll-backend -p 8000:8000 payroll-backend
   ```
 
 #### 2. Nginx容器 (payroll-nginx)
@@ -617,7 +617,7 @@ docker run -d -p 8000:8000 payroll-system
   - SSL证书配置
 
 #### 数据持久化
-- **数据库**：通过卷挂载 `payroll.db` 文件
+- **数据库**：MySQL（通过环境变量 `MYSQL_DB_URL` 配置）
 - **配置文件**：Nginx配置、SSL证书、前端文件均通过卷挂载
 - **优势**：数据在容器重启后不会丢失，配置可随时更新
 

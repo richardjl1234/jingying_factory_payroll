@@ -1,42 +1,79 @@
-# 使用Python 3.10作为基础镜像（已缓存本地）
-FROM python:3.10
+# ============================================================
+# IMPORTANT: PREREQUISITE
+# ============================================================
+# Before building this Docker image, you MUST build the frontend first:
+#   cd frontend && npm run build
+#
+# This will create the frontend/dist/ directory required by line 54.
+# Without it, the Docker build will fail.
+# ============================================================
 
-# 设置工作目录
+# Multi-stage build for reduced image size
+
+# Stage 1: Builder - Install dependencies and build
+FROM python:3.10-slim AS builder
+
+WORKDIR /build
+
+# Install system dependencies needed for Python packages
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    default-libmysqlclient-dev \
+    build-essential \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY backend/requirements.txt /build/
+RUN pip install --no-cache-dir --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
+    pip config set global.trusted-host mirrors.aliyun.com && \
+    pip install --no-cache-dir -r requirements.txt
+
+# ============================================================
+# Stage 2: Runtime - Final production image
+# ============================================================
+FROM python:3.10-slim AS runtime
+
 WORKDIR /app
 
-# 注意：由于网络问题，无法安装sqlite3包
-# 如果需要sqlite3命令行工具，请在网络恢复后取消注释以下行：
-RUN apt-get update -y && apt-get install -y --no-install-recommends sqlite3 && rm -rf /var/lib/apt/lists/*
+# Install only runtime system dependencies (no compiler needed)
+RUN apt-get update -y && apt-get install -y --no-install-recommends \
+    default-libmysqlclient-dev \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# 复制后端依赖文件
-COPY backend/requirements.txt /app/
+# Create non-root user for security
+RUN groupadd --gid 1000 appgroup && \
+    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
-# 更新pip并设置国内镜像源
-RUN pip install --upgrade pip -i https://mirrors.aliyun.com/pypi/simple/ && \
-    pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
-    pip config set global.trusted-host mirrors.aliyun.com
+# Copy Python dependencies from builder stage
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /build/requirements.txt /app/requirements.txt
 
-# 安装Python依赖
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制后端代码
+# Copy backend application code
 COPY backend/ /app/backend/
 
-# 复制前端构建好的静态资源
+# Copy frontend static files (must be built first with: cd frontend && npm run build)
 COPY frontend/dist/ /app/frontend/dist/
 
-# 复制环境变量示例文件
-COPY backend/.env.example /app/backend/.env.example
+# Set environment variables
+ENV PYTHONPATH=/app \
+    PYTHONUNBUFFERED=1
 
-# 设置环境变量
-ENV PYTHONPATH=/app
+# Change to non-root user
+USER appuser
 
-# 暴露端口
+# Expose application port
 EXPOSE 8000
 
-# 健康检查
+# Health check (without requests dependency)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python -c "import requests; requests.get('http://localhost:8000/api/health', timeout=2)" || exit 1
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=2)" || exit 1
 
-# 启动命令 - 使用环境变量
+# Start the application
 CMD ["python", "backend/run.py"]

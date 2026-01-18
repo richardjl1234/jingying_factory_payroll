@@ -12,8 +12,8 @@
     }
   },
   "containerEnv": {
-    "PYTHONPATH": "/workspace",
-    "DATABASE_URL": "sqlite:///./payroll.db"
+    "PYTHONPATH": "/workspace"
+    // DATABASE_URL: 通过 ~/shared/jianglei/payroll/env_cloud.sh 环境变量文件配置
   },
   "customizations": {
     "vscode": {

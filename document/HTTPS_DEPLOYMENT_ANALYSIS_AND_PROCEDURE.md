@@ -16,7 +16,7 @@ This document outlines the pitfalls encountered during the HTTPS deployment of t
 - Created `fix_password_hash.py` to convert hashes to proper `passlib` format
 - Updated cloud database with correct hash format
 **Lesson**: 
-1. **Database consistency**: Use the same database file across environments
+1. **Database consistency**: Use the same database across environments
 2. **Hash format awareness**: `passlib` requires specific prefix format
 3. **Prevention**: Create users with `get_password_hash()` function instead of manual SQL
 4. **Verification**: Test authentication in each environment separately
@@ -75,11 +75,11 @@ This document outlines the pitfalls encountered during the HTTPS deployment of t
 
 ### 4. Database Synchronization
 **Problem**: Database changes not reflected in Docker container.
-**Root Cause**: Database file mounted as volume but changes made externally.
+**Root Cause**: For SQLite, database file mounted as volume but changes made externally.
 **Solution**:
-- Copy updated database file into container
-- Use `docker cp` or rebuild image with updated database
-**Lesson**: For simple deployments, include database in image; for production, use proper volume management.
+- For MySQL, use proper database connection via environment variable
+- Ensure `MYSQL_DB_URL` is correctly configured
+**Lesson**: For production, use proper database (MySQL) with environment-based configuration.
 
 ### 5. SSL Certificate Issues
 **Problem**: Self-signed certificate warnings and browser trust issues.
@@ -96,6 +96,7 @@ This document outlines the pitfalls encountered during the HTTPS deployment of t
 2. Domain/IP: `124.220.108.154` (update for your deployment)
 3. SSH access with passwordless login
 4. Source code repository cloned
+5. MySQL database configured with `MYSQL_DB_URL` environment variable
 
 ### Phase 1: Preparation
 ```bash
@@ -122,11 +123,14 @@ cd ..
 
 ### Phase 2: Database Preparation
 ```bash
-# 1. Ensure database has correct password hashes
+# 1. Ensure environment variables are set
+source ~/shared/jianglei/payroll/env_cloud.sh
+
+# 2. Ensure database has correct password hashes
 python3 fix_password_hash.py  # If needed
 
-# 2. Verify test user exists
-sqlite3 payroll.db "SELECT username, role FROM users WHERE username='test';"
+# 3. Verify test user exists (using MySQL client)
+mysql -h <host> -u <user> -p<password> <database> -e "SELECT username, role FROM users WHERE username='test';"
 # Should return: test|admin
 ```
 
@@ -166,7 +170,6 @@ EOF
 scp nginx-https-production.conf ubuntu@124.220.108.154:~/payroll-system/
 scp -r ssl/ ubuntu@124.220.108.154:~/payroll-system/
 scp -r frontend/dist/ ubuntu@124.220.108.154:~/payroll-system/frontend-dist/
-scp payroll.db ubuntu@124.220.108.154:~/payroll-system/
 
 # 3. Deploy on server
 ssh ubuntu@124.220.108.154 "cd ~/payroll-system && \
@@ -177,10 +180,10 @@ ssh ubuntu@124.220.108.154 "cd ~/payroll-system && \
   # Build backend image
   docker build -t payroll-backend -f Dockerfile .
   
-  # Run backend
+  # Run backend (using environment variable for MySQL)
   docker run -d --name payroll-backend \
     -p 8000:8000 \
-    -v $(pwd)/payroll.db:/app/payroll.db \
+    -e MYSQL_DB_URL=\"mysql+pymysql://username:password@host:port/database\" \
     payroll-backend
   
   # Run nginx
@@ -252,7 +255,7 @@ This test MUST pass for deployment to be considered successful:
 3. Verify API connectivity: `curl http://localhost:8000/api/health`
 4. Check frontend build: `ls -la frontend/dist/`
 5. Verify SSL certificates: `openssl x509 -in ssl/cert.pem -text -noout`
-6. Check database: `sqlite3 payroll.db "SELECT * FROM users;"`
+6. Check database connection: Verify `MYSQL_DB_URL` environment variable
 
 ### Common Issues and Fixes:
 1. **"net::ERR_CONNECTION_REFUSED"**: Backend not running or wrong port
@@ -260,6 +263,7 @@ This test MUST pass for deployment to be considered successful:
 3. **Nginx syntax error**: Validate config with `nginx -t`
 4. **CORS errors**: Check frontend API base URL configuration
 5. **SSL warnings**: Accept self-signed certificate in browser
+6. **Database connection error**: Verify MySQL connection string in environment variable
 
 ## File Cleanup Recommendations
 
@@ -270,7 +274,6 @@ This test MUST pass for deployment to be considered successful:
 - `generate_ssl_cert.sh`
 - `fix_password_hash.py` (for emergencies)
 - `test_https_puppeteer.js` (acceptance test)
-- `payroll.db` (with test user)
 
 ### Remove (Temporary/Development):
 - All `nginx-*.conf` except production template
@@ -279,6 +282,7 @@ This test MUST pass for deployment to be considered successful:
 - `deploy-*.sh` scripts (consolidate into one procedure)
 - Duplicate Docker compose files
 - Local test output files (`*.png`, `*.txt` in test/)
+- `payroll.db` files (no longer used with MySQL)
 
 ## Continuous Improvement
 
@@ -286,7 +290,7 @@ This test MUST pass for deployment to be considered successful:
 1. Create `deploy-production.sh` script encapsulating entire procedure
 2. Implement health checks and automatic rollback
 3. Add monitoring for container status and SSL certificate expiry
-4. Create backup procedure for database
+4. Create backup procedure for MySQL database
 
 ### Security Considerations:
 1. Use Let's Encrypt for production certificates
@@ -305,7 +309,7 @@ This procedure ensures reliable HTTPS deployment by addressing all encountered p
 1. Consistent environment configuration
 2. Proper SSL certificate setup
 3. Correct frontend API configuration
-4. Database compatibility
+4. Database compatibility (using MySQL with environment variables)
 5. **Mandatory acceptance test execution**
 
 By following this procedure and using `test_https_puppeteer.js` as the gatekeeper, future deployments will be predictable and successful.

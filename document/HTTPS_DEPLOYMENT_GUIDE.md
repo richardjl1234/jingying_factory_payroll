@@ -48,13 +48,13 @@
    ```bash
    # 构建后端镜像
    docker build -t payroll-backend -f Dockerfile .
-   
-   # 运行后端容器
+    
+   # 运行后端容器（通过环境变量配置MySQL连接）
    docker run -d --name payroll-backend \
      -p 8000:8000 \
-     -v $(pwd)/payroll.db:/app/payroll.db \
+     -e MYSQL_DB_URL="mysql+pymysql://username:password@host:port/database" \
      payroll-backend
-   
+    
    # 运行Nginx容器
    docker run -d --name payroll-nginx \
      -p 80:80 -p 443:443 \
@@ -83,7 +83,7 @@
    # 安装certbot
    sudo apt-get update
    sudo apt-get install certbot
-   
+    
    # 获取证书（需要域名）
    sudo certbot certonly --standalone -d your-domain.com
    ```
@@ -108,7 +108,7 @@ Nginx反向代理 (payroll-nginx容器)
     ↓ HTTP (内部网络)
 后端应用 (payroll-backend容器:8000)
     ↓
-SQLite数据库 (payroll.db)
+MySQL数据库（通过环境变量 MYSQL_DB_URL 配置）
 ```
 
 ### 端口映射
@@ -196,9 +196,9 @@ docker restart payroll-nginx
 docker stop payroll-backend payroll-nginx
 docker rm payroll-backend payroll-nginx
 
-# 启动单容器HTTP服务（如需要）
+# 启动单容器HTTP服务（如需要，使用环境变量配置数据库）
 docker build -t payroll-system .
-docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-system payroll-system
+docker run -d -p 80:8000 -e MYSQL_DB_URL="mysql+pymysql://username:password@host:port/database" --name payroll-system payroll-system
 ```
 
 ## 故障排除
@@ -210,7 +210,7 @@ docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-sys
    # 检查端口占用
    netstat -tulpn | grep :443
    netstat -tulpn | grep :80
-   
+    
    # 停止占用进程或修改端口
    ```
 
@@ -223,7 +223,7 @@ docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-sys
    ```bash
    # 检查Nginx配置
    docker exec payroll-nginx nginx -t
-   
+    
    # 查看错误日志
    docker logs payroll-nginx
    ```
@@ -232,10 +232,10 @@ docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-sys
    ```bash
    # 检查后端是否运行
    docker ps | grep payroll-backend
-   
+    
    # 检查后端日志
    docker logs payroll-backend
-   
+    
    # 测试内部连接
    curl http://localhost:8000/api/health
    ```
@@ -249,7 +249,7 @@ docker run -d -p 80:8000 -v $(pwd)/payroll.db:/app/payroll.db --name payroll-sys
    ```bash
    # 运行密码哈希修复脚本
    python3 fix_password_hash.py
-   
+    
    # 重启后端容器
    docker restart payroll-backend
    ```

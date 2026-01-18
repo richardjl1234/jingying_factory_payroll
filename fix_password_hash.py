@@ -3,10 +3,16 @@
 Fix password hash for test user with correct PBKDF2-SHA256 format.
 """
 
-import sqlite3
+import os
+import sys
 import base64
 import hashlib
-import os
+
+# Add backend to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 def create_proper_pbkdf2_hash(password: str, salt: bytes = None) -> str:
     """Create a properly formatted PBKDF2-SHA256 hash"""
@@ -25,13 +31,51 @@ def create_proper_pbkdf2_hash(password: str, salt: bytes = None) -> str:
 def main():
     print("Fixing test user password hash...")
     
+    # Load environment variables
+    env_file = os.path.expanduser("~/shared/jianglei/payroll/env_cloud.sh")
+    if os.path.exists(env_file):
+        with open(env_file) as f:
+            for line in f:
+                if line.strip() and not line.strip().startswith('#') and '=' in line:
+                    key, value = line.strip().split('=', 1)
+                    os.environ[key] = value
+    
+    # Get database URL from environment
+    mysql_db_url = os.environ.get('MYSQL_DB_URL')
+    if not mysql_db_url:
+        # Try local env as fallback
+        local_env = os.path.expanduser("~/shared/jianglei/payroll/env_local.sh")
+        if os.path.exists(local_env):
+            with open(local_env) as f:
+                for line in f:
+                    if line.strip() and not line.strip().startswith('#') and '=' in line:
+                        key, value = line.strip().split('=', 1)
+                        os.environ[key] = value
+        mysql_db_url = os.environ.get('MYSQL_DB_URL')
+    
+    if not mysql_db_url:
+        print("Error: MYSQL_DB_URL environment variable not set!")
+        print("Please run: source ~/shared/jianglei/payroll/env_local.sh")
+        sys.exit(1)
+    
+    print(f"Using database: {mysql_db_url.split('@')[0]}@...")
+    
     # Connect to database
-    conn = sqlite3.connect("payroll.db")
-    cursor = conn.cursor()
+    engine = create_engine(mysql_db_url)
+    Session = sessionmaker(bind=engine)
+    session = Session()
     
     # Get current hash to see format
-    cursor.execute("SELECT password FROM users WHERE username='test'")
-    current_hash = cursor.fetchone()[0]
+    result = session.execute(
+        "SELECT password FROM users WHERE username='test'"
+    ).fetchone()
+    
+    if not result:
+        print("Error: User 'test' not found!")
+        session.close()
+        sys.exit(1)
+    
+    current_hash = result[0]
     print(f"Current hash: {current_hash[:80]}...")
     
     # Create proper hash for password 'test123'
@@ -39,32 +83,22 @@ def main():
     print(f"New proper hash: {proper_hash[:80]}...")
     
     # Update database
-    cursor.execute(
+    session.execute(
         "UPDATE users SET password=? WHERE username='test'",
         (proper_hash,)
     )
-    conn.commit()
+    session.commit()
     
     # Verify
-    cursor.execute("SELECT password FROM users WHERE username='test'")
-    updated_hash = cursor.fetchone()[0]
-    conn.close()
+    result = session.execute(
+        "SELECT password FROM users WHERE username='test'"
+    ).fetchone()
+    updated_hash = result[0]
+    session.close()
     
     print(f"Updated hash in DB: {updated_hash[:80]}...")
-    
-    # Copy to container
-    print("\nCopying to container...")
-    os.system("docker cp payroll.db payroll-system-https:/app/payroll.db")
-    os.system("docker restart payroll-system-https")
-    
-    print("\n✅ Password hash fixed and container restarted.")
+    print("\n✅ Password hash fixed in MySQL database.")
     print("Test login with: username='test', password='test123'")
-    
-    # Also create a simple test
-    print("\nTo test, run:")
-    print("curl -X POST http://localhost:8000/api/auth/login \\")
-    print("  -H 'Content-Type: application/json' \\")
-    print("  -d '{\"username\": \"test\", \"password\": \"test123\"}'")
 
 if __name__ == "__main__":
     main()

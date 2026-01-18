@@ -6,6 +6,7 @@
 
 ## 环境要求
 - Docker
+- MySQL数据库
 - 支持HTTPS部署（使用Nginx反向代理）
 
 ## 部署概述
@@ -43,11 +44,14 @@ cd ..
 
 #### 2. 数据库准备
 ```bash
+# 加载环境变量
+source ~/shared/jianglei/payroll/env_cloud.sh
+
 # 确保数据库有正确的密码哈希格式（如遇登录问题）
 python3 fix_password_hash.py
 
-# 验证测试用户
-sqlite3 payroll.db "SELECT username, role FROM users WHERE username='test';"
+# 验证测试用户（使用MySQL客户端）
+mysql -h <host> -u <user> -p<password> <database> -e "SELECT username, role FROM users WHERE username='test';"
 # 应返回: test|admin
 ```
 
@@ -56,10 +60,10 @@ sqlite3 payroll.db "SELECT username, role FROM users WHERE username='test';"
 # 构建后端镜像
 docker build -t payroll-backend -f Dockerfile .
 
-# 运行后端容器
+# 运行后端容器（通过环境变量配置MySQL连接）
 docker run -d --name payroll-backend \
   -p 8000:8000 \
-  -v $(pwd)/payroll.db:/app/payroll.db \
+  -e MYSQL_DB_URL="mysql+pymysql://username:password@host:port/database" \
   payroll-backend
 
 # 运行Nginx容器
@@ -78,7 +82,7 @@ docker run -d --name payroll-nginx \
 - 生产环境 (`frontend/.env`): `VITE_API_BASE_URL=/api` (相对路径，由Nginx代理)
 
 ### 后端环境变量
-- 数据库: SQLite (`payroll.db`)
+- 数据库: MySQL（通过环境变量 `MYSQL_DB_URL` 配置）
 - JWT密钥: 通过环境变量 `SECRET_KEY` 设置
 
 ## 测试验证
@@ -141,11 +145,11 @@ docker restart payroll-nginx
 
 ### 备份数据库
 ```bash
-# 备份SQLite数据库
-cp payroll.db payroll.db.backup.$(date +%Y%m%d)
+# 使用mysqldump备份MySQL数据库
+mysqldump -h <host> -u <user> -p<password> <database> > backup_$(date +%Y%m%d).sql
 
-# 从容器中备份
-docker cp payroll-backend:/app/payroll.db ./backup/
+# 或使用Docker备份（如果MySQL在容器中运行）
+docker exec <mysql_container> mysqldump -u root -p<password> <database> > backup_$(date +%Y%m%d).sql
 ```
 
 ### 监控
@@ -168,7 +172,7 @@ docker exec payroll-backend ps aux
    ```bash
    # 检查配置语法
    docker exec payroll-nginx nginx -t
-   
+    
    # 查看错误日志
    docker logs payroll-nginx
    ```
@@ -177,10 +181,10 @@ docker exec payroll-backend ps aux
    ```bash
    # 检查后端是否运行
    docker ps | grep payroll-backend
-   
+    
    # 检查后端日志
    docker logs payroll-backend
-   
+    
    # 测试内部连接
    curl http://localhost:8000/api/health
    ```
@@ -189,7 +193,7 @@ docker exec payroll-backend ps aux
    ```bash
    # 运行密码哈希修复脚本
    python3 fix_password_hash.py
-   
+    
    # 重启后端容器
    docker restart payroll-backend
    ```
@@ -198,7 +202,7 @@ docker exec payroll-backend ps aux
    ```bash
    # 重新生成证书
    ./generate_ssl_cert.sh
-   
+    
    # 重启Nginx
    docker restart payroll-nginx
    ```
@@ -207,6 +211,11 @@ docker exec payroll-backend ps aux
    - 检查前端构建配置 `frontend/.env`
    - 确保 `VITE_API_BASE_URL=/api`
    - 重新构建前端 `cd frontend && npm run build`
+
+6. **数据库连接错误**
+   - 检查 `MYSQL_DB_URL` 环境变量是否正确配置
+   - 验证MySQL服务器是否正常运行
+   - 检查网络连接和防火墙设置
 
 ### 日志分析
 ```bash
@@ -229,8 +238,9 @@ docker exec payroll-nginx tail -f /var/log/nginx/access.log
    - 使用强密码和定期更换JWT密钥
 
 3. **数据安全**
-   - 定期备份数据库
+   - 定期备份MySQL数据库
    - 监控容器资源使用，防止资源耗尽
+   - 使用环境变量管理敏感信息，避免硬编码
 
 4. **更新维护**
    - 定期更新Docker基础镜像
