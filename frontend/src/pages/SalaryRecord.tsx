@@ -106,6 +106,12 @@ const SalaryRecord = () => {
   const [focusedProcessIndex, setFocusedProcessIndex] = useState<number>(-1);
   const processDropdownRef = useRef<HTMLDivElement>(null);
 
+  // 工人搜索状态
+  const [workerSearchValue, setWorkerSearchValue] = useState('');
+  const [workerSearchResults, setWorkerSearchResults] = useState<Worker[]>([]);
+  const [focusedWorkerIndex, setFocusedWorkerIndex] = useState<number>(-1);
+  const workerDropdownRef = useRef<HTMLDivElement>(null);
+
   // 获取工人列表
   const fetchWorkers = useCallback(async () => {
     try {
@@ -208,53 +214,32 @@ const SalaryRecord = () => {
     return `${month.slice(0, 4)}-${month.slice(4, 6)}`;
   };
 
-  // 工人选择变化
-  const handleWorkerChange = (value: string) => {
-    setSelectedWorker(value);
-    const worker = workers.find((w: Worker) => w.worker_code === value);
-    if (worker) {
-      setSelectedWorkerName(worker.name || worker.full_name || '');
-    }
-  };
-
-  // 月份输入变化
-  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // 移除所有非数字字符用于验证
-    const numericValue = value.replace(/\D/g, '');
-    // 限制为最多6位数字
-    if (numericValue.length <= 6) {
-      setSelectedMonth(numericValue);
-    }
-  };
-
-  // 工序搜索
-  const handleProcessSearch = (value: string) => {
-    setProcessSearchValue(value);
+  // 工人搜索（顺序匹配算法）
+  const handleWorkerSearch = (value: string) => {
+    setWorkerSearchValue(value);
     if (!value) {
-      setProcessSearchResults([]);
-      setFocusedProcessIndex(-1);
+      setWorkerSearchResults([]);
+      setFocusedWorkerIndex(-1);
       return;
     }
     
-    // 顺序匹配算法：用户输入的字符必须按顺序出现在组合中
+    // 顺序匹配算法：用户输入的字符必须按顺序出现在worker_code中
     const lowerValue = value.toLowerCase();
     
-    // 搜索所有组合（combined_code 格式: model_code + cat1_code + cat2_code + process_code）
-    const results = dictionaries.quota_combinations.filter((q: QuotaCombination) => {
-      const combinedCode = q.combined_code.toLowerCase();
+    const results = workers.filter((w: Worker) => {
+      const workerCode = w.worker_code.toLowerCase();
       let charIndex = 0;
       
       for (const char of lowerValue) {
-        charIndex = combinedCode.indexOf(char, charIndex);
+        charIndex = workerCode.indexOf(char, charIndex);
         if (charIndex === -1) return false;
         charIndex++;
       }
       return true;
     });
     
-    setProcessSearchResults(results);
-    setFocusedProcessIndex(-1);
+    setWorkerSearchResults(results);
+    setFocusedWorkerIndex(-1);
   };
 
   // 高亮显示匹配的字符
@@ -301,6 +286,161 @@ const SalaryRecord = () => {
     );
   };
 
+  // 选择工人
+  const handleWorkerSelect = (workerCode: string) => {
+    const worker = workers.find((w: Worker) => w.worker_code === workerCode);
+    if (worker) {
+      setSelectedWorker(workerCode);
+      setSelectedWorkerName(worker.name || worker.full_name || '');
+      setWorkerSearchValue('');
+      setWorkerSearchResults([]);
+      setFocusedWorkerIndex(-1);
+    }
+  };
+
+  // 工人下拉框键盘导航
+  const handleWorkerDropdownKeyDown = (e: React.KeyboardEvent) => {
+    const totalOptions = workerSearchResults.length;
+    if (totalOptions === 0) return;
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        // Shift+Tab: 上一项
+        setFocusedWorkerIndex(prev => {
+          const newIndex = prev <= 0 ? totalOptions - 1 : prev - 1;
+          setTimeout(() => {
+            const elements = workerDropdownRef.current?.querySelectorAll('[data-worker-index]');
+            const el = elements?.[newIndex] as HTMLElement;
+            el?.focus();
+          }, 0);
+          return newIndex;
+        });
+      } else {
+        // Tab: 下一项
+        setFocusedWorkerIndex(prev => {
+          const newIndex = prev >= totalOptions - 1 ? 0 : prev + 1;
+          setTimeout(() => {
+            const elements = workerDropdownRef.current?.querySelectorAll('[data-worker-index]');
+            const el = elements?.[newIndex] as HTMLElement;
+            el?.focus();
+          }, 0);
+          return newIndex;
+        });
+      }
+    } else if (e.key === ' ') {
+      // Space: 选择当前聚焦的选项
+      e.preventDefault();
+      if (focusedWorkerIndex >= 0 && focusedWorkerIndex < totalOptions) {
+        const worker = workerSearchResults[focusedWorkerIndex];
+        handleWorkerSelect(worker.worker_code);
+      }
+    }
+  };
+
+  // 上一位工人（循环）
+  const handleWorkerPrev = () => {
+    if (workers.length === 0) return;
+    
+    const currentIndex = selectedWorker 
+      ? workers.findIndex((w: Worker) => w.worker_code === selectedWorker)
+      : -1;
+    
+    // 如果没有选中工人，选择最后一个
+    let newIndex = currentIndex <= 0 ? workers.length - 1 : currentIndex - 1;
+    
+    // 如果有搜索结果，在搜索结果中循环
+    if (workerSearchResults.length > 0) {
+      const currentResultIndex = workerSearchResults.findIndex((w: Worker) => w.worker_code === selectedWorker);
+      if (currentResultIndex >= 0) {
+        newIndex = currentResultIndex <= 0 ? workerSearchResults.length - 1 : currentResultIndex - 1;
+        handleWorkerSelect(workerSearchResults[newIndex].worker_code);
+      } else {
+        handleWorkerSelect(workerSearchResults[workerSearchResults.length - 1].worker_code);
+      }
+    } else {
+      // 没有搜索结果时在整个工人列表中循环
+      handleWorkerSelect(workers[newIndex].worker_code);
+    }
+  };
+
+  // 下一位工人（循环）
+  const handleWorkerNext = () => {
+    if (workers.length === 0) return;
+    
+    const currentIndex = selectedWorker 
+      ? workers.findIndex((w: Worker) => w.worker_code === selectedWorker)
+      : -1;
+    
+    // 如果没有选中工人，选择第一个
+    let newIndex = currentIndex >= workers.length - 1 ? 0 : currentIndex + 1;
+    
+    // 如果有搜索结果，在搜索结果中循环
+    if (workerSearchResults.length > 0) {
+      const currentResultIndex = workerSearchResults.findIndex((w: Worker) => w.worker_code === selectedWorker);
+      if (currentResultIndex >= 0) {
+        newIndex = currentResultIndex >= workerSearchResults.length - 1 ? 0 : currentResultIndex + 1;
+        handleWorkerSelect(workerSearchResults[newIndex].worker_code);
+      } else {
+        handleWorkerSelect(workerSearchResults[0].worker_code);
+      }
+    } else {
+      // 没有搜索结果时在整个工人列表中循环
+      handleWorkerSelect(workers[newIndex].worker_code);
+    }
+  };
+
+  // 清除工人选择
+  const handleWorkerClear = () => {
+    setSelectedWorker(null);
+    setSelectedWorkerName('');
+    setWorkerSearchValue('');
+    setWorkerSearchResults([]);
+    setFocusedWorkerIndex(-1);
+    setRecords([]);
+    setSummary({ total_quantity: 0, total_amount: 0 });
+  };
+
+  // 月份输入变化
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // 移除所有非数字字符用于验证
+    const numericValue = value.replace(/\D/g, '');
+    // 限制为最多6位数字
+    if (numericValue.length <= 6) {
+      setSelectedMonth(numericValue);
+    }
+  };
+
+  // 工序搜索
+  const handleProcessSearch = (value: string) => {
+    setProcessSearchValue(value);
+    if (!value) {
+      setProcessSearchResults([]);
+      setFocusedProcessIndex(-1);
+      return;
+    }
+    
+    // 顺序匹配算法：用户输入的字符必须按顺序出现在组合中
+    const lowerValue = value.toLowerCase();
+    
+    // 搜索所有组合（combined_code 格式: model_code + cat1_code + cat2_code + process_code）
+    const results = dictionaries.quota_combinations.filter((q: QuotaCombination) => {
+      const combinedCode = q.combined_code.toLowerCase();
+      let charIndex = 0;
+      
+      for (const char of lowerValue) {
+        charIndex = combinedCode.indexOf(char, charIndex);
+        if (charIndex === -1) return false;
+        charIndex++;
+      }
+      return true;
+    });
+    
+    setProcessSearchResults(results);
+    setFocusedProcessIndex(-1);
+  };
+
   // 工序下拉框键盘导航
   const handleProcessDropdownKeyDown = (e: React.KeyboardEvent) => {
     const totalOptions = processSearchResults.length;
@@ -312,7 +452,6 @@ const SalaryRecord = () => {
         // Shift+Tab: 上一项
         setFocusedProcessIndex(prev => {
           const newIndex = prev <= 0 ? totalOptions - 1 : prev - 1;
-          // 聚焦到对应元素
           setTimeout(() => {
             const elements = processDropdownRef.current?.querySelectorAll('[data-process-index]');
             const el = elements?.[newIndex] as HTMLElement;
@@ -324,7 +463,6 @@ const SalaryRecord = () => {
         // Tab: 下一项
         setFocusedProcessIndex(prev => {
           const newIndex = prev >= totalOptions - 1 ? 0 : prev + 1;
-          // 聚焦到对应元素
           setTimeout(() => {
             const elements = processDropdownRef.current?.querySelectorAll('[data-process-index]');
             const el = elements?.[newIndex] as HTMLElement;
@@ -726,20 +864,117 @@ const SalaryRecord = () => {
       
       {/* 过滤器区域 */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Select
-            placeholder="选择工人"
-            style={{ width: '100%' }}
-            onChange={handleWorkerChange}
-            allowClear
-            value={selectedWorker}
-          >
-            {workers.map((worker: Worker) => (
-              <Option key={worker.worker_code} value={worker.worker_code}>
-                {worker.name || worker.full_name} ({worker.worker_code})
-              </Option>
-            ))}
-          </Select>
+        <Col span={10}>
+          <div style={{ position: 'relative' }}>
+            <Input
+              placeholder="搜索工人（输入工号进行模糊搜索）"
+              value={selectedWorker ? `${selectedWorkerName} (${selectedWorker})` : workerSearchValue}
+              onChange={(e) => handleWorkerSearch(e.target.value)}
+              onClear={handleWorkerClear}
+              allowClear
+              onKeyDown={(e) => {
+                if (e.key === 'Tab' && workerSearchResults.length > 0) {
+                  e.preventDefault();
+                  setFocusedWorkerIndex(0);
+                  setTimeout(() => {
+                    const firstOption = document.querySelector('[data-worker-index="0"]') as HTMLElement;
+                    firstOption?.focus();
+                  }, 10);
+                }
+              }}
+              prefix={
+                <Button 
+                  type="text" 
+                  size="small" 
+                  onClick={handleWorkerPrev}
+                  style={{ padding: '0 4px' }}
+                  title="上一位工人"
+                >
+                  ◀
+                </Button>
+              }
+              suffix={
+                <Space size={0}>
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    onClick={handleWorkerNext}
+                    style={{ padding: '0 4px' }}
+                    title="下一位工人"
+                  >
+                    ▶
+                  </Button>
+                </Space>
+              }
+            />
+            {/* 工人下拉框 */}
+            {workerSearchResults.length > 0 && (
+              <div 
+                ref={workerDropdownRef}
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  maxHeight: 200,
+                  overflow: 'auto',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: 4,
+                  backgroundColor: 'white',
+                  zIndex: 1000,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                }}
+                onKeyDown={handleWorkerDropdownKeyDown}
+              >
+                {workerSearchResults.slice(0, 50).map((worker: Worker, index: number) => (
+                  <div
+                    key={worker.worker_code}
+                    data-worker-index={index}
+                    tabIndex={0}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      borderBottom: '1px solid #f0f0f0',
+                      color: 'rgba(0, 0, 0, 0.85)',
+                      backgroundColor: focusedWorkerIndex === index ? '#e6f7ff' : 'transparent',
+                      outline: 'none'
+                    }}
+                    onClick={() => handleWorkerSelect(worker.worker_code)}
+                    onFocus={() => setFocusedWorkerIndex(index)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f5f5f5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = focusedWorkerIndex === index ? '#e6f7ff' : 'white';
+                    }}
+                  >
+                    {worker.name || worker.full_name} ({highlightMatchedChars(worker.worker_code, workerSearchValue)})
+                  </div>
+                ))}
+                {workerSearchResults.length > 50 && (
+                  <div style={{ padding: 8, textAlign: 'center', color: '#999' }}>
+                    还有 {workerSearchResults.length - 50} 条结果...
+                  </div>
+                )}
+              </div>
+            )}
+            {workerSearchResults.length === 0 && workerSearchValue && !selectedWorker && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                padding: '8px 12px',
+                border: '1px solid #d9d9d9',
+                borderRadius: 4,
+                backgroundColor: 'white',
+                color: '#999',
+                zIndex: 1000
+              }}>
+                没有匹配的工人
+              </div>
+            )}
+          </div>
         </Col>
         <Col span={4}>
           <Input 
@@ -769,7 +1004,7 @@ const SalaryRecord = () => {
             }
           />
         </Col>
-        <Col span={12}>
+        <Col span={8}>
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
