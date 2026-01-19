@@ -821,14 +821,17 @@ def get_quota_matrix_data(db: Session, cat1_code: str, cat2_code: str, effective
     # 构建矩阵数据
     model_codes = set()
     process_codes = set()
-    price_map = {}  # (model_code, process_code) -> unit_price
+    price_map = {}  # (model_code, process_code) -> {price, id}
     process_names = {}  # process_code -> process_name
     model_names = {}  # model_code -> model_name
     
     for quota, process_name, model_name in quotas:
         model_codes.add(quota.model_code)
         process_codes.add(quota.process_code)
-        price_map[(quota.model_code, quota.process_code)] = float(quota.unit_price)
+        price_map[(quota.model_code, quota.process_code)] = {
+            'price': float(quota.unit_price),
+            'id': quota.id
+        }
         # 保存工序名称（优先使用实际名称，如果为空则使用code）
         if process_name:
             process_names[quota.process_code] = process_name
@@ -867,9 +870,9 @@ def get_quota_matrix_data(db: Session, cat1_code: str, cat2_code: str, effective
     for model_code in sorted_models:
         prices = {}
         for process_code in sorted_processes:
-            price = price_map.get((model_code, process_code))
-            if price is not None:
-                prices[process_code] = price
+            price_info = price_map.get((model_code, process_code))
+            if price_info is not None:
+                prices[process_code] = price_info
         
         model_name = model_names.get(model_code, model_code)
         

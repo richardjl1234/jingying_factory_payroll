@@ -220,7 +220,10 @@ const QuotaManagement = () => {
           style: { backgroundColor: '#FFC0CB', fontWeight: 'bold' }
         }),
         render: (text, record) => (
-          <span>{text || `${record.model_name} (${record.model_code})`}</span>
+          <span>
+            {record.model_name}
+            <span style={{ color: '#5DADE2' }}> ({record.model_code})</span>
+          </span>
         )
       }
     ];
@@ -236,7 +239,7 @@ const QuotaManagement = () => {
             borderBottom: col.seq === undefined ? '2px solid orange' : 'none'
           }}>
             <div>{col.process_name}</div>
-            <div style={{ fontSize: '12px', color: '#666' }}>({col.process_code})</div>
+            <div style={{ fontSize: '12px', color: '#5DADE2' }}>({col.process_code})</div>
             {col.seq === undefined && (
               <div style={{ fontSize: '10px', color: 'orange' }}>未配置顺序</div>
             )}
@@ -249,11 +252,18 @@ const QuotaManagement = () => {
         onCell: () => ({
           style: { backgroundColor: '#FFFFFF', textAlign: 'right' }  // 无色/白色背景
         }),
-        render: (price) => {
-          if (price === undefined || price === null) {
+        render: (priceInfo) => {
+          if (priceInfo === undefined || priceInfo === null) {
             return '-';
           }
-          return `¥${price.toFixed(2)}`;
+          const price = priceInfo.price;
+          const quotaId = priceInfo.id;
+          return (
+            <span>
+              <span>¥{price.toFixed(2)}</span>
+              <span style={{ color: '#5DADE2', marginLeft: '4px' }}>({quotaId})</span>
+            </span>
+          );
         }
       });
     });
