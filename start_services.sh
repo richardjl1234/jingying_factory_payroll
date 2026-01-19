@@ -7,6 +7,11 @@ echo "========================================="
 echo "Starting Payroll System Services"
 echo "========================================="
 
+# 设置日志目录（支持Docker和本地环境）
+export LOG_DIR="${LOG_DIR:-/home/richard/shared/jianglei/trae/new_payroll/logs}"
+mkdir -p "$LOG_DIR"
+echo "Log directory: $LOG_DIR"
+
 # Check if we're in the right directory
 if [ ! -d "backend" ] || [ ! -d "frontend" ]; then
     echo "Error: Backend or frontend directory not found."

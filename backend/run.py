@@ -14,7 +14,13 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 log_level = LOG_LEVEL_MAP.get(LOG_LEVEL, logging.INFO)
 
 # 配置日志 - 使用单个日志文件
-log_file = '/app/logs/backend.log'
+# 支持Docker和本地环境：通过环境变量配置日志目录
+log_dir = os.getenv("LOG_DIR", "/app/logs")
+log_file = os.path.join(log_dir, 'backend.log')
+
+# 创建日志目录（支持Docker部署）
+os.makedirs(log_dir, exist_ok=True)
+
 logging.basicConfig(
     level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
