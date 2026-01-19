@@ -169,9 +169,46 @@ const SalaryRecord = () => {
     fetchWorkerMonthRecords();
   }, [fetchWorkerMonthRecords]);
 
-  // 设置当前月份
-  const handleSetCurrentMonth = () => {
-    setSelectedMonth(dayjs().format('YYYYMM'));
+  // 月份增加
+  const handleMonthIncrement = () => {
+    const currentMonth = selectedMonth;
+    const year = parseInt(currentMonth.slice(0, 4));
+    const month = parseInt(currentMonth.slice(4, 6));
+    
+    let newYear = year;
+    let newMonth = month + 1;
+    
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear = year + 1;
+    }
+    
+    const newMonthStr = `${newYear}${String(newMonth).padStart(2, '0')}`;
+    setSelectedMonth(newMonthStr);
+  };
+
+  // 月份减少
+  const handleMonthDecrement = () => {
+    const currentMonth = selectedMonth;
+    const year = parseInt(currentMonth.slice(0, 4));
+    const month = parseInt(currentMonth.slice(4, 6));
+    
+    let newYear = year;
+    let newMonth = month - 1;
+    
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear = year - 1;
+    }
+    
+    const newMonthStr = `${newYear}${String(newMonth).padStart(2, '0')}`;
+    setSelectedMonth(newMonthStr);
+  };
+
+  // 格式化月份显示（从 yyyymm 转换为 yyyy-mm 格式）
+  const formatMonthDisplay = (month: string) => {
+    if (!month || month.length !== 6) return month;
+    return `${month.slice(0, 4)}-${month.slice(4, 6)}`;
   };
 
   // 工人选择变化
@@ -186,8 +223,11 @@ const SalaryRecord = () => {
   // 月份输入变化
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (/^\d{0,6}$/.test(value)) {
-      setSelectedMonth(value);
+    // 移除所有非数字字符用于验证
+    const numericValue = value.replace(/\D/g, '');
+    // 限制为最多6位数字
+    if (numericValue.length <= 6) {
+      setSelectedMonth(numericValue);
     }
   };
 
@@ -434,6 +474,34 @@ const SalaryRecord = () => {
     setModelSearchResults([]);
     setProcessSearchResults([]);
     form.resetFields();
+    form.setFieldValue('quantity', 1);
+    
+    // 计算默认日期：最大现有记录日期的第二天，如果没有记录则默认为1号
+    let defaultDay = '01';
+    if (records.length > 0) {
+      // 找到最大日期
+      const maxDate = records.reduce((max, record) => {
+        return dayjs(record.record_date).isAfter(dayjs(max)) ? record.record_date : max;
+      }, records[0].record_date);
+      
+      const maxDayJs = dayjs(maxDate);
+      const lastDayOfMonth = maxDayJs.endOf('month');
+      
+      // 如果最大日期已经是当月最后一天，则使用该日期；否则使用第二天
+      if (maxDayJs.isSame(lastDayOfMonth, 'day')) {
+        defaultDay = maxDayJs.format('DD');
+      } else {
+        defaultDay = maxDayJs.add(1, 'day').format('DD');
+      }
+      
+      // 确保日期在有效范围内（1-31）
+      const dayNum = parseInt(defaultDay);
+      if (dayNum > 31) {
+        defaultDay = '01';
+      }
+    }
+    
+    form.setFieldValue('day', defaultDay);
     setIsModalVisible(true);
   };
 
@@ -471,6 +539,27 @@ const SalaryRecord = () => {
   // 关闭模态框
   const handleCancel = () => {
     setIsModalVisible(false);
+  };
+
+  // 日期增加
+  const handleDayIncrement = () => {
+    const currentDay = form.getFieldValue('day') || '01';
+    const dayNum = parseInt(currentDay);
+    if (isNaN(dayNum)) return;
+    
+    const maxDay = dayjs(`${selectedMonth.slice(0, 4)}-${selectedMonth.slice(4, 6)}-01`).endOf('month').date();
+    const newDay = dayNum >= maxDay ? maxDay : dayNum + 1;
+    form.setFieldValue('day', String(newDay).padStart(2, '0'));
+  };
+
+  // 日期减少
+  const handleDayDecrement = () => {
+    const currentDay = form.getFieldValue('day') || '01';
+    const dayNum = parseInt(currentDay);
+    if (isNaN(dayNum)) return;
+    
+    const newDay = dayNum <= 1 ? 1 : dayNum - 1;
+    form.setFieldValue('day', String(newDay).padStart(2, '0'));
   };
 
   // 提交表单
@@ -552,7 +641,7 @@ const SalaryRecord = () => {
               <span>
                 {match[1].trim()}
                 <br />
-                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
               </span>
             );
           }
@@ -574,7 +663,7 @@ const SalaryRecord = () => {
               <span>
                 {match[1].trim()}
                 <br />
-                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
               </span>
             );
           }
@@ -596,7 +685,7 @@ const SalaryRecord = () => {
               <span>
                 {match[1].trim()}
                 <br />
-                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
               </span>
             );
           }
@@ -618,7 +707,7 @@ const SalaryRecord = () => {
               <span>
                 {match[1].trim()}
                 <br />
-                <Text type="secondary" style={{ fontSize: 10 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
               </span>
             );
           }
@@ -702,16 +791,31 @@ const SalaryRecord = () => {
         </Col>
         <Col span={4}>
           <Input 
-            placeholder="YYYYMM" 
-            value={selectedMonth}
+            placeholder="YYYY-MM" 
+            value={formatMonthDisplay(selectedMonth)}
             onChange={handleMonthChange}
-            maxLength={6}
+            maxLength={7}
+            prefix={
+              <Button 
+                type="text" 
+                size="small" 
+                onClick={handleMonthDecrement}
+                style={{ padding: '0 4px' }}
+              >
+                -
+              </Button>
+            }
+            suffix={
+              <Button 
+                type="text" 
+                size="small" 
+                onClick={handleMonthIncrement}
+                style={{ padding: '0 4px' }}
+              >
+                +
+              </Button>
+            }
           />
-        </Col>
-        <Col span={2}>
-          <Button onClick={handleSetCurrentMonth}>
-            当前月份
-          </Button>
         </Col>
         <Col span={12}>
           <Button 
@@ -788,7 +892,7 @@ const SalaryRecord = () => {
             </Col>
             <Col span={12}>
               <Form.Item label="月份">
-                <Input value={selectedMonth} disabled style={{ backgroundColor: '#f5f5f5' }} />
+                <Input value={formatMonthDisplay(selectedMonth)} disabled style={{ backgroundColor: '#f5f5f5' }} />
               </Form.Item>
             </Col>
           </Row>
@@ -808,7 +912,30 @@ const SalaryRecord = () => {
               }
             ]}
           >
-            <Input placeholder="请输入日期（两位数，如：15）" maxLength={2} />
+            <Input 
+              placeholder="请输入日期（两位数，如：15）" 
+              maxLength={2} 
+              prefix={
+                <Button 
+                  type="text" 
+                  size="small" 
+                  onClick={handleDayDecrement}
+                  style={{ padding: '0 4px' }}
+                >
+                  -
+                </Button>
+              }
+              suffix={
+                <Button 
+                  type="text" 
+                  size="small" 
+                  onClick={handleDayIncrement}
+                  style={{ padding: '0 4px' }}
+                >
+                  +
+                </Button>
+              }
+            />
           </Form.Item>
 
           {/* 定额选择区域 */}
