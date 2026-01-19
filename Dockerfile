@@ -1,16 +1,9 @@
 # ============================================================
-# IMPORTANT: PREREQUISITE
-# ============================================================
-# Before building this Docker image, you MUST build the frontend first:
-#   cd frontend && npm run build
-#
-# This will create the frontend/dist/ directory required by line 54.
-# Without it, the Docker build will fail.
-# ============================================================
-
 # Multi-stage build for reduced image size
+# ============================================================
 
-# Stage 1: Builder - Install dependencies and build
+# Stage 1: Python Builder - Install Python dependencies
+# (Placed first for better cache utilization since Python deps change less frequently)
 FROM python:3.10-slim AS builder
 
 WORKDIR /build
@@ -31,8 +24,23 @@ RUN pip install --no-cache-dir --upgrade pip -i https://mirrors.aliyun.com/pypi/
     pip config set global.trusted-host mirrors.aliyun.com && \
     pip install --no-cache-dir -r requirements.txt
 
+# Stage 2: Frontend Builder - Build React frontend
+# (Placed second since frontend changes more frequently)
+FROM docker.m.daocloud.io/node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Configure npm to use Aliyun mirror for faster downloads in China
+RUN npm config set registry https://registry.npmmirror.com
+
+# Copy frontend source
+COPY frontend/ ./frontend/
+
+# Install dependencies and build
+RUN cd frontend && npm install && npm run build
+
 # ============================================================
-# Stage 2: Runtime - Final production image
+# Stage 3: Runtime - Final production image
 # ============================================================
 FROM python:3.10-slim AS runtime
 
@@ -61,8 +69,8 @@ COPY --from=builder /build/requirements.txt /app/requirements.txt
 # Copy backend application code
 COPY backend/ /app/backend/
 
-# Copy frontend static files (must be built first with: cd frontend && npm run build)
-COPY frontend/dist/ /app/frontend/dist/
+# Copy frontend static files from frontend builder stage
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist/
 
 # Set environment variables
 ENV PYTHONPATH=/app \
