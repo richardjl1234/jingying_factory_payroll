@@ -194,10 +194,10 @@ const UserManagement = () => {
           </Form.Item>
           <Form.Item
             name="name"
-            label="姓名"
-            rules={[{ required: true, message: '请输入姓名!' }]}
+            label="中文全名"
+            rules={[{ required: true, message: '请输入中文全名!' }]}
           >
-            <Input placeholder="姓名" />
+            <Input placeholder="请输入中文全名" />
           </Form.Item>
           <Form.Item
             name="role"
