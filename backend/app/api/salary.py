@@ -223,7 +223,8 @@ def get_dictionaries(
         # 构建定额组合列表
         quota_combinations = []
         for q in quota_combinations_query:
-            combined_code = f"{q.cat1_code}{q.cat2_code}{q.process_code}"
+            # 组合格式: model_code + cat1_code + cat2_code + process_code
+            combined_code = f"{q.model_code}{q.cat1_code}{q.cat2_code}{q.process_code}"
             quota_combinations.append({
                 "quota_id": q.quota_id,
                 "combined_code": combined_code,
