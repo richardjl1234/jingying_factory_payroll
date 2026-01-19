@@ -5,7 +5,7 @@ export interface User {
   id: number;
   username: string;
   password?: string;
-  full_name: string;
+  name: string;
   role: 'admin' | 'statistician' | 'report' | 'worker';
   need_change_password: boolean;
 }

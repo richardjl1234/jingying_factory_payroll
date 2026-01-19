@@ -32,10 +32,15 @@ const Login: React.FC = () => {
       // 保存用户信息
       localStorage.setItem('user', JSON.stringify(data.user));
       
+      // 保存登录密码用于首次登录修改密码
+      localStorage.setItem('login_password', values.password);
+      
       // 检查是否需要修改密码
       if (data.user.need_change_password) {
         message.info('首次登录，请修改密码');
         setIsChangePwdModalVisible(true);
+        // Pre-populate the old password field with the login password
+        changePwdForm.setFieldsValue({ old_password: values.password });
       } else {
         message.success('登录成功');
         window.location.href = '/';

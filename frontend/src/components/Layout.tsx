@@ -151,7 +151,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           <Dropdown menu={{ items: [{ key: 'logout', icon: <LogoutOutlined />, label: '退出登录', onClick: handleLogout }] }} trigger={['click']}>
             <Button type="text" style={{ display: 'flex', alignItems: 'center' }}>
               <Avatar icon={<UserOutlined />} />
-              <span style={{ marginLeft: 8 }}>{user?.full_name || '未知用户'}</span>
+              <span style={{ marginLeft: 8 }}>{user?.name || '未知用户'}</span>
             </Button>
           </Dropdown>
         </Header>
