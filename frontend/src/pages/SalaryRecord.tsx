@@ -91,15 +91,12 @@ const SalaryRecord = () => {
   
   // 定额选择状态
   const [quotaIdInput, setQuotaIdInput] = useState('');
-  const [selectedModel, setSelectedModel] = useState<MotorModel | null>(null);
   const [selectedProcess, setSelectedProcess] = useState<QuotaCombination | null>(null);
   const [quotaResult, setQuotaResult] = useState<QuotaSearchResult | null>(null);
   const [quotaLoading, setQuotaLoading] = useState(false);
   
   // 搜索结果
-  const [modelSearchResults, setModelSearchResults] = useState<MotorModel[]>([]);
   const [processSearchResults, setProcessSearchResults] = useState<QuotaCombination[]>([]);
-  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showProcessDropdown, setShowProcessDropdown] = useState(false);
   
   // 搜索输入值
@@ -231,36 +228,6 @@ const SalaryRecord = () => {
     }
   };
 
-  // 型号搜索
-  const handleModelSearch = (value: string) => {
-    if (!value) {
-      setModelSearchResults([]);
-      setShowModelDropdown(false);
-      return;
-    }
-    
-    const lowerValue = value.toLowerCase();
-    const results = dictionaries.motor_models.filter((m: MotorModel) => 
-      m.model_code.toLowerCase().includes(lowerValue) || 
-      (m.name && m.name.toLowerCase().includes(lowerValue))
-    );
-    setModelSearchResults(results);
-    setShowModelDropdown(results.length > 0);
-  };
-
-  // 选择型号
-  const handleModelSelect = (modelCode: string) => {
-    const model = dictionaries.motor_models.find((m: MotorModel) => m.model_code === modelCode);
-    if (model) {
-      setSelectedModel(model);
-      setShowModelDropdown(false);
-      // 尝试自动确定定额
-      if (selectedProcess) {
-        findQuotaByCombination(model.model_code, selectedProcess);
-      }
-    }
-  };
-
   // 工序搜索
   const handleProcessSearch = (value: string) => {
     setProcessSearchValue(value);
@@ -273,15 +240,8 @@ const SalaryRecord = () => {
     // 顺序匹配算法：用户输入的字符必须按顺序出现在组合中
     const lowerValue = value.toLowerCase();
     
-    // 如果已选型号，先按型号过滤
-    let baseCombinations = dictionaries.quota_combinations;
-    if (selectedModel) {
-      baseCombinations = baseCombinations.filter(
-        (q: QuotaCombination) => q.model_code === selectedModel.model_code
-      );
-    }
-    
-    const results = baseCombinations.filter((q: QuotaCombination) => {
+    // 搜索所有组合（combined_code 格式: model_code + cat1_code + cat2_code + process_code）
+    const results = dictionaries.quota_combinations.filter((q: QuotaCombination) => {
       const combinedCode = q.combined_code.toLowerCase();
       let charIndex = 0;
       
@@ -391,13 +351,8 @@ const SalaryRecord = () => {
       setProcessSearchResults([]);
       setProcessSearchValue('');
       setFocusedProcessIndex(-1);
-      // 尝试自动确定定额
-      if (selectedModel) {
-        findQuotaByCombination(selectedModel.model_code, process);
-      } else if (quotaResult) {
-        // 如果之前有定额信息，保留但更新
-        findQuotaByCombination(quotaResult.model_code, process);
-      }
+      // 尝试自动确定定额（从选中的工序组合中获取model_code）
+      findQuotaByCombination(process.model_code, process);
     }
   };
 
@@ -448,7 +403,6 @@ const SalaryRecord = () => {
         record_date: recordDate
       });
       setQuotaResult(result);
-      setSelectedModel({ model_code: (result as QuotaSearchResult).model_code, name: '' });
       setSelectedProcess(null);
       message.success('定额查找成功');
     } catch (error: any) {
@@ -468,10 +422,8 @@ const SalaryRecord = () => {
     setIsEditMode(false);
     setCurrentRecord(null);
     setQuotaIdInput('');
-    setSelectedModel(null);
     setSelectedProcess(null);
     setQuotaResult(null);
-    setModelSearchResults([]);
     setProcessSearchResults([]);
     form.resetFields();
     form.setFieldValue('quantity', 1);
@@ -970,40 +922,12 @@ const SalaryRecord = () => {
               </Col>
             </Row>
 
-            {/* 型号搜索 */}
-            <Row gutter={16} style={{ marginBottom: 8 }}>
-              <Col span={12}>
-                <Select
-                  showSearch
-                  placeholder="搜索型号（输入部分型号编码）"
-                  style={{ width: '100%' }}
-                  onSearch={handleModelSearch}
-                  onSelect={handleModelSelect}
-                  onBlur={() => setShowModelDropdown(false)}
-                  open={showModelDropdown}
-                  dropdownMatchSelectWidth={false}
-                  value={selectedModel ? `${selectedModel.name} (${selectedModel.model_code})` : undefined}
-                  allowClear
-                >
-                  {modelSearchResults.map((model: MotorModel) => (
-                    <Option key={model.model_code} value={model.model_code}>
-                      {model.name} ({model.model_code})
-                    </Option>
-                  ))}
-                </Select>
-              </Col>
-            </Row>
-
-            {/* 工序搜索 */}
+            {/* 定额组合搜索 */}
             <Row gutter={16} style={{ marginBottom: 16 }}>
               <Col span={12}>
                 <div style={{ position: 'relative' }}>
                   <Input
-                    placeholder={
-                      selectedModel 
-                        ? `已选型号 ${selectedModel.model_code}，搜索工序组合`
-                        : "搜索工序（输入编码组合，如：abcefg036）"
-                    }
+                    placeholder="搜索定额组合（输入编码组合，如：型号+工段+工序类别+工序）"
                     value={selectedProcess ? selectedProcess.combined_code : processSearchValue}
                     onChange={(e) => handleProcessSearch(e.target.value)}
                     onClear={() => {
@@ -1107,7 +1031,7 @@ const SalaryRecord = () => {
                       )}
                     </div>
                   )}
-                  {processSearchResults.length === 0 && processSearchValue && selectedModel && (
+                  {processSearchResults.length === 0 && processSearchValue && (
                     <div style={{
                       position: 'absolute',
                       top: '100%',
