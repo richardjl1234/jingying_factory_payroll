@@ -110,8 +110,8 @@ export const quotaAPI = {
   getFilterCombinations: (): Promise<QuotaFilterCombination[]> => 
     api.get('/quotas/filter-combinations/'),
   // 新增：获取生效日期列表
-  getEffectiveDates: (): Promise<string[]> => 
-    api.get('/quotas/effective-dates/'),
+  getEffectiveDates: (params?: { cat1_code?: string; cat2_code?: string }): Promise<string[]> => 
+    api.get('/quotas/effective-dates/', { params }),
   // 新增：获取工序类别选项（根据工段类别和生效日期）
   getCat2Options: (params: { cat1_code?: string; effective_date?: string }): Promise<{ value: string; label: string }[]> => 
     api.get('/quotas/cat2-options/', { params }),

@@ -339,7 +339,6 @@ class QuotaFilterCombination(BaseModel):
     cat1_name: str
     cat2_code: str
     cat2_name: str
-    effective_date: str
 
 class QuotaMatrixRow(BaseModel):
     """定额矩阵行模型"""

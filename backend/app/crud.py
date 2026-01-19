@@ -741,8 +741,8 @@ def delete_motor_model(db: Session, model_code: str) -> Optional[dict]:
 
 def get_quota_filter_combinations(db: Session) -> List[dict]:
     """
-    获取所有唯一的 (工段类别, 工序类别, 生效日期) 组合
-    按 生效日期, 工段类别, 工序类别 排序
+    获取所有唯一的 (工段类别, 工序类别) 组合
+    按 工段类别, 工序类别 排序
     """
     logger.debug("获取定额过滤器组合列表")
     
@@ -750,8 +750,7 @@ def get_quota_filter_combinations(db: Session) -> List[dict]:
         models.Quota.cat1_code,
         models.ProcessCat1.name.label('cat1_name'),
         models.Quota.cat2_code,
-        models.ProcessCat2.name.label('cat2_name'),
-        models.Quota.effective_date
+        models.ProcessCat2.name.label('cat2_name')
     ).join(
         models.ProcessCat1, 
         models.Quota.cat1_code == models.ProcessCat1.cat1_code, 
@@ -762,10 +761,8 @@ def get_quota_filter_combinations(db: Session) -> List[dict]:
         isouter=True
     ).distinct(
         models.Quota.cat1_code,
-        models.Quota.cat2_code,
-        models.Quota.effective_date
+        models.Quota.cat2_code
     ).order_by(
-        models.Quota.effective_date,
         models.Quota.cat1_code,
         models.Quota.cat2_code
     ).all()
@@ -775,8 +772,7 @@ def get_quota_filter_combinations(db: Session) -> List[dict]:
             "cat1_code": r.cat1_code,
             "cat1_name": r.cat1_name or r.cat1_code,
             "cat2_code": r.cat2_code,
-            "cat2_name": r.cat2_name or r.cat2_code,
-            "effective_date": str(r.effective_date)
+            "cat2_name": r.cat2_name or r.cat2_code
         }
         for r in results
     ]

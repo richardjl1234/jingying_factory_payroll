@@ -111,14 +111,25 @@ def get_filter_combinations(
 
 @router.get("/effective-dates/", response_model=List[str])
 def get_effective_dates(
+    cat1_code: str = Query(None, description="工段类别编码"),
+    cat2_code: str = Query(None, description="工序类别编码"),
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user)
 ):
     """
-    获取所有唯一的生效日期列表
+    获取生效日期列表
+    可按工段类别和工序类别筛选
     按生效日期排序
     """
-    results = db.query(models.Quota.effective_date).distinct().order_by(
+    query = db.query(models.Quota.effective_date)
+    
+    if cat1_code:
+        query = query.filter(models.Quota.cat1_code == cat1_code)
+    
+    if cat2_code:
+        query = query.filter(models.Quota.cat2_code == cat2_code)
+    
+    results = query.distinct().order_by(
         models.Quota.effective_date
     ).all()
     

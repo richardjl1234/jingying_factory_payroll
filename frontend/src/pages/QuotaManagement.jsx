@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Table, Button, Select, Typography, Space, message, Spin } from 'antd';
+import { Table, Button, Select, Typography, Space, message, Spin, Card } from 'antd';
 import { RightOutlined, LeftOutlined, ImportOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
 import { quotaAPI, processCat1API } from '../services/api';
 
 const { Title, Text } = Typography;
@@ -11,17 +10,16 @@ const QuotaManagement = () => {
   // 状态定义
   const [filterCombinations, setFilterCombinations] = useState([]);
   const [currentCombinationIndex, setCurrentCombinationIndex] = useState(0);
-  const [matrixData, setMatrixData] = useState(null);
+  const [matrixDataByDate, setMatrixDataByDate] = useState({});  // Map: effective_date -> matrixData
   const [loading, setLoading] = useState(false);
   const [matrixLoading, setMatrixLoading] = useState(false);
   
   // 筛选器状态
   const [cat1Options, setCat1Options] = useState([]);
   const [cat2Options, setCat2Options] = useState([]);
-  const [dateOptions, setDateOptions] = useState([]);
   const [selectedCat1, setSelectedCat1] = useState(null);
   const [selectedCat2, setSelectedCat2] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [effectiveDates, setEffectiveDates] = useState([]);  // 所有有效日期列表
 
   // 加载工段类别列表
   const fetchCat1Options = useCallback(async () => {
@@ -37,26 +35,11 @@ const QuotaManagement = () => {
     }
   }, []);
 
-  // 加载生效日期列表
-  const fetchDateOptions = useCallback(async () => {
-    try {
-      const data = await quotaAPI.getEffectiveDates();
-      const options = data.map((date) => ({
-        value: date,
-        label: date
-      }));
-      setDateOptions(options);
-    } catch (error) {
-      message.error('获取生效日期列表失败');
-    }
-  }, []);
-
-  // 加载工序类别列表（根据工段类别和生效日期动态获取）
-  const fetchCat2Options = useCallback(async (cat1, date) => {
+  // 加载工序类别列表（根据工段类别动态获取）
+  const fetchCat2Options = useCallback(async (cat1) => {
     try {
       const params = {};
       if (cat1) params.cat1_code = cat1;
-      if (date) params.effective_date = date;
       
       const data = await quotaAPI.getCat2Options(params);
       setCat2Options(data);
@@ -84,105 +67,120 @@ const QuotaManagement = () => {
     }
   }, []);
 
+  // 根据工段类别获取所有生效日期
+  const fetchEffectiveDates = useCallback(async (cat1, cat2) => {
+    try {
+      const params = {};
+      if (cat1) params.cat1_code = cat1;
+      if (cat2) params.cat2_code = cat2;
+      
+      const dates = await quotaAPI.getEffectiveDates(params);
+      setEffectiveDates(dates);
+      return dates;
+    } catch (error) {
+      message.error('获取生效日期列表失败');
+      return [];
+    }
+  }, []);
+
   // 应用过滤器组合
-  const applyCombination = (combination) => {
+  const applyCombination = async (combination) => {
     setSelectedCat1(combination.cat1_code);
     setSelectedCat2(combination.cat2_code);
-    setSelectedDate(combination.effective_date);
+    
     // 更新工序类别选项
-    fetchCat2Options(combination.cat1_code, combination.effective_date);
-    loadMatrixData(combination);
+    fetchCat2Options(combination.cat1_code);
+    
+    // 获取所有生效日期
+    const dates = await fetchEffectiveDates(combination.cat1_code, combination.cat2_code);
+    
+    // 加载所有生效日期对应的矩阵数据
+    loadAllMatrixData(combination.cat1_code, combination.cat2_code, dates);
   };
 
-  // 加载矩阵数据
-  const loadMatrixData = async (combination) => {
+  // 加载所有生效日期对应的矩阵数据
+  const loadAllMatrixData = async (cat1, cat2, dates) => {
     try {
       setMatrixLoading(true);
-      const data = await quotaAPI.getQuotaMatrix({
-        cat1_code: combination.cat1_code,
-        cat2_code: combination.cat2_code,
-        effective_date: combination.effective_date
-      });
-      setMatrixData(data);
-    } catch (error) {
-      if (error.response && error.response.status === 404) {
-        setMatrixData(null);
-      } else {
-        message.error('获取定额矩阵数据失败');
+      const matrixDataMap = {};
+      
+      for (const date of dates) {
+        try {
+          const data = await quotaAPI.getQuotaMatrix({
+            cat1_code: cat1,
+            cat2_code: cat2,
+            effective_date: date
+          });
+          matrixDataMap[date] = data;
+        } catch (error) {
+          if (error.response && error.response.status === 404) {
+            // 某个日期没有数据，跳过
+            console.warn(`No data for date: ${date}`);
+          } else {
+            message.error(`获取日期 ${date} 的定额矩阵数据失败`);
+          }
+        }
       }
+      
+      setMatrixDataByDate(matrixDataMap);
+    } catch (error) {
+      message.error('获取定额矩阵数据失败');
     } finally {
       setMatrixLoading(false);
     }
   };
 
-  // 加载矩阵数据（根据当前选择）
-  const loadMatrixByCurrentSelection = async () => {
-    if (!selectedCat1 || !selectedCat2 || !selectedDate) {
+  // 根据当前选择加载数据
+  const loadDataByCurrentSelection = async () => {
+    if (!selectedCat1 || !selectedCat2) {
       return;
     }
     
-    try {
-      setMatrixLoading(true);
-      const data = await quotaAPI.getQuotaMatrix({
-        cat1_code: selectedCat1,
-        cat2_code: selectedCat2,
-        effective_date: selectedDate
-      });
-      setMatrixData(data);
-      
-      // 更新当前组合索引
-      const index = filterCombinations.findIndex(
-        c => c.cat1_code === selectedCat1 && 
-             c.cat2_code === selectedCat2 && 
-             c.effective_date === selectedDate
-      );
-      if (index >= 0) {
-        setCurrentCombinationIndex(index);
-      }
-    } catch (error) {
-      if (error.response && error.response.status === 404) {
-        setMatrixData(null);
-      } else {
-        message.error('获取定额矩阵数据失败');
-      }
-    } finally {
-      setMatrixLoading(false);
+    // 获取所有生效日期
+    const dates = await fetchEffectiveDates(selectedCat1, selectedCat2);
+    
+    // 加载所有矩阵数据
+    await loadAllMatrixData(selectedCat1, selectedCat2, dates);
+    
+    // 更新当前组合索引
+    const index = filterCombinations.findIndex(
+      c => c.cat1_code === selectedCat1 && 
+           c.cat2_code === selectedCat2
+    );
+    if (index >= 0) {
+      setCurrentCombinationIndex(index);
     }
   };
 
   // 初始化加载
   useEffect(() => {
     fetchCat1Options();
-    fetchDateOptions();
     fetchFilterCombinations();
-  }, [fetchCat1Options, fetchDateOptions, fetchFilterCombinations]);
+  }, [fetchCat1Options, fetchFilterCombinations]);
 
-  // 工段类别或生效日期变化时，重新获取工序类别选项
+  // 工段类别变化时，重新获取工序类别选项
   useEffect(() => {
-    if (selectedCat1 || selectedDate) {
-      fetchCat2Options(selectedCat1, selectedDate);
+    if (selectedCat1) {
+      fetchCat2Options(selectedCat1);
     }
-  }, [selectedCat1, selectedDate, fetchCat2Options]);
+  }, [selectedCat1, fetchCat2Options]);
 
   // 监听筛选器变化
   useEffect(() => {
-    if (selectedCat1 && selectedCat2 && selectedDate) {
-      loadMatrixByCurrentSelection();
+    if (selectedCat1 && selectedCat2) {
+      loadDataByCurrentSelection();
+    } else {
+      setMatrixDataByDate({});
+      setEffectiveDates([]);
     }
-  }, [selectedCat1, selectedCat2, selectedDate]);
+  }, [selectedCat1, selectedCat2]);
 
-  // 工段类别变化时，清空工序类别选择
+  // 工段类别变化时，清空工序类别选择和数据
   const handleCat1Change = (value) => {
     setSelectedCat1(value);
     setSelectedCat2(null);
-    setMatrixData(null);
-  };
-
-  // 生效日期变化时，清空工序类别选择
-  const handleDateChange = (value) => {
-    setSelectedDate(value);
-    setSelectedCat2(null);
-    setMatrixData(null);
+    setMatrixDataByDate({});
+    setEffectiveDates([]);
   };
 
   // "下一个"按钮点击
@@ -206,7 +204,7 @@ const QuotaManagement = () => {
   };
 
   // 构建表格列定义
-  const getTableColumns = () => {
+  const getTableColumns = (matrixData) => {
     if (!matrixData || !matrixData.columns || matrixData.columns.length === 0) {
       return [];
     }
@@ -264,7 +262,7 @@ const QuotaManagement = () => {
   };
 
   // 构建表格数据
-  const getTableData = () => {
+  const getTableData = (matrixData) => {
     if (!matrixData || !matrixData.rows || matrixData.rows.length === 0) {
       return [];
     }
@@ -288,8 +286,31 @@ const QuotaManagement = () => {
 
   // 获取当前组合信息显示
   const getCurrentCombinationDisplay = () => {
-    if (!matrixData) return '';
-    return `${matrixData.cat1.name} (${matrixData.cat1.code}) / ${matrixData.cat2.name} (${matrixData.cat2.code}) / ${matrixData.effective_date}`;
+    if (Object.keys(matrixDataByDate).length === 0) return '';
+    const firstMatrixData = Object.values(matrixDataByDate)[0];
+    return `${firstMatrixData.cat1.name} (${firstMatrixData.cat1.code}) / ${firstMatrixData.cat2.name} (${firstMatrixData.cat2.code})`;
+  };
+
+  // 渲染单个表格
+  const renderMatrixTable = (effectiveDate, matrixData) => {
+    const columns = getTableColumns(matrixData);
+    const data = getTableData(matrixData);
+
+    return (
+      <div key={effectiveDate} style={{ marginBottom: 24 }}>
+        <Title level={4} style={{ marginBottom: 16, color: '#1890ff' }}>
+          生效日期: {effectiveDate}
+        </Title>
+        <Table
+          columns={columns}
+          dataSource={data}
+          rowKey="model_code"
+          pagination={false}
+          scroll={{ x: 'max-content', y: 500 }}
+          size="small"
+        />
+      </div>
+    );
   };
 
   return (
@@ -339,23 +360,15 @@ const QuotaManagement = () => {
           onChange={setSelectedCat2}
           options={cat2Options}
           allowClear
-          disabled={!selectedCat1 && !selectedDate}
-        />
-        <Select
-          placeholder="生效日期"
-          style={{ width: 150 }}
-          value={selectedDate}
-          onChange={handleDateChange}
-          options={dateOptions}
-          allowClear
+          disabled={!selectedCat1}
         />
       </Space>
 
       {/* 当前组合信息 */}
-      {matrixData && (
+      {Object.keys(matrixDataByDate).length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <Text type="secondary">
-            当前组合: {getCurrentCombinationDisplay()}
+            {getCurrentCombinationDisplay()} - 共有{Object.keys(matrixDataByDate).length}个生效日期: {effectiveDates.sort((a, b) => new Date(a) - new Date(b)).join(', ')}
           </Text>
         </div>
       )}
@@ -367,20 +380,23 @@ const QuotaManagement = () => {
         </div>
       )}
 
-      {/* 矩阵表格 */}
-      {!matrixLoading && matrixData && (
-        <Table
-          columns={getTableColumns()}
-          dataSource={getTableData()}
-          rowKey="model_code"
-          pagination={false}
-          scroll={{ x: 'max-content', y: 500 }}
-          size="small"
-        />
+      {/* 矩阵表格 - 多表格显示 */}
+      {!matrixLoading && Object.keys(matrixDataByDate).length > 0 && (
+        <div>
+          {effectiveDates
+            .sort((a, b) => new Date(a) - new Date(b))
+            .map(date => {
+              const matrixData = matrixDataByDate[date];
+              if (matrixData) {
+                return renderMatrixTable(date, matrixData);
+              }
+              return null;
+            })}
+        </div>
       )}
 
       {/* 无数据状态 */}
-      {!matrixLoading && !matrixData && (
+      {!matrixLoading && Object.keys(matrixDataByDate).length === 0 && selectedCat1 && selectedCat2 && (
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
           <Text type="secondary">暂无定额数据，请选择有效的过滤器组合</Text>
         </div>

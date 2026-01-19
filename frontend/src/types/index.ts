@@ -169,7 +169,6 @@ export interface QuotaFilterCombination {
   cat1_name: string;
   cat2_code: string;
   cat2_name: string;
-  effective_date: string;
 }
 
 /**
