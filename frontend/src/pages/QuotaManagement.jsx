@@ -378,7 +378,7 @@ const QuotaManagement = () => {
       {Object.keys(matrixDataByDate).length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <Text type="secondary">
-            {getCurrentCombinationDisplay()} - 共有{Object.keys(matrixDataByDate).length}个生效日期: {effectiveDates.sort((a, b) => new Date(a) - new Date(b)).join(', ')}
+            {getCurrentCombinationDisplay()} - 共有{Object.keys(matrixDataByDate).length}个生效日期: {effectiveDates.sort((a, b) => new Date(b) - new Date(a)).join(', ')}
           </Text>
         </div>
       )}
@@ -394,7 +394,7 @@ const QuotaManagement = () => {
       {!matrixLoading && Object.keys(matrixDataByDate).length > 0 && (
         <div>
           {effectiveDates
-            .sort((a, b) => new Date(a) - new Date(b))
+            .sort((a, b) => new Date(b) - new Date(a))
             .map(date => {
               const matrixData = matrixDataByDate[date];
               if (matrixData) {
