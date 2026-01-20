@@ -1,53 +1,78 @@
 import os
+import sys
 import logging
 from logging.handlers import RotatingFileHandler
+import uvicorn
 
-# 从环境变量获取日志级别配置
+# Configure logging FIRST - before any other imports
+# Support both local and Docker environments
+# Use the parent directory of backend (i.e., the project root)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG_DIR = os.getenv("LOG_DIR", os.path.join(PROJECT_ROOT, "logs"))
+os.makedirs(LOG_DIR, exist_ok=True)
+
+log_file = os.path.join(LOG_DIR, "backend.log")
+log_level_str = os.getenv("LOG_LEVEL", "INFO").upper()
+
+# Map log level string to logging constant
 LOG_LEVEL_MAP = {
     "DEBUG": logging.DEBUG,
     "INFO": logging.INFO,
     "WARNING": logging.WARNING,
     "ERROR": logging.ERROR
 }
+log_level = LOG_LEVEL_MAP.get(log_level_str, logging.INFO)
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
-log_level = LOG_LEVEL_MAP.get(LOG_LEVEL, logging.INFO)
+# Configure root logger
+root_logger = logging.getLogger()
+root_logger.setLevel(log_level)
+root_logger.handlers.clear()  # Clear any existing handlers
 
-# 配置日志 - 使用单个日志文件
-# 支持Docker和本地环境：通过环境变量配置日志目录
-log_dir = os.getenv("LOG_DIR", "/app/logs")
-log_file = os.path.join(log_dir, 'backend.log')
-
-# 创建日志目录（支持Docker部署）
-os.makedirs(log_dir, exist_ok=True)
-
-logging.basicConfig(
-    level=log_level,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        RotatingFileHandler(
-            log_file,
-            maxBytes=10*1024*1024,  # 10MB
-            backupCount=5,          # 保留5个备份文件
-            encoding='utf-8'
-        )
-    ]
+# File handler
+file_handler = RotatingFileHandler(
+    log_file,
+    maxBytes=10*1024*1024,  # 10MB
+    backupCount=5,
+    encoding="utf-8"
 )
+file_handler.setLevel(log_level)
+file_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+root_logger.addHandler(file_handler)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(log_level)
+console_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+root_logger.addHandler(console_handler)
+
 logger = logging.getLogger(__name__)
 
-# 从app.database导入配置，不再直接检查当前目录的数据库文件
-from app.main import app
-from app.database import engine
-from app import models
-
-# 创建所有数据库表
-logger.debug("开始创建数据库表...")
-models.Base.metadata.create_all(bind=engine)
-logger.debug("数据库表创建完成")
+# Print startup message to confirm logging is working
+print(f"[LOGGING INITIALIZED] log_file={log_file}, log_level={log_level_str}", flush=True)
 
 if __name__ == "__main__":
-    import uvicorn
+    # Ensure PYTHONPATH includes backend directory
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    if "PYTHONPATH" not in os.environ:
+        os.environ["PYTHONPATH"] = backend_dir
+    elif backend_dir not in os.environ["PYTHONPATH"]:
+        os.environ["PYTHONPATH"] = os.environ["PYTHONPATH"] + os.pathsep + backend_dir
+    
+    # Import app after PYTHONPATH is set and logging is configured
+    from app.main import app
+    
     logger.info("启动Uvicorn服务器...")
-    logger.debug(f"主机: 0.0.0.0, 端口: 8000, 重载模式: True")
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    logger.info(f"日志文件: {log_file}")
+    logger.info(f"日志级别: {log_level_str}")
+    
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,
+        log_level=None  # Use our custom logging configuration from main.py
+    )

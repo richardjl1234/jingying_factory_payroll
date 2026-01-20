@@ -1,14 +1,16 @@
+import os
 import logging
+
+# Get logger - logging should already be configured in run.py
+logger = logging.getLogger(__name__)
+
 from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 import time
-import os
 from jose import jwt
 from sqlalchemy.exc import SQLAlchemyError
-
-logger = logging.getLogger(__name__)
 
 from . import models
 from .database import engine
@@ -43,13 +45,13 @@ logger.debug("CORS中间件配置完成")
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
-    logger.debug(f"收到请求: {request.method} {request.url.path}")
+    logger.info(f"收到请求: {request.method} {request.url.path}")
     logger.debug(f"请求头: {dict(request.headers)}")
     
     response = await call_next(request)
     
     process_time = time.time() - start_time
-    logger.debug(f"请求处理完成: {request.method} {request.url.path} 状态码: {response.status_code} 耗时: {process_time:.3f}s")
+    logger.info(f"请求处理完成: {request.method} {request.url.path} 状态码: {response.status_code} 耗时: {process_time:.3f}s")
     return response
 
 # 全局异常处理器
