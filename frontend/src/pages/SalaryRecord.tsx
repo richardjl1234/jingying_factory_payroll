@@ -771,6 +771,13 @@ const SalaryRecord = () => {
       width: 100,
     },
     {
+      title: '定额ID',
+      dataIndex: 'quota_id',
+      key: 'quota_id',
+      width: 80,
+      align: 'center' as const,
+    },
+    {
       title: '电机型号',
       dataIndex: 'model_code',
       key: 'model_code',
