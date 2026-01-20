@@ -118,6 +118,12 @@ const SalaryRecord = () => {
       const data = await workerAPI.getWorkers();
       const workerList = (data as any).items || data;
       setWorkers(workerList);
+      // Select the first worker by default
+      if (workerList.length > 0) {
+        const firstWorker = workerList[0];
+        setSelectedWorker(firstWorker.worker_code);
+        setSelectedWorkerName(firstWorker.name || firstWorker.full_name || '');
+      }
     } catch (error) {
       message.error('获取工人列表失败');
     }
@@ -540,9 +546,55 @@ const SalaryRecord = () => {
         quota_id: quotaId,
         record_date: recordDate
       });
-      setQuotaResult(result);
-      setSelectedProcess(null);
-      message.success('定额查找成功');
+      
+      // 检查响应结果
+      if ((result as any).found === true) {
+        setQuotaResult(result as QuotaSearchResult);
+        setSelectedProcess(null);
+        message.success('定额查找成功');
+      } else if ((result as any).found === false) {
+        const errorType = (result as any).error_type;
+        const messageText = (result as any).message;
+        const replacement = (result as any).replacement;
+        
+        if (errorType === 'not_found') {
+          message.warning(messageText);
+        } else if (errorType === 'obsolete') {
+          // 显示失效信息和建议
+          let infoMessage = messageText;
+          if (replacement) {
+            infoMessage += `，建议使用定额ID ${replacement.quota_id}`;
+            Modal.info({
+              title: '定额已失效',
+              content: (
+                <div>
+                  <p>{messageText}</p>
+                  <p style={{ color: '#1890ff', fontWeight: 'bold' }}>
+                    建议使用定额ID {replacement.quota_id}
+                  </p>
+                  <p style={{ color: '#999', fontSize: 12 }}>
+                    该定额具有相同的型号、工段、工序类别和工序，且在有效期内
+                  </p>
+                  <p>
+                    单价：¥{replacement.unit_price.toFixed(2)}<br />
+                    有效期：{replacement.effective_date} ~ {replacement.obsolete_date}
+                  </p>
+                </div>
+              ),
+              okText: '确定',
+              onOk: () => {
+                // 自动填充建议的定额ID
+                setQuotaIdInput(String(replacement.quota_id));
+              }
+            });
+          } else {
+            message.warning(messageText + '，暂无推荐定额');
+          }
+        } else if (errorType === 'not_yet_effective') {
+          message.warning(messageText);
+        }
+        setQuotaResult(null);
+      }
     } catch (error: any) {
       if (error.response?.status === 404) {
         message.warning('定额不存在');
@@ -729,9 +781,9 @@ const SalaryRecord = () => {
           if (match) {
             return (
               <span>
-                {match[1].trim()}
+                {match[2].trim()}
                 <br />
-                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[1].trim()})</Text>
               </span>
             );
           }
@@ -751,9 +803,9 @@ const SalaryRecord = () => {
           if (match) {
             return (
               <span>
-                {match[1].trim()}
+                {match[2].trim()}
                 <br />
-                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[1].trim()})</Text>
               </span>
             );
           }
@@ -773,9 +825,9 @@ const SalaryRecord = () => {
           if (match) {
             return (
               <span>
-                {match[1].trim()}
+                {match[2].trim()}
                 <br />
-                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[1].trim()})</Text>
               </span>
             );
           }
@@ -795,9 +847,9 @@ const SalaryRecord = () => {
           if (match) {
             return (
               <span>
-                {match[1].trim()}
+                {match[2].trim()}
                 <br />
-                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[2].trim()})</Text>
+                <Text style={{ color: '#1890ff', fontSize: 12 }}>({match[1].trim()})</Text>
               </span>
             );
           }
@@ -1255,8 +1307,9 @@ const SalaryRecord = () => {
                             e.currentTarget.style.backgroundColor = focusedProcessIndex === index ? '#e6f7ff' : 'white';
                           }}
                         >
-                          {process.cat1_name}-{process.cat2_name}-{process.process_name} 
-                          ({highlightMatchedChars(process.combined_code, processSearchValue)})
+                          <Text strong style={{ color: '#1890ff', marginRight: 8 }}>#{process.quota_id}</Text>
+                          {process.cat1_name}-{process.cat2_name}-{process.process_name}
+                          <Text style={{ color: '#999', marginLeft: 8 }}>({highlightMatchedChars(process.combined_code, processSearchValue)})</Text>
                         </div>
                       ))}
                       {processSearchResults.length > 50 && (

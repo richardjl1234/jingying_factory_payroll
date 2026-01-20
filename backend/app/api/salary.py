@@ -276,13 +276,67 @@ def find_quota(
         if quota_id:
             quota = crud.get_quota_by_id(db, quota_id=quota_id)
             if not quota:
-                raise HTTPException(status_code=404, detail="定额不存在")
+                # 定额ID不存在
+                return {
+                    "found": False,
+                    "error_type": "not_found",
+                    "message": f"该定额id {quota_id} 不存在"
+                }
             
             # 验证日期是否在有效期内
             if record_date:
                 record_date_obj = date.fromisoformat(record_date)
-                if record_date_obj < quota.effective_date or record_date_obj > quota.obsolete_date:
-                    raise HTTPException(status_code=400, detail=f"定额在日期{record_date}不在有效期内，有效期: {quota.effective_date} ~ {quota.obsolete_date}")
+                if record_date_obj > quota.obsolete_date:
+                    # 定额已失效，查找替代定额
+                    logger.info(f"[FindQuota] Quota {quota_id} is obsolete, searching for replacement")
+                    
+                    # 查找相同组合的有效定额
+                    replacement = db.query(models.Quota).filter(
+                        models.Quota.model_code == quota.model_code,
+                        models.Quota.cat1_code == quota.cat1_code,
+                        models.Quota.cat2_code == quota.cat2_code,
+                        models.Quota.process_code == quota.process_code,
+                        models.Quota.effective_date <= record_date_obj,
+                        models.Quota.obsolete_date >= record_date_obj
+                    ).first()
+                    
+                    replacement_info = None
+                    if replacement:
+                        # 获取关联信息
+                        process = crud.get_process_by_code(db, process_code=replacement.process_code)
+                        cat1 = crud.get_process_cat1_by_code(db, cat1_code=replacement.cat1_code)
+                        cat2 = crud.get_process_cat2_by_code(db, cat2_code=replacement.cat2_code)
+                        replacement_info = {
+                            "quota_id": replacement.id,
+                            "model_code": replacement.model_code,
+                            "cat1_code": replacement.cat1_code,
+                            "cat1_name": cat1.name if cat1 else replacement.cat1_code,
+                            "cat2_code": replacement.cat2_code,
+                            "cat2_name": cat2.name if cat2 else replacement.cat2_code,
+                            "process_code": replacement.process_code,
+                            "process_name": process.name if process else replacement.process_code,
+                            "unit_price": float(replacement.unit_price),
+                            "effective_date": str(replacement.effective_date),
+                            "obsolete_date": str(replacement.obsolete_date)
+                        }
+                    
+                    return {
+                        "found": False,
+                        "error_type": "obsolete",
+                        "quota_id": quota.id,
+                        "obsolete_date": str(quota.obsolete_date),
+                        "replacement": replacement_info,
+                        "message": f"该定额id {quota_id} 存在，但是已经失效，失效日期 {quota.obsolete_date}"
+                    }
+                elif record_date_obj < quota.effective_date:
+                    # 定额尚未生效
+                    return {
+                        "found": False,
+                        "error_type": "not_yet_effective",
+                        "quota_id": quota.id,
+                        "effective_date": str(quota.effective_date),
+                        "message": f"该定额id {quota_id} 尚未生效，生效日期 {quota.effective_date}"
+                    }
             
             # 获取关联信息
             process = crud.get_process_by_code(db, process_code=quota.process_code)
@@ -290,6 +344,7 @@ def find_quota(
             cat2 = crud.get_process_cat2_by_code(db, cat2_code=quota.cat2_code)
             
             return {
+                "found": True,
                 "quota_id": quota.id,
                 "model_code": quota.model_code,
                 "cat1_code": quota.cat1_code,
@@ -329,6 +384,7 @@ def find_quota(
         cat2 = crud.get_process_cat2_by_code(db, cat2_code=quota.cat2_code)
         
         return {
+            "found": True,
             "quota_id": quota.id,
             "model_code": quota.model_code,
             "cat1_code": quota.cat1_code,
