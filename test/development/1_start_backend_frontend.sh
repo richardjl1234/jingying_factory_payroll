@@ -25,7 +25,7 @@ TEST_DIR="$SCRIPT_DIR"
 # 设置日志目录（支持Docker和本地环境）
 export LOG_DIR="${LOG_DIR:-$ROOT_DIR/logs}"
 mkdir -p "$LOG_DIR"
-write_color_output "Log directory: $LOG_DIR" "green"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] Log directory: $LOG_DIR"
 
 # Function to write colored output to stderr (so it doesn't interfere with function return values)
 write_color_output() {
