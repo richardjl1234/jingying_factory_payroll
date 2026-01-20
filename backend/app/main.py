@@ -137,10 +137,14 @@ logger.debug(f"FRONTEND_DIST_DIR: {FRONTEND_DIST_DIR}")
 logger.debug(f"ASSETS_DIR: {ASSETS_DIR}")
 logger.debug(f"INDEX_HTML_PATH: {INDEX_HTML_PATH}")
 
-# 挂载前端静态文件
-logger.debug("挂载前端静态文件...")
-app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
-logger.debug("前端静态文件挂载完成")
+# 检查前端静态文件是否存在，如果不存在则跳过挂载（用于本地开发模式）
+if os.path.exists(ASSETS_DIR):
+    # 挂载前端静态文件
+    logger.debug("挂载前端静态文件...")
+    app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+    logger.debug("前端静态文件挂载完成")
+else:
+    logger.debug("前端静态文件目录不存在，跳过挂载（本地开发模式）")
 
 # 处理所有其他路径，返回前端HTML，支持React Router
 @app.get("/{path:path}")
@@ -151,6 +155,19 @@ def catch_all(path: str):
     if path.startswith("api/"):
         logger.debug(f"路径 {path} 以api/开头，返回404")
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
+    
+    # 如果前端静态文件不存在，返回错误信息
+    if not os.path.exists(INDEX_HTML_PATH):
+        logger.debug(f"前端HTML不存在: {INDEX_HTML_PATH}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "前端静态文件不存在，请先构建前端项目或使用Docker运行",
+                "frontend_dist_exists": False,
+                "frontend_dist_path": FRONTEND_DIST_DIR
+            }
+        )
+    
     logger.debug(f"返回前端HTML: {INDEX_HTML_PATH}")
     return FileResponse(INDEX_HTML_PATH)
 
@@ -159,6 +176,19 @@ def catch_all(path: str):
 def read_root():
     """根路径，返回前端HTML"""
     logger.debug("根路径请求，返回前端HTML")
+    
+    # 如果前端静态文件不存在，返回错误信息
+    if not os.path.exists(INDEX_HTML_PATH):
+        logger.debug(f"前端HTML不存在: {INDEX_HTML_PATH}")
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "前端静态文件不存在，请先构建前端项目或使用Docker运行",
+                "frontend_dist_exists": False,
+                "frontend_dist_path": FRONTEND_DIST_DIR
+            }
+        )
+    
     return FileResponse(INDEX_HTML_PATH)
 
 logger.info("应用启动完成")
