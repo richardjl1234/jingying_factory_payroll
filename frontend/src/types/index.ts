@@ -210,3 +210,41 @@ export interface ColumnSeq {
   seq: number;
   created_at?: string;
 }
+
+/**
+ * 单个定额选项
+ */
+export interface QuotaOptionItem {
+  quota_id: number;
+  model_code: string;
+  model_name: string;
+  cat1_code: string;
+  cat1_name: string;
+  cat2_code: string;
+  cat2_name: string;
+  process_code: string;
+  process_name: string;
+  unit_price: number;
+  effective_date: string;
+  obsolete_date: string;
+}
+
+/**
+ * 级联下拉框选项
+ */
+export interface CascadeOption {
+  value: string;
+  label: string;
+  cat1_codes?: string[];  // for model options
+  cat2_codes?: string[];  // for model options
+}
+
+/**
+ * 预加载定额数据响应
+ */
+export interface QuotaOptionsResponse {
+  quota_options: QuotaOptionItem[];
+  cat1_options: CascadeOption[];
+  cat2_options: Record<string, CascadeOption[]>;
+  model_options: CascadeOption[];
+}

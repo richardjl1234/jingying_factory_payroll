@@ -71,6 +71,72 @@ def create_salary_record(
     
     return crud.create_work_record(db=db, record=record, created_by=current_user.id)
 
+@router.post("/batch", response_model=schemas.BatchWorkRecordCreateResponse, status_code=status.HTTP_201_CREATED)
+def create_batch_salary_records(
+    records: schemas.BatchWorkRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """
+    批量创建工作记录
+    当选择了多个工序时，一次性创建多条记录
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[BatchCreate] User {current_user.username} creating batch records: worker={records.worker_code}, date={records.record_date}, count={len(records.quota_ids)}")
+    
+    try:
+        # 检查工人是否存在
+        if not crud.get_worker_by_code(db, worker_code=records.worker_code):
+            raise HTTPException(status_code=400, detail="Worker not found")
+        
+        # 检查所有定额是否存在
+        created_records = []
+        errors = []
+        
+        for quota_id in records.quota_ids:
+            quota = crud.get_quota_by_id(db, quota_id=quota_id)
+            if not quota:
+                errors.append({"quota_id": quota_id, "error": "Quota not found"})
+                continue
+            
+            # 计算金额
+            amount = float(quota.unit_price) * float(records.quantity)
+            
+            # 创建记录
+            work_record = crud.create_work_record(
+                db=db, 
+                record=schemas.WorkRecordCreate(
+                    worker_code=records.worker_code,
+                    quota_id=quota_id,
+                    quantity=records.quantity,
+                    record_date=records.record_date
+                ),
+                created_by=current_user.id
+            )
+            created_records.append({
+                "id": work_record.id,
+                "quota_id": quota_id,
+                "unit_price": float(quota.unit_price),
+                "quantity": records.quantity,
+                "amount": amount
+            })
+        
+        logger.info(f"[BatchCreate] Created {len(created_records)} records, {len(errors)} errors")
+        
+        return {
+            "message": f"成功创建 {len(created_records)} 条工作记录",
+            "created_count": len(created_records),
+            "error_count": len(errors),
+            "records": created_records,
+            "errors": errors
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[BatchCreate] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"批量创建工作记录失败: {str(e)}")
+
 @router.put("/{record_id}", response_model=schemas.WorkRecord)
 def update_salary_record(
     record_id: int,
@@ -402,3 +468,155 @@ def find_quota(
     except Exception as e:
         logger.error(f"[FindQuota] Error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"查询定额失败: {str(e)}")
+
+# 预加载定额数据接口（用于前端级联下拉框）
+
+@router.get("/quota-options/")
+def get_quota_options(
+    record_date: str = Query(None, description="记录日期 (YYYY-MM-DD)"),
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """
+    预加载所有定额数据，用于前端进行级联筛选
+    返回所有定额组合及其关联的名称翻译
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[QuotaOptions] User {current_user.username} requesting quota options, date={record_date}")
+    
+    try:
+        # 获取所有工段类别名称
+        cat1_names = {}
+        cat1_query = db.query(models.ProcessCat1.cat1_code, models.ProcessCat1.name).all()
+        for c in cat1_query:
+            cat1_names[c.cat1_code] = c.name or c.cat1_code
+        
+        # 获取所有工序类别名称
+        cat2_names = {}
+        cat2_query = db.query(models.ProcessCat2.cat2_code, models.ProcessCat2.name).all()
+        for c in cat2_query:
+            cat2_names[c.cat2_code] = c.name or c.cat2_code
+        
+        # 获取所有电机型号名称
+        model_names = {}
+        model_query = db.query(models.MotorModel.model_code, models.MotorModel.name).all()
+        for m in model_query:
+            model_names[m.model_code] = m.name or m.model_code
+        
+        # 获取所有工序名称
+        process_names = {}
+        process_query = db.query(models.Process.process_code, models.Process.name).all()
+        for p in process_query:
+            process_names[p.process_code] = p.name or p.process_code
+        
+        # 查询所有定额及其关联名称
+        query = db.query(
+            models.Quota.id.label('quota_id'),
+            models.Quota.model_code,
+            models.Quota.cat1_code,
+            models.Quota.cat2_code,
+            models.Quota.process_code,
+            models.Quota.unit_price,
+            models.Quota.effective_date,
+            models.Quota.obsolete_date
+        )
+        
+        # 获取所有结果
+        results = query.all()
+        
+        # 构建返回数据
+        quota_options = []
+        cat1_set = set()
+        cat2_dict = {}
+        model_dict = {}
+        
+        for r in results:
+            # 收集工段类别
+            cat1_key = r.cat1_code
+            if cat1_key and cat1_key not in cat1_set:
+                cat1_set.add(cat1_key)
+                cat2_dict[cat1_key] = set()
+            
+            # 收集工序类别（关联到工段）
+            cat2_key = r.cat2_code
+            if cat1_key and cat2_key:
+                cat2_dict[cat1_key].add(cat2_key)
+            
+            # 收集电机型号
+            model_key = r.model_code
+            if model_key:
+                if model_key not in model_dict:
+                    model_dict[model_key] = {
+                        'name': model_names.get(model_key, model_key),
+                        'cat1_codes': set(),
+                        'cat2_codes': set()
+                    }
+                model_dict[model_key]['cat1_codes'].add(cat1_key)
+                model_dict[model_key]['cat2_codes'].add(cat2_key)
+            
+            # 判断是否在有效期内
+            is_effective = True
+            if record_date:
+                record_date_obj = date.fromisoformat(record_date)
+                if record_date_obj > r.obsolete_date or record_date_obj < r.effective_date:
+                    is_effective = False
+            
+            if not is_effective:
+                continue
+            
+            quota_options.append({
+                'quota_id': r.quota_id,
+                'model_code': r.model_code,
+                'model_name': model_names.get(r.model_code, r.model_code),
+                'cat1_code': r.cat1_code,
+                'cat1_name': cat1_names.get(r.cat1_code, r.cat1_code),
+                'cat2_code': r.cat2_code,
+                'cat2_name': cat2_names.get(r.cat2_code, r.cat2_code),
+                'process_code': r.process_code,
+                'process_name': process_names.get(r.process_code, r.process_code),
+                'unit_price': float(r.unit_price) if r.unit_price else 0,
+                'effective_date': str(r.effective_date),
+                'obsolete_date': str(r.obsolete_date)
+            })
+        
+        # 构建级联结构，使用实际名称
+        cat1_options = []
+        for code in sorted(cat1_set):
+            name = cat1_names.get(code, code)
+            cat1_options.append({
+                'value': code,
+                'label': f"{name} ({code})"
+            })
+        
+        cat2_options = {}
+        for cat1_code, cat2_codes in cat2_dict.items():
+            cat2_list = []
+            for code in sorted(cat2_codes):
+                name = cat2_names.get(code, code)
+                cat2_list.append({
+                    'value': code,
+                    'label': f"{name} ({code})"
+                })
+            cat2_options[cat1_code] = cat2_list
+        
+        model_options = []
+        for code, info in sorted(model_dict.items()):
+            model_options.append({
+                'value': code,
+                'label': f"{info['name']} ({code})",
+                'cat1_codes': list(info['cat1_codes']),
+                'cat2_codes': list(info['cat2_codes'])
+            })
+        
+        logger.info(f"[QuotaOptions] Found {len(quota_options)} effective quota records")
+        
+        return {
+            'quota_options': quota_options,
+            'cat1_options': cat1_options,
+            'cat2_options': cat2_options,
+            'model_options': model_options
+        }
+    except Exception as e:
+        logger.error(f"[QuotaOptions] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取定额选项失败: {str(e)}")

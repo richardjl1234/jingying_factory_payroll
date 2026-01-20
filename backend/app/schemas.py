@@ -388,3 +388,27 @@ class ColumnSeqInDB(ColumnSeqBase):
 class ColumnSeq(ColumnSeqInDB):
     """返回给客户端的列顺序模型"""
     pass
+
+# 批量创建工作记录相关模型
+class BatchWorkRecordCreate(BaseModel):
+    """批量创建工作记录请求模型"""
+    worker_code: str = Field(..., min_length=1, max_length=20, description="工人编码")
+    quota_ids: List[int] = Field(..., description="定额ID列表")
+    quantity: Decimal = Field(..., ge=0, decimal_places=2, description="数量")
+    record_date: date = Field(..., description="记录日期")
+
+class BatchWorkRecordItem(BaseModel):
+    """批量创建的工作记录项"""
+    id: int
+    quota_id: int
+    unit_price: float
+    quantity: float
+    amount: float
+
+class BatchWorkRecordCreateResponse(BaseModel):
+    """批量创建工作记录响应模型"""
+    message: str
+    created_count: int
+    error_count: int
+    records: List[BatchWorkRecordItem]
+    errors: List[dict]

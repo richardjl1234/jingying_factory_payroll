@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse, WorkerMonthRecordsResponse, Dictionaries, QuotaSearchResult } from '../types';
+import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse, WorkerMonthRecordsResponse, Dictionaries, QuotaSearchResult, QuotaOptionsResponse } from '../types';
 
 // 创建axios实例
 const api = axios.create({
@@ -132,6 +132,26 @@ export const salaryAPI = {
     api.get(`/salary-records/${id}`),
   createSalaryRecord: (data: Omit<WorkRecord, 'id'>): Promise<WorkRecord> => 
     api.post('/salary-records/', data),
+  // 批量创建工作记录
+  createBatchSalaryRecords: (data: {
+    worker_code: string;
+    quota_ids: number[];
+    quantity: number;
+    record_date: string;
+  }): Promise<{
+    message: string;
+    created_count: number;
+    error_count: number;
+    records: Array<{
+      id: number;
+      quota_id: number;
+      unit_price: number;
+      quantity: number;
+      amount: number;
+    }>;
+    errors: Array<{ quota_id: number; error: string }>;
+  }> =>
+    api.post('/salary-records/batch', data),
   updateSalaryRecord: (id: number, data: Partial<WorkRecord>): Promise<WorkRecord> => 
     api.put(`/salary-records/${id}`, data),
   deleteSalaryRecord: (id: number): Promise<void> => 
@@ -152,6 +172,9 @@ export const salaryAPI = {
     record_date?: string;
   }): Promise<QuotaSearchResult> =>
     api.get('/salary-records/find-quota/', { params }),
+  // 预加载定额数据（用于前端级联筛选）
+  getQuotaOptions: (params: { record_date?: string }): Promise<QuotaOptionsResponse> =>
+    api.get('/salary-records/quota-options/', { params }),
 };
 
 // 报表API
