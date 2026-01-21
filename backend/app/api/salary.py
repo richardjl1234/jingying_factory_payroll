@@ -543,17 +543,16 @@ def get_quota_options(
             if cat1_key and cat2_key:
                 cat2_dict[cat1_key].add(cat2_key)
             
-            # 收集电机型号
+            # 收集电机型号 - 跟踪实际的(cat1_code, cat2_code)组合
             model_key = r.model_code
             if model_key:
                 if model_key not in model_dict:
                     model_dict[model_key] = {
                         'name': model_names.get(model_key, model_key),
-                        'cat1_codes': set(),
-                        'cat2_codes': set()
+                        'cat1_cat2_pairs': set()  # 存储实际的(cat1, cat2)组合
                     }
-                model_dict[model_key]['cat1_codes'].add(cat1_key)
-                model_dict[model_key]['cat2_codes'].add(cat2_key)
+                # 添加实际的组合
+                model_dict[model_key]['cat1_cat2_pairs'].add((cat1_key, cat2_key))
             
             # 判断是否在有效期内
             is_effective = True
@@ -602,11 +601,14 @@ def get_quota_options(
         
         model_options = []
         for code, info in sorted(model_dict.items()):
+            # 将(cat1, cat2)组合转换为前端可用的格式
+            cat1_cat2_pairs = []
+            for pair in info['cat1_cat2_pairs']:
+                cat1_cat2_pairs.append({'cat1': pair[0], 'cat2': pair[1]})
             model_options.append({
                 'value': code,
                 'label': f"{info['name']} ({code})",
-                'cat1_codes': list(info['cat1_codes']),
-                'cat2_codes': list(info['cat2_codes'])
+                'cat1_cat2_pairs': cat1_cat2_pairs
             })
         
         logger.info(f"[QuotaOptions] Found {len(quota_options)} effective quota records")

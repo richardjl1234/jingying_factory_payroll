@@ -122,10 +122,13 @@ const SalaryRecord = () => {
   const filteredModelOptions = useMemo(() => {
     if (!quotaOptionsData || !selectedCascadeCat1 || !selectedCascadeCat2) return [];
     return quotaOptionsData.model_options.filter((model: CascadeOption) => {
-      const modelInfo = quotaOptionsData.model_options.find(m => m.value === model.value);
-      if (modelInfo && (modelInfo as any).cat1_codes && (modelInfo as any).cat2_codes) {
-        return (modelInfo as any).cat1_codes.includes(selectedCascadeCat1) && 
-               (modelInfo as any).cat2_codes.includes(selectedCascadeCat2);
+      const modelInfo = model; // Each model already has its own cat1_cat2_pairs
+      if (modelInfo && (modelInfo as any).cat1_cat2_pairs) {
+        // 检查是否存在至少一个(cat1, cat2)组合与当前选择完全匹配
+        const pairs = (modelInfo as any).cat1_cat2_pairs;
+        return pairs.some((pair: { cat1: string; cat2: string }) => 
+          pair.cat1 === selectedCascadeCat1 && pair.cat2 === selectedCascadeCat2
+        );
       }
       return false;
     });
@@ -1381,6 +1384,7 @@ const SalaryRecord = () => {
                     value={selectedCascadeCat1 ? (quotaOptionsData?.cat1_options.find(o => o.value === selectedCascadeCat1)?.label || selectedCascadeCat1) : ''}
                     readOnly
                     onFocus={() => setShowCat1Dropdown(true)}
+                    onMouseEnter={() => setShowCat1Dropdown(true)}
                     onBlur={() => setTimeout(() => setShowCat1Dropdown(false), 200)}
                     suffix={<span style={{ color: '#999' }}>▼</span>}
                     style={{ cursor: 'pointer' }}
@@ -1436,6 +1440,7 @@ const SalaryRecord = () => {
                     readOnly
                     disabled={!selectedCascadeCat1}
                     onFocus={() => selectedCascadeCat1 && setShowCat2Dropdown(true)}
+                    onMouseEnter={() => selectedCascadeCat1 && setShowCat2Dropdown(true)}
                     onBlur={() => setTimeout(() => setShowCat2Dropdown(false), 200)}
                     suffix={<span style={{ color: '#999' }}>▼</span>}
                     style={{ cursor: !selectedCascadeCat1 ? 'not-allowed' : 'pointer' }}
@@ -1490,6 +1495,7 @@ const SalaryRecord = () => {
                     readOnly
                     disabled={!selectedCascadeCat2}
                     onFocus={() => selectedCascadeCat1 && selectedCascadeCat2 && setShowModelDropdown(true)}
+                    onMouseEnter={() => selectedCascadeCat1 && selectedCascadeCat2 && setShowModelDropdown(true)}
                     onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
                     suffix={<span style={{ color: '#999' }}>▼</span>}
                     style={{ cursor: !selectedCascadeCat2 ? 'not-allowed' : 'pointer' }}
@@ -1548,6 +1554,7 @@ const SalaryRecord = () => {
                     readOnly
                     disabled={!selectedCascadeModel}
                     onFocus={() => selectedCascadeModel && setShowProcessDropdown(true)}
+                    onMouseEnter={() => selectedCascadeModel && setShowProcessDropdown(true)}
                     onBlur={() => setTimeout(() => setShowProcessDropdown(false), 200)}
                     suffix={<span style={{ color: '#999' }}>▼</span>}
                     style={{ cursor: !selectedCascadeModel ? 'not-allowed' : 'pointer' }}
