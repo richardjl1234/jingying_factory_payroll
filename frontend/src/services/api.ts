@@ -2,12 +2,17 @@ import axios from 'axios';
 import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse, WorkerMonthRecordsResponse, Dictionaries, QuotaSearchResult, QuotaOptionsResponse } from '../types';
 
 // 创建axios实例
+// 注意：在Docker构建时通过 --build-arg VITE_API_BASE_URL 设置
+// 如果未设置，回退到相对路径 /api
 const api = axios.create({
-  baseURL: (import.meta as any).env.VITE_API_BASE_URL || 'http://localhost:8000/api',
+  // 如果 VITE_API_BASE_URL 是空字符串，使用相对路径
+  baseURL: (import.meta as any).env?.VITE_API_BASE_URL || '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  // 允许携带cookie（用于跨域请求）
+  withCredentials: false
 });
 
 // 请求拦截器，添加token

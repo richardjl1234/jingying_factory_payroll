@@ -22,6 +22,13 @@ FROM docker.m.daocloud.io/node:20-alpine AS frontend-builder
 
 WORKDIR /app
 RUN npm config set registry https://registry.npmmirror.com
+
+# Build arguments - must be defined before COPY
+ARG VITE_API_BASE_URL=/api
+
+# Pass build argument to environment (Vite will read this during build)
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 COPY frontend/ ./frontend/
 RUN cd frontend && npm install && npm run build
 
@@ -58,15 +65,11 @@ ENV API_ENDPOINT=http://127.0.0.1:8000
 
 RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
 # Auto-generated nginx configuration for CloudBase Run
+# Note: CloudBase Run handles SSL termination at load balancer level
+# So nginx receives HTTP requests only
 
 server {
     listen 80;
-    server_name localhost;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
     server_name localhost;
 
     # Frontend static files
