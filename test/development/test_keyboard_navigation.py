@@ -6,7 +6,9 @@ This test verifies the keyboard navigation requirements:
 2. Use UP/DOWN arrow to move between options
 3. Use RIGHT arrow to select current option and show next level menu
 4. Use LEFT arrow to go back to previous level
-5. Use SPACE bar to select option
+5. Use SPACE bar to select option (in 工序 dropdown: toggle selection, keep dropdown open)
+6. In 工序 dropdown: RIGHT arrow or TAB completes selection and closes dropdown
+7. Clicking "工序选择完成" button completes selection
 """
 
 import asyncio
@@ -543,23 +545,244 @@ async def test_keyboard_navigation():
                 if process_dropdown:
                     logger.info("工序 dropdown shown after Right arrow in 电机型号")
                     
-                    # Test Space bar in 工序 dropdown
-                    await page.keyboard.press('Space')
-                    await asyncio.sleep(1)
+                    # ==============================================
+                    # Test 6: Multi-selection behavior in 工序 dropdown
+                    # ==============================================
+                    logger.info("Test 6: Multi-selection behavior in 工序 dropdown")
                     
-                    # Check if dropdown is closed and option is selected
-                    process_dropdown_after = await page.querySelector('div[style*="position: absolute"][style*="z-index: 1000"]')
-                    if not process_dropdown_after:
-                        logger.info("工序 dropdown closed after Space bar (selection successful)")
+                    # Check initial state - should have at least 2 options
+                    process_options = await page.evaluate('''() => {
+                        const options = document.querySelectorAll('[data-cascade-process-index]');
+                        return Array.from(options).map(opt => ({
+                            text: opt.textContent.trim(),
+                            index: opt.getAttribute('data-cascade-process-index')
+                        }));
+                    }''')
+                    
+                    if len(process_options) >= 2:
+                        logger.info(f"Found {len(process_options)} process options")
                         
-                        # Check if quota information is displayed
-                        quota_info = await page.querySelector('div[style*="background-color: #e6f7ff"]')
-                        if quota_info:
-                            logger.info("Quota information displayed after selection")
+                        # Check current selection count
+                        input_value = await page.evaluate('''() => {
+                            const input = document.querySelector('input[placeholder="工序"]');
+                            return input ? input.value : '';
+                        }''')
+                        logger.info(f"Initial input value: '{input_value}'")
+                        
+                        # Test 6a: Spacebar should add selection and keep dropdown open
+                        logger.info("Test 6a: Spacebar adds selection and keeps dropdown open")
+                        
+                        # Focus on first option
+                        first_process_option = await page.querySelector('[data-cascade-process-index="0"]')
+                        if first_process_option:
+                            await first_process_option.focus()
+                            await asyncio.sleep(0.3)
+                        
+                        # Press Space to select first option
+                        await page.keyboard.press('Space')
+                        await asyncio.sleep(0.5)
+                        
+                        # Check if dropdown is still open
+                        process_dropdown_after_space = await page.querySelector('div[style*="position: absolute"][style*="z-index: 1000"]')
+                        if process_dropdown_after_space:
+                            logger.info("SUCCESS: Dropdown still open after Space bar")
                         else:
-                            logger.warning("Quota information not displayed after selection")
+                            logger.warning("FAIL: Dropdown closed after Space bar")
+                        
+                        # Check if selection was made
+                        input_value_after_space = await page.evaluate('''() => {
+                            const input = document.querySelector('input[placeholder="工序"]');
+                            return input ? input.value : '';
+                        }''')
+                        if input_value_after_space and input_value_after_space != '':
+                            logger.info(f"SUCCESS: Selection made, input value: '{input_value_after_space}'")
+                        else:
+                            logger.warning("FAIL: No selection made after Space bar")
+                        
+                        # Check if focus moved to next option
+                        focused_index = await page.evaluate('''() => {
+                            const focused = document.activeElement;
+                            if (focused && focused.hasAttribute('data-cascade-process-index')) {
+                                return focused.getAttribute('data-cascade-process-index');
+                            }
+                            return null;
+                        }''')
+                        
+                        if focused_index == "1":
+                            logger.info(f"SUCCESS: Focus moved to next option: {focused_index}")
+                        else:
+                            logger.warning(f"Expected focus on option 1, but got: {focused_index}")
+                        
+                        # Test 6b: Press Space again to select second option
+                        logger.info("Test 6b: Spacebar selects second option (multi-selection)")
+                        await page.keyboard.press('Space')
+                        await asyncio.sleep(0.5)
+                        
+                        # Check if dropdown is still open
+                        process_dropdown_after_second = await page.querySelector('div[style*="position: absolute"][style*="z-index: 1000"]')
+                        if process_dropdown_after_second:
+                            logger.info("SUCCESS: Dropdown still open after second Space bar")
+                        else:
+                            logger.warning("FAIL: Dropdown closed after second Space bar")
+                        
+                        # Check selection count
+                        input_value_after_second = await page.evaluate('''() => {
+                            const input = document.querySelector('input[placeholder="工序"]');
+                            return input ? input.value : '';
+                        }''')
+                        logger.info(f"Input value after second selection: '{input_value_after_second}'")
+                        
+                        # Check if "工序选择完成" button is shown (should be shown when multiple items selected)
+                        buttons = await page.querySelectorAll('button')
+                        complete_button = None
+                        for btn in buttons:
+                            btn_text = await page.evaluate('(el) => el.textContent', btn)
+                            if btn_text and "工序选择完成" in btn_text:
+                                complete_button = btn
+                                logger.info("SUCCESS: 工序选择完成 button found")
+                                break
+                        
+                        if complete_button:
+                            logger.info("SUCCESS: 工序选择完成 button shown for multi-selection")
+                        else:
+                            logger.warning("Note: 工序选择完成 button not found (may not appear until selection is confirmed)")
+                        
+                        # Test 6c: RIGHT arrow should complete selection and close dropdown
+                        logger.info("Test 6c: RIGHT arrow completes selection and closes dropdown")
+                        await page.keyboard.press('ArrowRight')
+                        await asyncio.sleep(1)
+                        
+                        # Check if dropdown is closed
+                        process_dropdown_after_right = await page.querySelector('div[style*="position: absolute"][style*="z-index: 1000"]')
+                        if not process_dropdown_after_right:
+                            logger.info("SUCCESS: Dropdown closed after RIGHT arrow")
+                        else:
+                            logger.warning("FAIL: Dropdown still open after RIGHT arrow")
+                        
+                        # Check if focus moved to 数量 input
+                        focused_element = await page.evaluate('''() => {
+                            const focused = document.activeElement;
+                            if (focused) {
+                                return {
+                                    tagName: focused.tagName,
+                                    placeholder: focused.placeholder || focused.getAttribute('placeholder'),
+                                    name: focused.getAttribute('name'),
+                                    id: focused.id
+                                };
+                            }
+                            return null;
+                        }''')
+                        
+                        if focused_element and (focused_element.get('placeholder') == '数量' or focused_element.get('id') == 'quantity'):
+                            logger.info(f"SUCCESS: Focus moved to 数量 input: {focused_element}")
+                        else:
+                            logger.warning(f"FAIL: Focus did not move to 数量 input. Current focus: {focused_element}")
+                            
+                            # Try to manually focus on 数量 input
+                            quantity_input = await page.querySelector('#quantity')
+                            if quantity_input:
+                                await quantity_input.focus()
+                                await asyncio.sleep(0.3)
+                                focused_after = await page.evaluate('''() => {
+                                    const focused = document.activeElement;
+                                    if (focused) {
+                                        return { tagName: focused.tagName, id: focused.id, placeholder: focused.placeholder };
+                                    }
+                                    return null;
+                                }''')
+                                logger.info(f"After manual focus: {focused_after}")
+                        
+                        # Check if quota information is displayed (for single selection)
+                        # Get selection count from page
+                        selection_count = await page.evaluate('''() => {
+                            const input = document.querySelector('input[placeholder="工序"]');
+                            if (input && input.value) {
+                                return input.value.split(',').filter(v => v.trim()).length;
+                            }
+                            return 0;
+                        }''')
+                        
+                        if selection_count <= 1:
+                            quota_info = await page.querySelector('div[style*="background-color: #e6f7ff"]')
+                            if quota_info:
+                                logger.info("SUCCESS: Quota information displayed after completing selection")
+                            else:
+                                logger.warning("Note: Quota information not displayed (may be multi-selection)")
                     else:
-                        logger.warning("工序 dropdown still open after Space bar")
+                        logger.warning(f"Not enough process options for multi-selection test (found {len(process_options)})")
+                    
+                    # Test 7: Test TAB to complete selection (open modal again)
+                    logger.info("Test 7: TAB completes selection and closes dropdown")
+                    
+                    # Open the modal again for single selection test
+                    await page.goto('http://localhost:5173')
+                    await asyncio.sleep(2)
+                    
+                    # Login again
+                    login_success = await login(page, 'root', 'root123')
+                    if login_success:
+                        await asyncio.sleep(1)
+                        
+                        # Find and click add button
+                        buttons = await page.querySelectorAll('button')
+                        for btn in buttons:
+                            btn_text = await page.evaluate('(el) => el.textContent', btn)
+                            if btn_text and "添加工作记录" in btn_text:
+                                await btn.click()
+                                break
+                        
+                        await asyncio.sleep(1)
+                        
+                        # Wait for modal and navigate to 工序 dropdown
+                        # TAB to 工段类别
+                        await page.evaluate('''() => {
+                            const input = document.querySelector('input[placeholder*="工段类别"]');
+                            if (input) {
+                                const event = new KeyboardEvent('keydown', {
+                                    key: 'Tab', code: 'Tab', keyCode: 9, which: 9, bubbles: true, cancelable: true
+                                });
+                                input.dispatchEvent(event);
+                            }
+                        }''')
+                        await asyncio.sleep(1)
+                        
+                        # Right to 工序类别
+                        await page.keyboard.press('ArrowRight')
+                        await asyncio.sleep(0.5)
+                        
+                        # Right to 电机型号
+                        await page.keyboard.press('ArrowRight')
+                        await asyncio.sleep(0.5)
+                        
+                        # Right to 工序
+                        await page.keyboard.press('ArrowRight')
+                        await asyncio.sleep(1)
+                        
+                        # Verify 工序 dropdown is open
+                        process_dropdown_open = await page.querySelector('div[style*="position: absolute"][style*="z-index: 1000"]')
+                        if process_dropdown_open:
+                            logger.info("工序 dropdown open, testing TAB completion")
+                            
+                            # Focus on first option
+                            first_process = await page.querySelector('[data-cascade-process-index="0"]')
+                            if first_process:
+                                await first_process.focus()
+                                await asyncio.sleep(0.3)
+                            
+                            # Press TAB to complete selection
+                            await page.keyboard.press('Tab')
+                            await asyncio.sleep(1)
+                            
+                            # Check if dropdown is closed
+                            process_dropdown_after_tab = await page.querySelector('div[style*="position: absolute"][style*="z-index: 1000"]')
+                            if not process_dropdown_after_tab:
+                                logger.info("SUCCESS: Dropdown closed after TAB")
+                            else:
+                                logger.warning("FAIL: Dropdown still open after TAB")
+                        else:
+                            logger.warning("工序 dropdown not open for TAB test")
+                    else:
+                        logger.warning("Could not re-login for TAB test")
                 else:
                     logger.warning("工序 dropdown not shown")
             else:

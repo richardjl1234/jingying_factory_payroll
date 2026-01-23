@@ -942,11 +942,31 @@ const SalaryRecord = () => {
         }, 0);
         return newIndex;
       });
-    } else if (e.key === 'ArrowRight' || e.key === ' ') {
+    } else if (e.key === 'ArrowRight' || e.key === 'Tab') {
+      // Right arrow or Tab completes selection - same as clicking "工序选择完成" button
+      e.preventDefault();
+      completeProcessSelection();
+    } else if (e.key === ' ') {
+      // Space: Toggle selection but keep dropdown open (multi-selection mode)
       e.preventDefault();
       if (focusedCascadeProcessIndex >= 0 && focusedCascadeProcessIndex < options.length) {
         const option = options[focusedCascadeProcessIndex];
-        handleCascadeProcessChange(option.process_code);
+        setSelectedCascadeProcesses(prev => {
+          if (prev.includes(option.process_code)) {
+            return prev.filter(v => v !== option.process_code);
+          } else {
+            return [...prev, option.process_code];
+          }
+        });
+        // Keep dropdown open and move focus to next option
+        setFocusedCascadeProcessIndex(prev => {
+          const newIndex = prev >= options.length - 1 ? 0 : prev + 1;
+          setTimeout(() => {
+            const element = cascadeProcessDropdownRef.current?.querySelector(`[data-cascade-process-index="${newIndex}"]`) as HTMLElement;
+            element?.focus();
+          }, 0);
+          return newIndex;
+        });
       }
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
@@ -959,6 +979,44 @@ const SalaryRecord = () => {
     } else if (e.key === 'Escape') {
       setShowProcessDropdown(false);
     }
+  };
+
+  // Complete the process selection (used by button and keyboard)
+  const completeProcessSelection = () => {
+    // Close all dropdowns
+    setShowCat1Dropdown(false);
+    setShowCat2Dropdown(false);
+    setShowModelDropdown(false);
+    setShowProcessDropdown(false);
+    setMultiSelectionConfirmed(true);
+    
+    // If only one selection, set the quota result
+    if (selectedCascadeProcesses.length === 1 && selectedCascadeCat1 && selectedCascadeCat2 && selectedCascadeModel) {
+      const selectedCode = selectedCascadeProcesses[0];
+      const processInfo = filteredProcessOptions.find((p: QuotaOptionItem) => p.process_code === selectedCode);
+      if (processInfo) {
+        setQuotaResult({
+          quota_id: processInfo.quota_id,
+          model_code: selectedCascadeModel,
+          cat1_code: selectedCascadeCat1,
+          cat1_name: processInfo.cat1_name,
+          cat2_code: selectedCascadeCat2,
+          cat2_name: processInfo.cat2_name,
+          process_code: selectedCode,
+          process_name: processInfo.process_name,
+          unit_price: processInfo.unit_price,
+          effective_date: processInfo.effective_date,
+          obsolete_date: processInfo.obsolete_date
+        });
+        setQuotaIdInput(String(processInfo.quota_id));
+      }
+    }
+    
+    // Focus on 数量 input after completing selection
+    setTimeout(() => {
+      const quantityInput = document.querySelector('#quantity') as HTMLInputElement;
+      quantityInput?.focus();
+    }, 100);
   };
 
   const handleCascadeProcessChange = (value: string, e?: React.MouseEvent) => {
@@ -1873,7 +1931,7 @@ const SalaryRecord = () => {
                     style={{ cursor: !selectedCascadeModel ? 'not-allowed' : 'pointer' }}
                   />
                   {/* 多选完成按钮 */}
-                  {selectedCascadeProcesses.length > 1 && !multiSelectionConfirmed && (
+                  {selectedCascadeProcesses.length > 0 && !multiSelectionConfirmed && (
                     <Button
                       type="primary"
                       size="small"
@@ -1886,11 +1944,7 @@ const SalaryRecord = () => {
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setShowCat1Dropdown(false);
-                        setShowCat2Dropdown(false);
-                        setShowModelDropdown(false);
-                        setShowProcessDropdown(false);
-                        setMultiSelectionConfirmed(true);
+                        completeProcessSelection();
                       }}
                     >
                       工序选择完成
