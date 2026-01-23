@@ -113,6 +113,16 @@ const SalaryRecord = () => {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [showProcessDropdown, setShowProcessDropdown] = useState(false);
 
+  // 级联下拉框键盘导航状态
+  const [focusedCat1Index, setFocusedCat1Index] = useState<number>(-1);
+  const [focusedCat2Index, setFocusedCat2Index] = useState<number>(-1);
+  const [focusedModelIndex, setFocusedModelIndex] = useState<number>(-1);
+  const [focusedCascadeProcessIndex, setFocusedCascadeProcessIndex] = useState<number>(-1);
+  const cat1DropdownRef = useRef<HTMLDivElement>(null);
+  const cat2DropdownRef = useRef<HTMLDivElement>(null);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
+  const cascadeProcessDropdownRef = useRef<HTMLDivElement>(null);
+
   // 根据级联选择过滤的选项（前端内存中过滤）
   const filteredCat2Options = useMemo(() => {
     if (!quotaOptionsData || !selectedCascadeCat1) return [];
@@ -203,9 +213,13 @@ const SalaryRecord = () => {
     try {
       setQuotaOptionsLoading(true);
       const recordDate = `${selectedMonth.slice(0, 4)}-${selectedMonth.slice(4, 6)}-01`;
+      console.log('[QuotaOptions] Fetching quota options for date:', recordDate);
       const data = await salaryAPI.getQuotaOptions({ record_date: recordDate });
+      console.log('[QuotaOptions] Received data:', data);
+      console.log('[QuotaOptions] cat1_options:', data?.cat1_options?.length || 0, 'options');
       setQuotaOptionsData(data);
     } catch (error) {
+      console.error('[QuotaOptions] Error fetching quota options:', error);
       message.error('获取定额选项失败');
     } finally {
       setQuotaOptionsLoading(false);
@@ -702,6 +716,249 @@ const SalaryRecord = () => {
     setSelectedCascadeProcesses([]);
     setShowProcessDropdown(true);
     setQuotaResult(null);
+  };
+
+  // 级联下拉框键盘导航处理函数
+  const handleCat1KeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!quotaOptionsData) return;
+    
+    const options = quotaOptionsData.cat1_options;
+    if (options.length === 0) return;
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setShowCat1Dropdown(true);
+      setFocusedCat1Index(0);
+      setTimeout(() => {
+        const firstOption = cat1DropdownRef.current?.querySelector('[data-cat1-index="0"]') as HTMLElement;
+        firstOption?.focus();
+      }, 0);
+    }
+  };
+
+  const handleCat1DropdownKeyDown = (e: React.KeyboardEvent) => {
+    const options = quotaOptionsData?.cat1_options || [];
+    if (options.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedCat1Index(prev => {
+        const newIndex = prev >= options.length - 1 ? 0 : prev + 1;
+        setTimeout(() => {
+          const element = cat1DropdownRef.current?.querySelector(`[data-cat1-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedCat1Index(prev => {
+        const newIndex = prev <= 0 ? options.length - 1 : prev - 1;
+        setTimeout(() => {
+          const element = cat1DropdownRef.current?.querySelector(`[data-cat1-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (focusedCat1Index >= 0 && focusedCat1Index < options.length) {
+        const option = options[focusedCat1Index];
+        handleCascadeCat1Change(option.value);
+        setFocusedCat2Index(0);
+        setTimeout(() => {
+          const firstOption = cat2DropdownRef.current?.querySelector('[data-cat2-index="0"]') as HTMLElement;
+          firstOption?.focus();
+        }, 0);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      // In 工段类别 (first level), do nothing - no previous level to go back to
+      e.preventDefault();
+      // No action needed - already at the first level
+    } else if (e.key === 'Escape') {
+      setShowCat1Dropdown(false);
+    }
+  };
+
+  const handleCat2KeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!selectedCascadeCat1 || filteredCat2Options.length === 0) return;
+    
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setShowCat2Dropdown(true);
+      setFocusedCat2Index(0);
+      setTimeout(() => {
+        const firstOption = cat2DropdownRef.current?.querySelector('[data-cat2-index="0"]') as HTMLElement;
+        firstOption?.focus();
+      }, 0);
+    }
+  };
+
+  const handleCat2DropdownKeyDown = (e: React.KeyboardEvent) => {
+    const options = filteredCat2Options;
+    if (options.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedCat2Index(prev => {
+        const newIndex = prev >= options.length - 1 ? 0 : prev + 1;
+        setTimeout(() => {
+          const element = cat2DropdownRef.current?.querySelector(`[data-cat2-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedCat2Index(prev => {
+        const newIndex = prev <= 0 ? options.length - 1 : prev - 1;
+        setTimeout(() => {
+          const element = cat2DropdownRef.current?.querySelector(`[data-cat2-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (focusedCat2Index >= 0 && focusedCat2Index < options.length) {
+        const option = options[focusedCat2Index];
+        handleCascadeCat2Change(option.value);
+        setFocusedModelIndex(0);
+        setTimeout(() => {
+          const firstOption = modelDropdownRef.current?.querySelector('[data-model-index="0"]') as HTMLElement;
+          firstOption?.focus();
+        }, 0);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setShowCat2Dropdown(false);
+      setFocusedCat1Index(0);
+      setTimeout(() => {
+        const firstOption = cat1DropdownRef.current?.querySelector('[data-cat1-index="0"]') as HTMLElement;
+        firstOption?.focus();
+      }, 0);
+    } else if (e.key === 'Escape') {
+      setShowCat2Dropdown(false);
+    }
+  };
+
+  const handleModelKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!selectedCascadeCat2 || filteredModelOptions.length === 0) return;
+    
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setShowModelDropdown(true);
+      setFocusedModelIndex(0);
+      setTimeout(() => {
+        const firstOption = modelDropdownRef.current?.querySelector('[data-model-index="0"]') as HTMLElement;
+        firstOption?.focus();
+      }, 0);
+    }
+  };
+
+  const handleModelDropdownKeyDown = (e: React.KeyboardEvent) => {
+    const options = filteredModelOptions;
+    if (options.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedModelIndex(prev => {
+        const newIndex = prev >= options.length - 1 ? 0 : prev + 1;
+        setTimeout(() => {
+          const element = modelDropdownRef.current?.querySelector(`[data-model-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedModelIndex(prev => {
+        const newIndex = prev <= 0 ? options.length - 1 : prev - 1;
+        setTimeout(() => {
+          const element = modelDropdownRef.current?.querySelector(`[data-model-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (focusedModelIndex >= 0 && focusedModelIndex < options.length) {
+        const option = options[focusedModelIndex];
+        handleCascadeModelChange(option.value);
+        setFocusedCascadeProcessIndex(0);
+        setTimeout(() => {
+          const firstOption = cascadeProcessDropdownRef.current?.querySelector('[data-cascade-process-index="0"]') as HTMLElement;
+          firstOption?.focus();
+        }, 0);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setShowModelDropdown(false);
+      setFocusedCat2Index(0);
+      setTimeout(() => {
+        const firstOption = cat2DropdownRef.current?.querySelector('[data-cat2-index="0"]') as HTMLElement;
+        firstOption?.focus();
+      }, 0);
+    } else if (e.key === 'Escape') {
+      setShowModelDropdown(false);
+    }
+  };
+
+  const handleCascadeProcessKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!selectedCascadeModel || filteredProcessOptions.length === 0) return;
+    
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setShowProcessDropdown(true);
+      setFocusedCascadeProcessIndex(0);
+      setTimeout(() => {
+        const firstOption = cascadeProcessDropdownRef.current?.querySelector('[data-cascade-process-index="0"]') as HTMLElement;
+        firstOption?.focus();
+      }, 0);
+    }
+  };
+
+  const handleCascadeProcessDropdownKeyDown = (e: React.KeyboardEvent) => {
+    const options = filteredProcessOptions;
+    if (options.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setFocusedCascadeProcessIndex(prev => {
+        const newIndex = prev >= options.length - 1 ? 0 : prev + 1;
+        setTimeout(() => {
+          const element = cascadeProcessDropdownRef.current?.querySelector(`[data-cascade-process-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setFocusedCascadeProcessIndex(prev => {
+        const newIndex = prev <= 0 ? options.length - 1 : prev - 1;
+        setTimeout(() => {
+          const element = cascadeProcessDropdownRef.current?.querySelector(`[data-cascade-process-index="${newIndex}"]`) as HTMLElement;
+          element?.focus();
+        }, 0);
+        return newIndex;
+      });
+    } else if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      if (focusedCascadeProcessIndex >= 0 && focusedCascadeProcessIndex < options.length) {
+        const option = options[focusedCascadeProcessIndex];
+        handleCascadeProcessChange(option.process_code);
+      }
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setShowProcessDropdown(false);
+      setFocusedModelIndex(0);
+      setTimeout(() => {
+        const firstOption = modelDropdownRef.current?.querySelector('[data-model-index="0"]') as HTMLElement;
+        firstOption?.focus();
+      }, 0);
+    } else if (e.key === 'Escape') {
+      setShowProcessDropdown(false);
+    }
   };
 
   const handleCascadeProcessChange = (value: string, e?: React.MouseEvent) => {
@@ -1298,7 +1555,6 @@ const SalaryRecord = () => {
         onCancel={handleCancel}
         footer={null}
         width={900}
-        destroyOnClose
       >
         <Form
           form={form}
@@ -1379,19 +1635,27 @@ const SalaryRecord = () => {
               {/* 工段类别 */}
               <Col span={5}>
                 <div style={{ position: 'relative' }}>
-                  <Input
-                    placeholder="工段类别"
-                    value={selectedCascadeCat1 ? (quotaOptionsData?.cat1_options.find(o => o.value === selectedCascadeCat1)?.label || selectedCascadeCat1) : ''}
-                    readOnly
-                    onFocus={() => setShowCat1Dropdown(true)}
-                    onMouseEnter={() => setShowCat1Dropdown(true)}
-                    onBlur={() => setTimeout(() => setShowCat1Dropdown(false), 200)}
-                    suffix={<span style={{ color: '#999' }}>▼</span>}
-                    style={{ cursor: 'pointer' }}
-                  />
+              <Input
+                placeholder="工段类别"
+                value={selectedCascadeCat1 ? (quotaOptionsData?.cat1_options.find(o => o.value === selectedCascadeCat1)?.label || selectedCascadeCat1) : ''}
+                readOnly
+                onFocus={() => {
+                  setShowCat1Dropdown(true);
+                  setFocusedCat1Index(0);
+                  setTimeout(() => {
+                    const firstOption = cat1DropdownRef.current?.querySelector('[data-cat1-index="0"]') as HTMLElement;
+                    firstOption?.focus();
+                  }, 0);
+                }}
+                onMouseEnter={() => setShowCat1Dropdown(true)}
+                onKeyDown={handleCat1KeyDown}
+                suffix={<span style={{ color: '#999' }}>▼</span>}
+                style={{ cursor: 'pointer' }}
+              />
                   {/* 下拉面板 - 工段类别 */}
                   {showCat1Dropdown && quotaOptionsData && quotaOptionsData.cat1_options.length > 0 && (
                     <div
+                      ref={cat1DropdownRef}
                       style={{
                         position: 'absolute',
                         top: '100%',
@@ -1405,22 +1669,31 @@ const SalaryRecord = () => {
                         zIndex: 1000,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                       }}
+                      onKeyDown={handleCat1DropdownKeyDown}
                     >
-                      {quotaOptionsData.cat1_options.map((option) => (
+                      {quotaOptionsData.cat1_options.map((option, index) => (
                         <div
                           key={option.value}
+                          data-cat1-index={index}
+                          tabIndex={0}
                           style={{
                             padding: '8px 12px',
                             cursor: 'pointer',
-                            backgroundColor: selectedCascadeCat1 === option.value ? '#e6f7ff' : 'white',
-                            borderBottom: '1px solid #f0f0f0'
+                            backgroundColor: selectedCascadeCat1 === option.value ? '#e6f7ff' : (focusedCat1Index === index ? '#f5f5f5' : 'white'),
+                            borderBottom: '1px solid #f0f0f0',
+                            outline: 'none'
                           }}
                           onClick={() => handleCascadeCat1Change(option.value)}
+                          onFocus={() => {
+                            setFocusedCat1Index(index);
+                            setShowCat1Dropdown(true);
+                          }}
                           onMouseEnter={() => {
-                            // 悬停时自动选中并展开下一级
-                            if (option.value !== selectedCascadeCat1) {
-                              handleCascadeCat1Change(option.value);
-                            }
+                            setFocusedCat1Index(index);
+                          }}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            handleCat1DropdownKeyDown(e);
                           }}
                         >
                           {option.label}
@@ -1439,15 +1712,20 @@ const SalaryRecord = () => {
                     value={selectedCascadeCat2 ? (filteredCat2Options.find((o: CascadeOption) => o.value === selectedCascadeCat2)?.label || selectedCascadeCat2) : ''}
                     readOnly
                     disabled={!selectedCascadeCat1}
-                    onFocus={() => selectedCascadeCat1 && setShowCat2Dropdown(true)}
+                    onFocus={() => {
+                      if (selectedCascadeCat1) {
+                        setShowCat2Dropdown(true);
+                        setFocusedCat2Index(0);
+                      }
+                    }}
                     onMouseEnter={() => selectedCascadeCat1 && setShowCat2Dropdown(true)}
-                    onBlur={() => setTimeout(() => setShowCat2Dropdown(false), 200)}
                     suffix={<span style={{ color: '#999' }}>▼</span>}
                     style={{ cursor: !selectedCascadeCat1 ? 'not-allowed' : 'pointer' }}
                   />
                   {/* 下拉面板 - 工序类别 */}
                   {showCat2Dropdown && selectedCascadeCat1 && filteredCat2Options.length > 0 && (
                     <div
+                      ref={cat2DropdownRef}
                       style={{
                         position: 'absolute',
                         top: '100%',
@@ -1461,21 +1739,34 @@ const SalaryRecord = () => {
                         zIndex: 1000,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                       }}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        handleCat2DropdownKeyDown(e);
+                      }}
                     >
-                      {filteredCat2Options.map((option: CascadeOption) => (
+                      {filteredCat2Options.map((option: CascadeOption, index: number) => (
                         <div
                           key={option.value}
+                          data-cat2-index={index}
+                          tabIndex={0}
                           style={{
                             padding: '8px 12px',
                             cursor: 'pointer',
-                            backgroundColor: selectedCascadeCat2 === option.value ? '#e6f7ff' : 'white',
-                            borderBottom: '1px solid #f0f0f0'
+                            backgroundColor: selectedCascadeCat2 === option.value ? '#e6f7ff' : (focusedCat2Index === index ? '#f5f5f5' : 'white'),
+                            borderBottom: '1px solid #f0f0f0',
+                            outline: 'none'
                           }}
                           onClick={() => handleCascadeCat2Change(option.value)}
+                          onFocus={() => {
+                            setFocusedCat2Index(index);
+                            setShowCat2Dropdown(true);
+                          }}
                           onMouseEnter={() => {
-                            if (option.value !== selectedCascadeCat2) {
-                              handleCascadeCat2Change(option.value);
-                            }
+                            setFocusedCat2Index(index);
+                          }}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            handleCat2DropdownKeyDown(e);
                           }}
                         >
                           {option.label}
@@ -1494,15 +1785,20 @@ const SalaryRecord = () => {
                     value={selectedCascadeModel ? (filteredModelOptions.find((o: CascadeOption) => o.value === selectedCascadeModel)?.label || selectedCascadeModel) : ''}
                     readOnly
                     disabled={!selectedCascadeCat2}
-                    onFocus={() => selectedCascadeCat1 && selectedCascadeCat2 && setShowModelDropdown(true)}
+                    onFocus={() => {
+                      if (selectedCascadeCat1 && selectedCascadeCat2) {
+                        setShowModelDropdown(true);
+                        setFocusedModelIndex(0);
+                      }
+                    }}
                     onMouseEnter={() => selectedCascadeCat1 && selectedCascadeCat2 && setShowModelDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowModelDropdown(false), 200)}
                     suffix={<span style={{ color: '#999' }}>▼</span>}
                     style={{ cursor: !selectedCascadeCat2 ? 'not-allowed' : 'pointer' }}
                   />
                   {/* 下拉面板 - 电机型号 */}
                   {showModelDropdown && selectedCascadeCat1 && selectedCascadeCat2 && filteredModelOptions.length > 0 && (
                     <div
+                      ref={modelDropdownRef}
                       style={{
                         position: 'absolute',
                         top: '100%',
@@ -1516,21 +1812,34 @@ const SalaryRecord = () => {
                         zIndex: 1000,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                       }}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        handleModelDropdownKeyDown(e);
+                      }}
                     >
-                      {filteredModelOptions.map((option: CascadeOption) => (
+                      {filteredModelOptions.map((option: CascadeOption, index: number) => (
                         <div
                           key={option.value}
+                          data-model-index={index}
+                          tabIndex={0}
                           style={{
                             padding: '8px 12px',
                             cursor: 'pointer',
-                            backgroundColor: selectedCascadeModel === option.value ? '#e6f7ff' : 'white',
-                            borderBottom: '1px solid #f0f0f0'
+                            backgroundColor: selectedCascadeModel === option.value ? '#e6f7ff' : (focusedModelIndex === index ? '#f5f5f5' : 'white'),
+                            borderBottom: '1px solid #f0f0f0',
+                            outline: 'none'
                           }}
                           onClick={() => handleCascadeModelChange(option.value)}
+                          onFocus={() => {
+                            setFocusedModelIndex(index);
+                            setShowModelDropdown(true);
+                          }}
                           onMouseEnter={() => {
-                            if (option.value !== selectedCascadeModel) {
-                              handleCascadeModelChange(option.value);
-                            }
+                            setFocusedModelIndex(index);
+                          }}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            handleModelDropdownKeyDown(e);
                           }}
                         >
                           {option.label}
@@ -1553,9 +1862,13 @@ const SalaryRecord = () => {
                       : ''}
                     readOnly
                     disabled={!selectedCascadeModel}
-                    onFocus={() => selectedCascadeModel && setShowProcessDropdown(true)}
+                    onFocus={() => {
+                      if (selectedCascadeModel) {
+                        setShowProcessDropdown(true);
+                        setFocusedCascadeProcessIndex(0);
+                      }
+                    }}
                     onMouseEnter={() => selectedCascadeModel && setShowProcessDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowProcessDropdown(false), 200)}
                     suffix={<span style={{ color: '#999' }}>▼</span>}
                     style={{ cursor: !selectedCascadeModel ? 'not-allowed' : 'pointer' }}
                   />
@@ -1586,6 +1899,7 @@ const SalaryRecord = () => {
                   {/* 下拉面板 - 工序 */}
                   {showProcessDropdown && selectedCascadeModel && filteredProcessOptions.length > 0 && (
                     <div
+                      ref={cascadeProcessDropdownRef}
                       style={{
                         position: 'absolute',
                         top: '100%',
@@ -1600,20 +1914,38 @@ const SalaryRecord = () => {
                         zIndex: 1000,
                         boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                       }}
+                      onKeyDown={(e) => {
+                        e.stopPropagation();
+                        handleCascadeProcessDropdownKeyDown(e);
+                      }}
                     >
-                      {filteredProcessOptions.map((option: QuotaOptionItem) => (
+                      {filteredProcessOptions.map((option: QuotaOptionItem, index: number) => (
                         <div
                           key={option.process_code}
+                          data-cascade-process-index={index}
+                          tabIndex={0}
                           style={{
                             padding: '8px 12px',
                             cursor: 'pointer',
-                            backgroundColor: selectedCascadeProcesses.includes(option.process_code) ? '#e6f7ff' : 'white',
+                            backgroundColor: selectedCascadeProcesses.includes(option.process_code) ? '#e6f7ff' : (focusedCascadeProcessIndex === index ? '#f5f5f5' : 'white'),
                             borderBottom: '1px solid #f0f0f0',
+                            outline: 'none',
                             display: 'flex',
                             alignItems: 'center',
                             gap: 8
                           }}
                           onClick={(e) => handleCascadeProcessChange(option.process_code, e)}
+                          onFocus={() => {
+                            setFocusedCascadeProcessIndex(index);
+                            setShowProcessDropdown(true);
+                          }}
+                          onMouseEnter={() => {
+                            setFocusedCascadeProcessIndex(index);
+                          }}
+                          onKeyDown={(e) => {
+                            e.stopPropagation();
+                            handleCascadeProcessDropdownKeyDown(e);
+                          }}
                         >
                           <span style={{ 
                             display: 'inline-block', 
