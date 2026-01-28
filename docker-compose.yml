@@ -7,7 +7,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ~/shared/jianglei/payroll/env_local.sh
+      - ~/shared/jianglei/payroll/env_docker.sh
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
@@ -22,6 +22,8 @@ services:
     # For local development, logs are written to ./logs directory
     volumes:
       - ./logs:/app/logs:rw
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=2)"]
