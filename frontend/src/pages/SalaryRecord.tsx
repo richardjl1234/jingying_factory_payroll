@@ -1977,7 +1977,9 @@ const SalaryRecord = () => {
                         }
                       }}
                       onFocus={() => {
-                        // 显示下拉菜单
+                        // 折叠方式1的下拉菜单
+                        setShowCat1Dropdown(false);
+                        // 显示Way 0下拉菜单
                         if (quotaOptionsData && quotaOptionsData.cat1_options.length > 0) {
                           setShowWay0Cat1Dropdown(true);
                         }
