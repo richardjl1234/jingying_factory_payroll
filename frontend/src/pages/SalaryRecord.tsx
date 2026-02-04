@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col, Card, Tag, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { salaryAPI, workerAPI } from '../services/api';
@@ -125,6 +125,15 @@ const SalaryRecord = () => {
   // 多选确认状态
   const [multiSelectionConfirmed, setMultiSelectionConfirmed] = useState(false);
   
+  // ========== Way 0 状态变量 ==========
+  const [way0Cat1SearchValue, setWay0Cat1SearchValue] = useState('');
+  const [way0SelectedCat1, setWay0SelectedCat1] = useState<string | null>(null);
+  const [way0QuotaDialogVisible, setWay0QuotaDialogVisible] = useState(false);
+  const [way0SelectedQuotas, setWay0SelectedQuotas] = useState<Set<number>>(new Set());
+  const [way0SelectedQuotaItems, setWay0SelectedQuotaItems] = useState<QuotaOptionItem[]>([]);
+  const [showWay0Cat1Dropdown, setShowWay0Cat1Dropdown] = useState(false);
+  // ==================================
+  
   // 下拉面板显示状态
   const [showCat1Dropdown, setShowCat1Dropdown] = useState(false);
   const [showCat2Dropdown, setShowCat2Dropdown] = useState(false);
@@ -173,6 +182,17 @@ const SalaryRecord = () => {
 
   // Get selected quota details (for multi-selection)
   const selectedQuotaDetails = useMemo(() => {
+    // 如果有Way 0选择的定额，返回这些定额
+    if (way0SelectedQuotaItems.length > 0) {
+      return way0SelectedQuotaItems.map(q => ({
+        quota_id: q.quota_id,
+        process_code: q.process_code,
+        process_name: q.process_name,
+        unit_price: q.unit_price
+      }));
+    }
+    
+    // 否则使用级联下拉框的选项
     if (selectedCascadeProcesses.length === 0) return [];
     return selectedCascadeProcesses.map(code => {
       const option = filteredProcessOptions.find((p: QuotaOptionItem) => p.process_code === code);
@@ -183,7 +203,7 @@ const SalaryRecord = () => {
         unit_price: option.unit_price
       } : null;
     }).filter(Boolean);
-  }, [selectedCascadeProcesses, filteredProcessOptions]);
+  }, [way0SelectedQuotaItems, selectedCascadeProcesses, filteredProcessOptions]);
 
   // 构建定额组合列表用于搜索
   const quotaCombinations = useMemo(() => {
@@ -202,6 +222,109 @@ const SalaryRecord = () => {
       unit_price: q.unit_price
     }));
   }, [quotaOptionsData]);
+
+  // ========== Way 0 矩阵数据结构 ==========
+  interface MatrixRow {
+    model_code: string;
+    model_name: string;
+    prices: Record<string, { quota_id: number; unit_price: number }>;
+  }
+  
+  interface MatrixColumn {
+    process_code: string;
+    process_name: string;
+  }
+  
+  interface MatrixSection {
+    cat2_code: string;
+    cat2_name: string;
+    rows: MatrixRow[];
+    columns: MatrixColumn[];
+  }
+  
+  // 构建矩阵行数据
+  const buildMatrixRows = (quotas: QuotaOptionItem[]): MatrixRow[] => {
+    const modelMap = new Map<string, Record<string, { quota_id: number; unit_price: number }>>();
+    const modelNames: Record<string, string> = {};
+    
+    quotas.forEach(q => {
+      if (!modelMap.has(q.model_code)) {
+        modelMap.set(q.model_code, {});
+      }
+      modelMap.get(q.model_code)![q.process_code] = {
+        quota_id: q.quota_id,
+        unit_price: q.unit_price
+      };
+      modelNames[q.model_code] = q.model_name;
+    });
+    
+    // 排序型号（按数字前缀排序）
+    const sortedModels = Array.from(modelMap.keys()).sort((a, b) => {
+      try {
+        const partA = a.split('-')[0];
+        const partB = b.split('-')[0];
+        return parseInt(partA) - parseInt(partB);
+      } catch {
+        return a.localeCompare(b);
+      }
+    });
+    
+    return sortedModels.map(model_code => ({
+      model_code,
+      model_name: modelNames[model_code] || model_code,
+      prices: modelMap.get(model_code) || {}
+    }));
+  };
+  
+  // 构建矩阵列数据
+  const buildMatrixColumns = (quotas: QuotaOptionItem[]): MatrixColumn[] => {
+    const processSet = new Set<string>();
+    quotas.forEach(q => processSet.add(q.process_code));
+    
+    // 排序工序
+    const sortedProcesses = Array.from(processSet).sort((a, b) => a.localeCompare(b));
+    
+    return sortedProcesses.map(process_code => ({
+      process_code,
+      process_name: quotas.find(q => q.process_code === process_code)?.process_name || process_code
+    }));
+  };
+  
+  // Way 0 矩阵数据转换
+  const way0MatrixData = useMemo((): MatrixSection[] => {
+    if (!quotaOptionsData || !way0SelectedCat1) return [];
+    
+    const currentDate = dayjs(`${selectedMonth.slice(0, 4)}-${selectedMonth.slice(4, 6)}-01`);
+    
+    // 过滤：工段类别匹配 + 当前月份在有效期内
+    const filteredQuotas = quotaOptionsData.quota_options.filter(q => {
+      const effective = dayjs(q.effective_date);
+      const obsolete = dayjs(q.obsolete_date);
+      return (
+        q.cat1_code === way0SelectedCat1 &&
+        (currentDate.isAfter(effective) || currentDate.isSame(effective, 'day')) &&
+        (currentDate.isBefore(obsolete) || currentDate.isSame(obsolete, 'day'))
+      );
+    });
+    
+    // 按工序类别分组
+    const groups: Record<string, QuotaOptionItem[]> = {};
+    filteredQuotas.forEach(q => {
+      if (!groups[q.cat2_code]) {
+        groups[q.cat2_code] = [];
+      }
+      groups[q.cat2_code].push(q);
+    });
+    
+    // 构建矩阵结构
+    return Object.entries(groups).map(([cat2_code, quotas]) => ({
+      cat2_code,
+      cat2_name: quotas[0]?.cat2_name || cat2_code,
+      rows: buildMatrixRows(quotas),
+      columns: buildMatrixColumns(quotas)
+    }));
+  }, [quotaOptionsData, way0SelectedCat1, selectedMonth]);
+  // =====================================
 
   // 工人搜索状态
   const [workerSearchValue, setWorkerSearchValue] = useState('');
@@ -1086,6 +1209,81 @@ const SalaryRecord = () => {
     }
   };
 
+  // ==============================
+
+  // 切换定额单元格选择
+  const handleQuotaCellToggle = (quotaId: number) => {
+    setWay0SelectedQuotas(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(quotaId)) {
+        newSet.delete(quotaId);
+      } else {
+        newSet.add(quotaId);
+      }
+      return newSet;
+    });
+  };
+  
+  // 确认选择
+  const handleWay0Confirm = () => {
+    // 将选中的定额ID转换为定额对象
+    const selectedQuotaObjects = Array.from(way0SelectedQuotas).map(id => {
+      const quota = quotaOptionsData?.quota_options.find(q => q.quota_id === id);
+      return quota;
+    }).filter(Boolean) as QuotaOptionItem[];
+    
+    // 保存选中的定额项（用于批量创建）
+    setWay0SelectedQuotaItems(selectedQuotaObjects);
+    
+    // 设置级联下拉框状态
+    if (selectedQuotaObjects.length > 0) {
+      // 使用第一个选中项设置级联下拉框
+      const firstQuota = selectedQuotaObjects[0];
+      setSelectedCascadeCat1(firstQuota.cat1_code);
+      setSelectedCascadeCat2(firstQuota.cat2_code);
+      setSelectedCascadeModel(firstQuota.model_code);
+      setSelectedCascadeProcesses(selectedQuotaObjects.map(q => q.process_code));
+      
+      // 如果只有一个选择，设置详细的定额结果
+      if (selectedQuotaObjects.length === 1) {
+        setQuotaResult({
+          quota_id: firstQuota.quota_id,
+          model_code: firstQuota.model_code,
+          cat1_code: firstQuota.cat1_code,
+          cat1_name: firstQuota.cat1_name,
+          cat2_code: firstQuota.cat2_code,
+          cat2_name: firstQuota.cat2_name,
+          process_code: firstQuota.process_code,
+          process_name: firstQuota.process_name,
+          unit_price: firstQuota.unit_price,
+          effective_date: firstQuota.effective_date,
+          obsolete_date: firstQuota.obsolete_date
+        });
+        setQuotaIdInput(String(firstQuota.quota_id));
+      } else {
+        // 多选时清空详细结果显示，使用多选显示
+        setQuotaResult(null);
+        setQuotaIdInput('');
+      }
+    }
+    
+    setMultiSelectionConfirmed(true);
+    
+    // 关闭对话框
+    setWay0QuotaDialogVisible(false);
+    setWay0Cat1SearchValue('');
+    setWay0SelectedCat1(null);
+    setWay0SelectedQuotas(new Set());
+    setShowWay0Cat1Dropdown(false);
+    
+    // 聚焦到数量输入框
+    setTimeout(() => {
+      const quantityInput = document.querySelector('#quantity') as HTMLInputElement;
+      quantityInput?.focus();
+    }, 100);
+  };
+  // ==============================
+
   // 显示添加记录模态框
   const showAddModal = () => {
     setIsEditMode(false);
@@ -1104,6 +1302,12 @@ const SalaryRecord = () => {
     setShowCat2Dropdown(false);
     setShowModelDropdown(false);
     setShowProcessDropdown(false);
+    // Reset Way 0 states
+    setWay0Cat1SearchValue('');
+    setWay0SelectedCat1(null);
+    setWay0SelectedQuotas(new Set());
+    setWay0SelectedQuotaItems([]);
+    setWay0QuotaDialogVisible(false);
     form.resetFields();
     form.setFieldValue('quantity', 1);
     
@@ -1205,8 +1409,23 @@ const SalaryRecord = () => {
     const recordDate = `${selectedMonth.slice(0, 4)}-${selectedMonth.slice(4, 6)}-${String(values.day).padStart(2, '0')}`;
     
     try {
-      if (selectedCascadeProcesses.length > 1) {
-        // Multi-selection mode: create batch records
+      // Way 0 multi-selection mode
+      if (way0SelectedQuotaItems.length > 1) {
+        setQuotaLoading(true);
+        const quotaIds = way0SelectedQuotaItems.map(q => q.quota_id);
+        
+        const result = await salaryAPI.createBatchSalaryRecords({
+          worker_code: selectedWorker || '',
+          quota_ids: quotaIds,
+          quantity: parseFloat(values.quantity),
+          record_date: recordDate
+        });
+        
+        message.success(result.message);
+        setIsModalVisible(false);
+        fetchWorkerMonthRecords();
+      } else if (selectedCascadeProcesses.length > 1) {
+        // Cascade dropdown multi-selection mode: create batch records
         setQuotaLoading(true);
         const quotaIds = selectedQuotaDetails.map(d => d!.quota_id);
         
@@ -1220,11 +1439,22 @@ const SalaryRecord = () => {
         message.success(result.message);
         setIsModalVisible(false);
         fetchWorkerMonthRecords();
-      } else if (quotaResult) {
+      } else if (quotaResult || way0SelectedQuotaItems.length === 1) {
         // Single selection mode: create single record
+        let quotaId: number;
+        let unitPrice: number;
+        
+        if (way0SelectedQuotaItems.length === 1) {
+          quotaId = way0SelectedQuotaItems[0].quota_id;
+          unitPrice = way0SelectedQuotaItems[0].unit_price;
+        } else {
+          quotaId = (quotaResult as QuotaSearchResult).quota_id;
+          unitPrice = (quotaResult as QuotaSearchResult).unit_price;
+        }
+        
         const formattedValues = {
           worker_code: selectedWorker || '',
-          quota_id: (quotaResult as QuotaSearchResult).quota_id,
+          quota_id: quotaId,
           quantity: parseFloat(values.quantity),
           record_date: recordDate
         };
@@ -1714,6 +1944,108 @@ const SalaryRecord = () => {
             backgroundColor: '#fafafa'
           }}>
             <Text strong style={{ display: 'block', marginBottom: 16 }}>定额选择 {selectedCascadeProcesses.length > 0 && <Text type="secondary">（已选择 {selectedCascadeProcesses.length} 项，按Ctrl可多选）</Text>}</Text>
+            
+            {/* ========== Way 0: 工段类别快速选择 ========== */}
+            <Card 
+              size="small" 
+              style={{ 
+                marginBottom: 16, 
+                backgroundColor: '#f0f5ff',
+                border: '1px solid #91d5ff'
+              }}
+            >
+              <Row gutter={8} align="middle">
+                <Col flex="auto">
+                  <div style={{ position: 'relative' }}>
+                    <Input
+                      placeholder="请输入工段类别代码（如A、B、C）"
+                      value={way0Cat1SearchValue}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setWay0Cat1SearchValue(value);
+                        // 立即触发：如果输入匹配工段类别代码
+                        if (value && quotaOptionsData) {
+                          const matchedOption = quotaOptionsData.cat1_options.find(
+                            o => o.value.toLowerCase() === value.toLowerCase()
+                          );
+                          if (matchedOption) {
+                            setWay0SelectedCat1(matchedOption.value);
+                            setWay0Cat1SearchValue(matchedOption.label);
+                            setWay0QuotaDialogVisible(true);
+                            setWay0SelectedQuotas(new Set());
+                          }
+                        }
+                      }}
+                      onFocus={() => {
+                        // 显示下拉菜单
+                        if (quotaOptionsData && quotaOptionsData.cat1_options.length > 0) {
+                          setShowWay0Cat1Dropdown(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        // 延迟隐藏下拉菜单，以便点击可以触发
+                        setTimeout(() => setShowWay0Cat1Dropdown(false), 200);
+                      }}
+                      size="small"
+                      allowClear
+                    />
+                    {/* 下拉面板 - 显示所有工段类别选项 */}
+                    {showWay0Cat1Dropdown && quotaOptionsData && quotaOptionsData.cat1_options.length > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          maxHeight: 200,
+                          overflow: 'auto',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          backgroundColor: 'white',
+                          zIndex: 1000,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                          marginTop: 2
+                        }}
+                      >
+                        {quotaOptionsData.cat1_options.map((option) => (
+                          <div
+                            key={option.value}
+                            onClick={() => {
+                              setWay0SelectedCat1(option.value);
+                              setWay0Cat1SearchValue(option.label);
+                              setWay0QuotaDialogVisible(true);
+                              setWay0SelectedQuotas(new Set());
+                              setShowWay0Cat1Dropdown(false);
+                            }}
+                            style={{
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              borderBottom: '1px solid #f0f0f0',
+                              transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#e6f7ff';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'white';
+                            }}
+                          >
+                            <Text strong style={{ color: '#1890ff', marginRight: 8 }}>{option.value}</Text>
+                            <Text>{option.label.replace(/\s*\(.*\)$/, '')}</Text>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Col>
+                <Col>
+                  {way0SelectedQuotas.size > 0 && (
+                    <Tag color="blue">已选择 {way0SelectedQuotas.size} 项</Tag>
+                  )}
+                </Col>
+              </Row>
+            </Card>
+            {/* ========================================= */}
             
             {/* 级联下拉框选择 - 带悬停自动展开下一级 */}
             <Row gutter={8} style={{ marginBottom: 16 }}>
@@ -2296,6 +2628,117 @@ const SalaryRecord = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* ========== Way 0 定额矩阵选择对话框 ========== */}
+      <Modal
+        title={`定额选择 - ${way0SelectedCat1 ? 
+          (quotaOptionsData?.cat1_options.find(o => o.value === way0SelectedCat1)?.label || way0SelectedCat1) 
+          : ''}`}
+        open={way0QuotaDialogVisible}
+        onCancel={() => setWay0QuotaDialogVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setWay0QuotaDialogVisible(false)}>
+            取消
+          </Button>,
+          <Button 
+            key="confirm" 
+            type="primary" 
+            onClick={handleWay0Confirm}
+            disabled={way0SelectedQuotas.size === 0}
+          >
+            确认选择 ({way0SelectedQuotas.size})
+          </Button>
+        ]}
+        width={1000}
+        style={{ top: 20 }}
+      >
+        <div 
+          style={{ maxHeight: '70vh', overflowY: 'auto' }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && way0SelectedQuotas.size > 0) {
+              e.preventDefault();
+              handleWay0Confirm();
+            }
+            if (e.key === 'Escape') {
+              setWay0QuotaDialogVisible(false);
+            }
+          }}
+          tabIndex={0}
+        >
+          {way0MatrixData.map((cat2Section) => (
+            <div key={cat2Section.cat2_code} style={{ marginBottom: 24 }}>
+              <Divider>
+                <Text strong style={{ fontSize: 13 }}>
+                  {cat2Section.cat2_name}
+                </Text>
+              </Divider>
+              
+              {/* 矩阵表格 */}
+              <Table
+                size="small"
+                pagination={false}
+                bordered
+                columns={[
+                  {
+                    title: '型号',
+                    dataIndex: 'model_name',
+                    key: 'model_name',
+                    width: 100,
+                    fixed: 'left',
+                    render: (text: string) => (
+                      <Text style={{ fontSize: 11, fontWeight: 500 }}>{text}</Text>
+                    )
+                  },
+                  ...cat2Section.columns.map(col => ({
+                    title: (
+                      <Text style={{ fontSize: 11 }}>{col.process_name}</Text>
+                    ),
+                    dataIndex: ['prices', col.process_code],
+                    key: col.process_code,
+                    width: 65,
+                    align: 'center' as const,
+                    render: (priceInfo: { quota_id: number; unit_price: number } | undefined) => {
+                      if (!priceInfo) {
+                        return <Text style={{ color: '#f5f5f5', fontSize: 12 }}>-</Text>;
+                      }
+                      const isSelected = way0SelectedQuotas.has(priceInfo.quota_id);
+                      return (
+                        <div
+                          onClick={() => handleQuotaCellToggle(priceInfo.quota_id)}
+                          style={{
+                            padding: '2px 4px',
+                            cursor: 'pointer',
+                            backgroundColor: isSelected ? '#1890ff' : 'transparent',
+                            color: isSelected ? 'white' : '#1890ff',
+                            borderRadius: 2,
+                            fontSize: 12,
+                            fontWeight: 'bold',
+                            border: isSelected ? 'none' : '1px solid #f0f0f0',
+                            transition: 'all 0.15s',
+                            minWidth: 45
+                          }}
+                        >
+                          {priceInfo.unit_price.toFixed(2)}
+                        </div>
+                      );
+                    }
+                  }))
+                ]}
+                dataSource={cat2Section.rows}
+                rowKey="model_name"
+                scroll={{ x: cat2Section.columns.length * 65 + 100 }}
+              />
+            </div>
+          ))}
+          
+          {way0MatrixData.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+              <Text type="secondary">没有找到有效的定额数据</Text>
+            </div>
+          )}
+        </div>
+      </Modal>
+      {/* ========================================== */}
     </div>
   );
 };
