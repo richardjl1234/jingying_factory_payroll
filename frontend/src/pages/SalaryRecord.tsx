@@ -132,6 +132,7 @@ const SalaryRecord = () => {
   const [way0SelectedQuotas, setWay0SelectedQuotas] = useState<Set<number>>(new Set());
   const [way0SelectedQuotaItems, setWay0SelectedQuotaItems] = useState<QuotaOptionItem[]>([]);
   const [showWay0Cat1Dropdown, setShowWay0Cat1Dropdown] = useState(false);
+  const [way0DropdownClosing, setWay0DropdownClosing] = useState(false);
   // ==================================
   
   // 下拉面板显示状态
@@ -1268,6 +1269,7 @@ const SalaryRecord = () => {
     }
     
     setMultiSelectionConfirmed(true);
+    setWay0DropdownClosing(false);
     
     // 关闭对话框，折叠所有下拉菜单
     setWay0QuotaDialogVisible(false);
@@ -1986,7 +1988,8 @@ const SalaryRecord = () => {
                         }
                       }}
                       onBlur={() => {
-                        // 延迟隐藏下拉菜单，以便点击可以触发
+                        // 如果正在关闭，不重新显示
+                        if (way0DropdownClosing) return;
                         setTimeout(() => setShowWay0Cat1Dropdown(false), 200);
                       }}
                       size="small"
@@ -2014,6 +2017,7 @@ const SalaryRecord = () => {
                           <div
                             key={option.value}
                             onClick={() => {
+                              setWay0DropdownClosing(true);
                               setWay0SelectedCat1(option.value);
                               setWay0Cat1SearchValue(option.label);
                               setWay0QuotaDialogVisible(true);
