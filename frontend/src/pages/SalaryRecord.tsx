@@ -1269,12 +1269,13 @@ const SalaryRecord = () => {
     
     setMultiSelectionConfirmed(true);
     
-    // 关闭对话框
+    // 关闭对话框，折叠所有下拉菜单
     setWay0QuotaDialogVisible(false);
     setWay0Cat1SearchValue('');
     setWay0SelectedCat1(null);
     setWay0SelectedQuotas(new Set());
     setShowWay0Cat1Dropdown(false);
+    setShowCat1Dropdown(false);
     
     // 聚焦到数量输入框
     setTimeout(() => {
