@@ -91,6 +91,24 @@ const SalaryRecord = () => {
   // 搜索结果
   const [processSearchResults, setProcessSearchResults] = useState<QuotaCombination[]>([]);
   
+  // 排序状态
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // 排序后的记录
+  const sortedRecords = useMemo(() => {
+    const sorted = [...records].sort((a, b) => {
+      const dateA = new Date(a.record_date).getTime();
+      const dateB = new Date(b.record_date).getTime();
+      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+    return sorted;
+  }, [records, sortOrder]);
+  
+  // 切换排序顺序
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+  
   // 搜索输入值
   const [processSearchValue, setProcessSearchValue] = useState('');
   
@@ -1571,9 +1589,18 @@ const SalaryRecord = () => {
       </Row>
       
       {/* 工作记录表格 */}
+      <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'flex-end' }}>
+        <Button 
+          size="small"
+          onClick={toggleSortOrder}
+          id="sort-toggle-button"
+        >
+          排序: {sortOrder === 'asc' ? '升序' : '降序'}
+        </Button>
+      </div>
       <Table
         columns={columns}
-        dataSource={records}
+        dataSource={sortedRecords}
         rowKey="id"
         loading={dataLoading}
         pagination={{ pageSize: 10 }}
