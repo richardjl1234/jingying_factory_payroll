@@ -48,7 +48,7 @@
    - 符合业务逻辑流程，优化用户体验
 
 ### HTTPS部署与云服务器配置 (2025-12-05)
-1. **HTTPS部署完成**：成功在云服务器 `124.220.108.154` 上完成HTTPS部署
+1. **HTTPS部署完成**：成功在云服务器 `49.235.120.195` 上完成HTTPS部署
    - 生成自签名SSL证书
    - 配置Nginx反向代理支持HTTPS
    - 实现HTTP到HTTPS自动重定向
@@ -93,7 +93,7 @@
    - 测试了Docker容器运行状态和API健康检查。
 
 ### 使用说明更新
-- 系统现在可通过HTTPS访问：`https://124.220.108.154`
+- 系统现在可通过HTTPS访问：`https://49.235.120.195`
 - HTTP请求自动重定向到HTTPS
 - 登录时如遇问题，请尝试浏览器硬刷新 (Ctrl+F5) 以清除缓存。
 
@@ -304,7 +304,7 @@ source ~/shared/jianglei/payroll/env_cloud.sh
 - `ACCESS_TOKEN_EXPIRE_MINUTES` - Token过期时间（默认：30）
 
 **前端变量（VITE_*）：**
-- `VITE_API_BASE_URL` - 前端API基础URL（开发：`/api`，生产：`https://124.220.108.154/api`）
+- `VITE_API_BASE_URL` - 前端API基础URL（开发：`/api`，生产：`https://49.235.120.195/api`）
 - `VITE_APP_ENV` - 应用环境（开发：`development`，生产：`production`）
 - `VITE_ENABLE_HTTPS` - 是否启用HTTPS（仅生产环境）
 
@@ -524,6 +524,55 @@ npm run build
 
 ## 部署
 
+### 快速部署到腾讯云
+
+使用 `deploy.sh` 脚本可以快速部署到腾讯云服务器。
+
+```bash
+# 部署到服务器（使用现有镜像）
+./deploy.sh
+
+# 构建新镜像并部署（当代码有修改时）
+./deploy.sh --build
+```
+
+**访问地址：** https://49.235.120.195
+
+**部署脚本功能：**
+- ✅ 创建服务器目录
+- ✅ 生成SSL证书
+- ✅ 配置nginx反向代理
+- ✅ 启动Docker容器
+- ✅ 验证部署状态
+- ✅ 配置nginx开机自启
+
+**常用命令：**
+```bash
+# 查看容器日志
+ssh jingying@49.235.120.195 'docker logs payroll'
+
+# 停止/重启容器
+ssh jingying@49.235.120.195 'docker stop/restart payroll'
+
+# 查看nginx日志
+ssh jingying@49.235.120.195 'sudo tail -f /var/log/nginx/error.log'
+
+# 服务器重启后手动启动nginx（如果未自动启动）
+ssh jingying@49.235.120.195 'sudo systemctl start nginx'
+
+# 检查服务状态
+ssh jingying@49.235.120.195 'sudo systemctl status nginx && docker ps | grep payroll'
+```
+
+### 服务器重启处理
+
+服务器重启后，服务会自动启动：
+
+| 服务 | 启动方式 | 状态 |
+|------|---------|------|
+| Docker容器 | `--restart unless-stopped` | ✅ 自动启动 |
+| nginx | `systemctl enable nginx` | ✅ 自动启动 |
+
 ### 开发环境部署
 
 1. 启动后端服务
@@ -663,25 +712,14 @@ npm run dev
 简要步骤：
 ```bash
 # 登录云服务器
-ssh ubuntu@124.220.108.154
+ssh jingying@49.235.120.195
 
-# 克隆代码
-git clone https://gitee.com/richardjl/payroll-system.git
-cd payroll-system
+# 使用deploy.sh脚本部署
+cd /home/richard/shared/jianglei/trae/new_payroll
+./deploy.sh
 
-# 生成SSL证书
-./generate_ssl_cert.sh
-
-# 准备前端环境（使用系统环境变量）
-source ~/shared/jianglei/payroll/env_cloud.sh
-
-# 构建前端
-cd frontend
-npm install
-npm run build
-cd ..
-
-# 部署（详细命令请参考文档）
+# 或构建新镜像后部署
+./deploy.sh --build
 ```
 
 ## 注意事项
