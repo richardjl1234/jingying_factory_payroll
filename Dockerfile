@@ -10,7 +10,7 @@
 # ============================================================
 # Stage 1: Python Builder - Install Python dependencies
 # ============================================================
-FROM python:3.10-slim AS python-builder
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.10-slim-bookworm AS python-builder
 
 WORKDIR /build
 
@@ -45,7 +45,7 @@ RUN npm run build
 # ============================================================
 # Stage 3: Runtime - Final production image
 # ============================================================
-FROM python:3.10-slim AS runtime
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/python:3.10-slim-bookworm AS runtime
 
 WORKDIR /app
 
