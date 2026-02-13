@@ -16,7 +16,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ~/shared/jianglei/payroll/env_docker_remote_mysql.sh
+      - ~/payroll/env_docker_remote_mysql.sh
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
