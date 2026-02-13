@@ -482,7 +482,10 @@ def get_quota_options(
     返回所有定额组合及其关联的名称翻译
     """
     import logging
+    import time
     logger = logging.getLogger(__name__)
+    start_time = time.time()
+    
     logger.info(f"[QuotaOptions] User {current_user.username} requesting quota options, date={record_date}")
     
     try:
@@ -491,24 +494,28 @@ def get_quota_options(
         cat1_query = db.query(models.ProcessCat1.cat1_code, models.ProcessCat1.name).all()
         for c in cat1_query:
             cat1_names[c.cat1_code] = c.name or c.cat1_code
+        logger.info(f"[QuotaOptions] Found {len(cat1_names)} cat1 categories")
         
         # 获取所有工序类别名称
         cat2_names = {}
         cat2_query = db.query(models.ProcessCat2.cat2_code, models.ProcessCat2.name).all()
         for c in cat2_query:
             cat2_names[c.cat2_code] = c.name or c.cat2_code
+        logger.info(f"[QuotaOptions] Found {len(cat2_names)} cat2 categories")
         
         # 获取所有电机型号名称
         model_names = {}
         model_query = db.query(models.MotorModel.model_code, models.MotorModel.name).all()
         for m in model_query:
             model_names[m.model_code] = m.name or m.model_code
+        logger.info(f"[QuotaOptions] Found {len(model_names)} motor models")
         
         # 获取所有工序名称
         process_names = {}
         process_query = db.query(models.Process.process_code, models.Process.name).all()
         for p in process_query:
             process_names[p.process_code] = p.name or p.process_code
+        logger.info(f"[QuotaOptions] Found {len(process_names)} processes")
         
         # 查询所有定额及其关联名称
         query = db.query(
@@ -524,6 +531,8 @@ def get_quota_options(
         
         # 获取所有结果
         results = query.all()
+        total_records = len(results)
+        logger.info(f"[QuotaOptions] Found {total_records} total quota records")
         
         # 构建返回数据
         quota_options = []
@@ -611,7 +620,8 @@ def get_quota_options(
                 'cat1_cat2_pairs': cat1_cat2_pairs
             })
         
-        logger.info(f"[QuotaOptions] Found {len(quota_options)} effective quota records")
+        elapsed_time = time.time() - start_time
+        logger.info(f"[QuotaOptions] Returning {len(quota_options)} effective quota records, {len(cat1_options)} cat1 options, {len(model_options)} model options in {elapsed_time:.2f}s")
         
         return {
             'quota_options': quota_options,

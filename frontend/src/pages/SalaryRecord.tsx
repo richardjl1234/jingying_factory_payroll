@@ -356,9 +356,55 @@ const SalaryRecord = () => {
       setQuotaOptionsLoading(true);
       const recordDate = `${selectedMonth.slice(0, 4)}-${selectedMonth.slice(4, 6)}-01`;
       console.log('[QuotaOptions] Fetching quota options for date:', recordDate);
+      
+      // 尝试从localStorage读取预加载的数据
+      const cachedData = localStorage.getItem('quota_options_data');
+      const cachedTimestamp = localStorage.getItem('quota_options_timestamp');
+      
+      if (cachedData && cachedTimestamp) {
+        try {
+          const parsedData = JSON.parse(cachedData);
+          const cacheTime = new Date(cachedTimestamp);
+          const now = new Date();
+          const cacheAge = (now.getTime() - cacheTime.getTime()) / 1000 / 60; // minutes
+          
+          console.log(`[QuotaOptions] Found cached quota data (${cacheAge.toFixed(1)} minutes old)`);
+          
+          // 如果缓存数据不超过5分钟，直接使用
+          if (cacheAge < 5) {
+            console.log('[QuotaOptions] Using cached quota data');
+            console.log('[QuotaOptions] Cached data:', {
+              quota_options_count: parsedData?.quota_options?.length || 0,
+              cat1_options_count: parsedData?.cat1_options?.length || 0,
+              model_options_count: parsedData?.model_options?.length || 0
+            });
+            setQuotaOptionsData(parsedData);
+            setQuotaOptionsLoading(false);
+            return;
+          } else {
+            console.log(`[QuotaOptions] Cache too old (${cacheAge.toFixed(1)} minutes), fetching fresh data`);
+          }
+        } catch (parseError) {
+          console.error('[QuotaOptions] Failed to parse cached quota data:', parseError);
+        }
+      } else {
+        console.log('[QuotaOptions] No cached quota data found');
+      }
+      
+      // 从API获取新数据
+      console.log('[QuotaOptions] Fetching fresh data from API...');
       const data = await salaryAPI.getQuotaOptions({ record_date: recordDate });
-      console.log('[QuotaOptions] Received data:', data);
-      console.log('[QuotaOptions] cat1_options:', data?.cat1_options?.length || 0, 'options');
+      console.log('[QuotaOptions] Received fresh data:', data);
+      console.log('[QuotaOptions] Fresh data stats:', {
+        quota_options_count: data?.quota_options?.length || 0,
+        cat1_options_count: data?.cat1_options?.length || 0,
+        model_options_count: data?.model_options?.length || 0
+      });
+      
+      // 更新缓存
+      localStorage.setItem('quota_options_data', JSON.stringify(data));
+      localStorage.setItem('quota_options_timestamp', new Date().toISOString());
+      
       setQuotaOptionsData(data);
     } catch (error) {
       console.error('[QuotaOptions] Error fetching quota options:', error);
@@ -1966,25 +2012,46 @@ const SalaryRecord = () => {
                       onChange={(e) => {
                         const value = e.target.value;
                         setWay0Cat1SearchValue(value);
+                        
+                        console.log('[Way0] Input changed:', {
+                          value: value,
+                          hasQuotaData: !!quotaOptionsData,
+                          quotaDataLoaded: quotaOptionsData?.cat1_options?.length ? true : false,
+                          cat1OptionsCount: quotaOptionsData?.cat1_options?.length || 0
+                        });
+                        
                         // 立即触发：如果输入匹配工段类别代码
                         if (value && quotaOptionsData) {
                           const matchedOption = quotaOptionsData.cat1_options.find(
                             o => o.value.toLowerCase() === value.toLowerCase()
                           );
+                          console.log('[Way0] Matched option:', matchedOption);
+                          
                           if (matchedOption) {
                             setWay0SelectedCat1(matchedOption.value);
                             setWay0Cat1SearchValue(matchedOption.label);
                             setWay0QuotaDialogVisible(true);
                             setWay0SelectedQuotas(new Set());
                           }
+                        } else if (value && !quotaOptionsData) {
+                          console.log('[Way0] Warning: Input received but quota data not yet loaded');
                         }
                       }}
                       onFocus={() => {
+                        console.log('[Way0] Input focused, quotaData:', !!quotaOptionsData);
                         // 折叠方式1的下拉菜单
                         setShowCat1Dropdown(false);
                         // 显示Way 0下拉菜单
                         if (quotaOptionsData && quotaOptionsData.cat1_options.length > 0) {
+                          console.log('[Way0] Showing dropdown with', quotaOptionsData.cat1_options.length, 'options');
                           setShowWay0Cat1Dropdown(true);
+                        } else {
+                          console.log('[Way0] Cannot show dropdown - no quota data or empty options');
+                          // 尝试加载数据
+                          if (!quotaOptionsData) {
+                            console.log('[Way0] Triggering fetchQuotaOptions...');
+                            fetchQuotaOptions();
+                          }
                         }
                       }}
                       onBlur={() => {

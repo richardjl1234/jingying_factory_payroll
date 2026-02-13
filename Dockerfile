@@ -1,9 +1,16 @@
-# ============================================================
-# Multi-stage build for reduced image size
-# ============================================================
+# =============================================================================
+# Multi-stage Dockerfile for Payroll System
+# =============================================================================
+# Build optimization:
+# - Python deps: cached until backend/requirements.txt changes
+# - Frontend: cached until frontend/src or frontend/package.json changes
+# - Runtime: rebuilds when either changes
+# =============================================================================
 
+# ============================================================
 # Stage 1: Python Builder - Install Python dependencies
-FROM python:3.10-slim AS builder
+# ============================================================
+FROM python:3.10-slim AS python-builder
 
 WORKDIR /build
 
@@ -17,28 +24,32 @@ RUN pip install --no-cache-dir --upgrade pip -i https://mirrors.aliyun.com/pypi/
     pip config set global.trusted-host mirrors.aliyun.com && \
     pip install --no-cache-dir -r requirements.txt
 
-# Stage 2: Frontend Builder - Build React frontend
-FROM docker.m.daocloud.io/node:20-alpine AS frontend-builder
+# ============================================================
+# Stage 2: Frontend Builder - Build frontend inside container
+# ============================================================
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/node:18-slim AS frontend-builder
 
-WORKDIR /app
-RUN npm config set registry https://registry.npmmirror.com
+WORKDIR /build/frontend
 
-# Build arguments - must be defined before COPY
-ARG VITE_API_BASE_URL=/api
+# Copy package files first (for better caching)
+COPY frontend/package.json frontend/package-lock.json* ./
 
-# Pass build argument to environment (Vite will read this during build)
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# Install dependencies
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm install
 
-COPY frontend/ ./frontend/
-RUN cd frontend && npm install && npm run build
+# Copy frontend source code and build
+COPY frontend/ ./
+RUN npm run build
 
 # ============================================================
-# Stage 3: Runtime - Final production image for CloudBase Run
+# Stage 3: Runtime - Final production image
 # ============================================================
 FROM python:3.10-slim AS runtime
 
 WORKDIR /app
 
+# Install runtime dependencies
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
     default-libmysqlclient-dev libglib2.0-0 libsm6 libxext6 libxrender1 nginx \
     && rm -rf /var/lib/apt/lists/*
@@ -47,15 +58,15 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends \
 RUN groupadd --gid 1000 appgroup && \
     useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
-# Copy Python dependencies
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
-COPY --from=builder /build/requirements.txt /app/requirements.txt
+# Copy Python dependencies from builder stage
+COPY --from=python-builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=python-builder /build/requirements.txt /app/requirements.txt
 
 # Copy backend application code
 COPY backend/ /app/backend/
 
-# Copy frontend static files
-COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist/
+# Copy frontend build output from frontend builder stage
+COPY --from=frontend-builder /build/frontend/dist /app/frontend/dist/
 
 # Generate nginx configuration as root (before switching user)
 ENV DOMAIN_NAME=localhost
@@ -115,6 +126,10 @@ EOF
 # Create logs directory and set permissions
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app/logs && chmod 755 /etc/nginx/conf.d/default.conf
 
+# Copy startup script (before switching to non-root user)
+COPY docker-start.sh /app/docker-start.sh
+RUN chmod +x /app/docker-start.sh
+
 # Set environment variables
 ENV PYTHONPATH=/app PYTHONUNBUFFERED=1
 
@@ -124,15 +139,5 @@ USER appuser
 # Expose application port
 EXPOSE 8000
 
-# Note: Health check is configured in CloudBase Run console, not in Dockerfile
-# To configure health check in CloudBase Run:
-# 1. Go to CloudBase Console → CloudBase Run
-# 2. Select your service
-# 3. Go to Configuration → Health Check
-# 4. Set:
-#    - Port: 8000
-#    - Check Path: /api/health
-#    - Initial Delay: 15 seconds
-
 # Start the application
-CMD ["python", "backend/run.py"]
+CMD ["/app/docker-start.sh"]

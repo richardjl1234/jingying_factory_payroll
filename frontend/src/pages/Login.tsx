@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, message, Typography, Modal } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
-import { authAPI } from '../services/api';
+import { authAPI, salaryAPI } from '../services/api';
 
 const { Title } = Typography;
 const { Item, useForm } = Form;
@@ -43,6 +43,40 @@ const Login: React.FC = () => {
         changePwdForm.setFieldsValue({ old_password: values.password });
       } else {
         message.success('登录成功');
+        
+        // 预加载定额字典数据（异步，不阻塞跳转）
+        console.log('[Login] Starting quota dictionary preload after login...');
+        const preloadQuotaData = async () => {
+          try {
+            // 使用当前月份作为记录日期
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
+            const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+            const recordDate = `${year}-${month}-01`;
+            
+            console.log(`[Login] Fetching quota options for date: ${recordDate}`);
+            const quotaData = await salaryAPI.getQuotaOptions({ record_date: recordDate });
+            
+            console.log('[Login] Quota data received:', {
+              quota_options_count: quotaData?.quota_options?.length || 0,
+              cat1_options_count: quotaData?.cat1_options?.length || 0,
+              model_options_count: quotaData?.model_options?.length || 0
+            });
+            
+            // 保存到localStorage
+            localStorage.setItem('quota_options_data', JSON.stringify(quotaData));
+            localStorage.setItem('quota_options_timestamp', new Date().toISOString());
+            console.log('[Login] Quota data saved to localStorage');
+          } catch (error) {
+            console.error('[Login] Failed to preload quota data:', error);
+            // 静默失败，不影响用户体验
+          }
+        };
+        
+        // 启动预加载
+        preloadQuotaData();
+        
+        // 跳转首页
         window.location.href = '/';
       }
     } catch (error) {
