@@ -53,3 +53,5 @@ ngrok.exe
 
 cloudbaserc.json
 ssl/**
+
+logs/**
