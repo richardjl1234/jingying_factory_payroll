@@ -25,6 +25,11 @@ def read_column_seqs(
     """获取列顺序列表，可按工段类别和工序类别过滤"""
     if cat1_code and cat2_code:
         return crud.get_column_seq_by_combination(db, cat1_code, cat2_code)
+    elif cat1_code:
+        # 当只提供 cat1_code 时，过滤该工段类别的所有记录
+        return db.query(models.ColumnSeq).filter(
+            models.ColumnSeq.cat1_code == cat1_code
+        ).order_by(models.ColumnSeq.seq).all()
     return crud.get_column_seq_list(db, skip=skip, limit=limit)
 
 @router.get("/{id}", response_model=schemas.ColumnSeq)

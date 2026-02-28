@@ -55,3 +55,6 @@ cloudbaserc.json
 ssl/**
 
 logs/**
+
+
+*.png
