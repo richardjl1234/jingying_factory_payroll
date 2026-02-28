@@ -4,9 +4,10 @@
 
 工厂定额和计件工资管理系统是一个用于工厂管理工序定额和工人计件工资的Web应用。该系统支持工序管理、定额设置、工人信息管理、工资记录以及报表统计等功能，帮助工厂实现自动化的工资计算和管理。
 
-## 最近更新 (2026-01-01)
+## 最近更新 (2026-02-26)
 
-### 定额表新增作废日期字段与业务逻辑优化
+### TypeScript迁移与前端优化 (2025-12-24) - 部分进度更新
+1. **TypeScript迁移进展**：前端核心基础设施已迁移到TypeScript
 1. **新增 `obsolete_date` 字段**：在定额表 (`quotas`) 中新增作废日期字段
    - 默认值：`9999-12-31`，表示当前有效的定额
    - 数据库迁移脚本自动为现有记录添加该字段
@@ -107,7 +108,7 @@
 - ✅ **菜单优化**: 重新排序侧边栏菜单，"工序管理"位于"工序类别"之后
 - ✅ **构建验证**: TypeScript编译通过，仅存在预期的类型警告
 
-#### 待迁移页面 (10个JavaScript文件)
+#### 待迁移页面 (9个JavaScript文件)
 1. `Home.jsx` - 首页/统计面板
 2. `UserManagement.jsx` - 用户管理页面
 3. `WorkerManagement.jsx` - 工人管理页面
@@ -116,8 +117,9 @@
 6. `ProcessCat2Management.jsx` - 工序类别管理
 7. `MotorModelManagement.jsx` - 电机型号管理
 8. `QuotaManagement.jsx` - 定额管理页面
-9. `SalaryRecord.jsx` - 工资记录页面
-10. `Report.jsx` - 报表统计页面
+9. `Report.jsx` - 报表统计页面
+
+> 注：`SalaryRecord.jsx` 已成功迁移到 TypeScript (`SalaryRecord.tsx`)
 
 #### 迁移风险评估
 - **当前状态**: 稳定，功能正常，混合架构可接受
@@ -204,13 +206,18 @@ new_payroll/
 │   └── *.png              # 测试截图
 ├── Dockerfile             # Docker配置
 ├── nginx-https-production.conf # 生产环境HTTPS Nginx配置
-├── CLOUD_DEPLOYMENT.md    # 云服务器部署指南
+├── docker-compose-local.yml    # 本地Docker Compose配置
+├── docker-compose-tencent.yml  # 腾讯云Docker Compose配置
+├── docker-compose-tencent_test.yml # 腾讯云测试环境Docker Compose配置
 ├── HTTPS_DEPLOYMENT_GUIDE.md # HTTPS部署指南
 ├── HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md # HTTPS部署分析与流程文档（最新）
 ├── SSH_Password_Less_Login_Guide.md # SSH免密登录指南
 ├── generate_ssl_cert.sh   # SSL证书生成脚本
 ├── fix_password_hash.py   # 密码哈希修复脚本
 ├── test_https_puppeteer.js # HTTPS自动化测试脚本
+├── docker_local.sh        # 本地Docker启动脚本
+├── start_services.sh      # 服务启动脚本
+├── run_all_tests_docker.sh # Docker测试脚本
 └── README.md              # 项目说明
 ```
 
@@ -512,6 +519,7 @@ npm run build
 - 新增数据模型：在 `backend/app/models.py` 中定义
 - 新增数据校验：在 `backend/app/schemas.py` 中定义
 - 新增CRUD操作：在 `backend/app/crud.py` 中实现
+- **重构总结**：参考 [`backend/BACKEND_REFACTORING_SUMMARY.md`](backend/BACKEND_REFACTORING_SUMMARY.md) 了解后端架构重构详情
 
 ### 前端开发
 
@@ -521,47 +529,41 @@ npm run build
 - **新增组件**：在 `frontend/src/components/` 目录下创建新的组件（建议使用`.tsx`）
 - **API调用**：通过 `frontend/src/services/api.ts` 封装的API方法调用后端接口
 - **类型定义**：在 `frontend/src/types/` 目录下维护TypeScript类型定义
+- **重构总结**：参考 [`frontend/TYPESCRIPT_REFACTORING_SUMMARY.md`](frontend/TYPESCRIPT_REFACTORING_SUMMARY.md) 了解TypeScript迁移详情
 
 ## 部署
 
 ### 快速部署到腾讯云
 
-使用 `deploy.sh` 脚本可以快速部署到腾讯云服务器。
+使用 Docker Compose 配置文件可以快速部署到腾讯云服务器。
 
 ```bash
-# 部署到服务器（使用现有镜像）
-./deploy.sh
+# 使用腾讯云生产环境配置部署
+docker-compose -f docker-compose-tencent.yml up -d
 
-# 构建新镜像并部署（当代码有修改时）
-./deploy.sh --build
+# 或使用腾讯云测试环境配置
+docker-compose -f docker-compose-tencent_test.yml up -d
 ```
 
 **访问地址：** https://49.235.120.195
 
 **部署脚本功能：**
-- ✅ 创建服务器目录
-- ✅ 生成SSL证书
-- ✅ 配置nginx反向代理
-- ✅ 启动Docker容器
-- ✅ 验证部署状态
-- ✅ 配置nginx开机自启
+- ✅ 使用Docker Compose管理多容器部署
+- ✅ 支持本地、测试、生产多环境配置
+- ✅ 前端构建和后端服务集成
+- ✅ MySQL数据库集成
 
 **常用命令：**
 ```bash
 # 查看容器日志
-ssh jingying@49.235.120.195 'docker logs payroll'
+docker-compose -f docker-compose-tencent.yml logs -f
 
-# 停止/重启容器
-ssh jingying@49.235.120.195 'docker stop/restart payroll'
+# 停止/重启服务
+docker-compose -f docker-compose-tencent.yml stop
+docker-compose -f docker-compose-tencent.yml start
 
-# 查看nginx日志
-ssh jingying@49.235.120.195 'sudo tail -f /var/log/nginx/error.log'
-
-# 服务器重启后手动启动nginx（如果未自动启动）
-ssh jingying@49.235.120.195 'sudo systemctl start nginx'
-
-# 检查服务状态
-ssh jingying@49.235.120.195 'sudo systemctl status nginx && docker ps | grep payroll'
+# 查看运行中的容器
+docker-compose -f docker-compose-tencent.yml ps
 ```
 
 ### 服务器重启处理
@@ -603,10 +605,10 @@ docker run -d -p 8000:8000 payroll-system
 系统已配置支持云服务器HTTPS部署，请参考最新的部署文档。
 
 #### 推荐部署流程
-参考 [HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md) 文件中的"Robust HTTPS Deployment Procedure"章节，包含完整的准备、数据库准备、Docker部署、验证和回滚步骤。
+参考 [HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](document/HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md) 文件中的"Robust HTTPS Deployment Procedure"章节，包含完整的准备、数据库准备、Docker部署、验证和回滚步骤。
 
 #### 详细部署指南
-- **CLOUD_DEPLOYMENT.md**: 基础云服务器部署指南（已更新）
+- **CLOUDBASE_RUN_DEPLOYMENT.md**: 腾讯云云托管部署指南
 - **HTTPS_DEPLOYMENT_GUIDE.md**: HTTPS部署指南（已更新）
 - **HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md**: 详细的HTTPS部署分析与流程文档（最新）
 
@@ -714,12 +716,12 @@ npm run dev
 # 登录云服务器
 ssh jingying@49.235.120.195
 
-# 使用deploy.sh脚本部署
+# 使用Docker Compose部署
 cd /home/richard/shared/jianglei/trae/new_payroll
-./deploy.sh
+docker-compose -f docker-compose-tencent.yml up -d
 
-# 或构建新镜像后部署
-./deploy.sh --build
+# 或使用测试环境配置
+docker-compose -f docker-compose-tencent_test.yml up -d
 ```
 
 ## 注意事项
@@ -731,7 +733,16 @@ cd /home/richard/shared/jianglei/trae/new_payroll
 
 ## 项目计划
 
-根据 `.trae/documents/工厂定额和计件工资管理系统开发计划.md` 进行开发，包含以下阶段：
+项目计划文档位于 `plans/` 目录下，包含以下内容：
+
+- `enhancement_plan.md` - 系统增强计划
+- `add_work_record_plan.md` - 工作记录功能计划
+- `column_seq_implementation_plan.md` - 工序序号实现计划
+- `salary_management_redesign_plan.md` - 工资管理重构计划
+- `way0_quota_selection_plan.md` - 定额选择方案计划
+- `cloud_run_deployment_plan.md` - 云托管部署计划
+
+开发流程包含以下阶段：
 
 1. 需求分析和系统设计
 2. 基础框架搭建

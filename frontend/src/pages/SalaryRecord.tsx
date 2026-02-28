@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col, Card, Tag, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { salaryAPI, workerAPI } from '../services/api';
+import { salaryAPI, workerAPI, columnSeqAPI } from '../services/api';
 import { QuotaOptionsResponse, QuotaOptionItem, CascadeOption } from '../types';
 
 const { Title, Text } = Typography;
@@ -133,6 +133,40 @@ const SalaryRecord = () => {
   const [way0SelectedQuotaItems, setWay0SelectedQuotaItems] = useState<QuotaOptionItem[]>([]);
   const [showWay0Cat1Dropdown, setShowWay0Cat1Dropdown] = useState(false);
   const [way0DropdownClosing, setWay0DropdownClosing] = useState(false);
+  // ==================================
+
+  // 列顺序状态
+  const [columnSeqMap, setColumnSeqMap] = useState<Record<string, Record<string, number>>>({});
+
+  // 获取列顺序
+  const fetchColumnSeq = useCallback(async (cat1Code: string) => {
+    try {
+      console.log('[fetchColumnSeq] Fetching for cat1_code:', cat1Code);
+      const data = await columnSeqAPI.getColumnSeqList({ cat1_code: cat1Code });
+      console.log('[fetchColumnSeq] Received data:', JSON.stringify(data));
+      // 构建 cat2_code -> process_code -> seq 的映射
+      const seqMap: Record<string, Record<string, number>> = {};
+      (data as any[]).forEach((item: { cat2_code: string; process_code: string; seq: number }) => {
+        if (!seqMap[item.cat2_code]) {
+          seqMap[item.cat2_code] = {};
+        }
+        seqMap[item.cat2_code][item.process_code] = item.seq;
+      });
+      console.log('[fetchColumnSeq] Built seqMap:', JSON.stringify(seqMap));
+      setColumnSeqMap(prev => ({ ...prev, [cat1Code]: seqMap }));
+    } catch (error) {
+      console.error('获取列顺序失败:', error);
+    }
+  }, []);
+
+  // 当 way0SelectedCat1 变化时获取列顺序
+  useEffect(() => {
+    console.log('[useEffect columnSeqMap] way0SelectedCat1:', way0SelectedCat1, 'columnSeqMap:', JSON.stringify(columnSeqMap));
+    if (way0SelectedCat1 && !columnSeqMap[way0SelectedCat1]) {
+      console.log('[useEffect columnSeqMap] Fetching column seq for:', way0SelectedCat1);
+      fetchColumnSeq(way0SelectedCat1);
+    }
+  }, [way0SelectedCat1, columnSeqMap, fetchColumnSeq]);
   // ==================================
   
   // 下拉面板显示状态
@@ -278,12 +312,36 @@ const SalaryRecord = () => {
   };
   
   // 构建矩阵列数据
-  const buildMatrixColumns = (quotas: QuotaOptionItem[]): MatrixColumn[] => {
+  const buildMatrixColumns = (quotas: QuotaOptionItem[], cat2_code: string): MatrixColumn[] => {
     const processSet = new Set<string>();
     quotas.forEach(q => processSet.add(q.process_code));
     
-    // 排序工序
-    const sortedProcesses = Array.from(processSet).sort((a, b) => a.localeCompare(b));
+    // 获取当前 cat1_code 和 cat2_code 对应的列顺序
+    const cat1SeqMap = columnSeqMap[way0SelectedCat1 || ''] || {};
+    const seqMap = cat1SeqMap[cat2_code] || {};
+    
+    console.log('[buildMatrixColumns] cat1_code:', way0SelectedCat1, 'cat2_code:', cat2_code);
+    console.log('[buildMatrixColumns] columnSeqMap:', JSON.stringify(columnSeqMap));
+    console.log('[buildMatrixColumns] seqMap:', JSON.stringify(seqMap));
+    console.log('[buildMatrixColumns] processSet:', Array.from(processSet));
+    
+    // 排序工序 - 使用列顺序，如果没有则按字母排序
+    const sortedProcesses = Array.from(processSet).sort((a, b) => {
+      const seqA = seqMap[a];
+      const seqB = seqMap[b];
+      console.log('[buildMatrixColumns] Comparing:', a, 'seq:', seqA, b, 'seq:', seqB);
+      // 如果两个都有序列号，按序列号排序
+      if (seqA !== undefined && seqB !== undefined) {
+        return seqA - seqB;
+      }
+      // 如果只有一个有序列号，有序列号的排在前面
+      if (seqA !== undefined) return -1;
+      if (seqB !== undefined) return 1;
+      // 都没有则按字母排序
+      return a.localeCompare(b);
+    });
+    
+    console.log('[buildMatrixColumns] sortedProcesses:', sortedProcesses);
     
     return sortedProcesses.map(process_code => ({
       process_code,
@@ -322,9 +380,9 @@ const SalaryRecord = () => {
       cat2_code,
       cat2_name: quotas[0]?.cat2_name || cat2_code,
       rows: buildMatrixRows(quotas),
-      columns: buildMatrixColumns(quotas)
+      columns: buildMatrixColumns(quotas, cat2_code)
     }));
-  }, [quotaOptionsData, way0SelectedCat1, selectedMonth]);
+  }, [quotaOptionsData, way0SelectedCat1, selectedMonth, columnSeqMap]);
   // =====================================
 
   // 工人搜索状态
