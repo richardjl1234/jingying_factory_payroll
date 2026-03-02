@@ -185,11 +185,11 @@ export const salaryAPI = {
 // 报表API
 export const reportAPI = {
   getWorkerSalaryReport: (workerCode: string, month: string): Promise<any> => 
-    api.get(`/reports/worker-salary/${workerCode}/${month}/`),
+    api.get(`/reports/worker-salary/${workerCode}/${month}`),
   getProcessWorkloadReport: (month: string): Promise<any> => 
-    api.get(`/reports/process-workload/${month}/`),
+    api.get(`/reports/process-workload/${month}`),
   getSalarySummaryReport: (month: string): Promise<any> => 
-    api.get(`/reports/salary-summary/${month}/`)
+    api.get(`/reports/salary-summary/${month}`)
 };
 
 // 统计API

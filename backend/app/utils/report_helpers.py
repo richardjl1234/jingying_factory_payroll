@@ -33,18 +33,36 @@ def get_worker_by_code(db: Session, worker_code: str) -> models.Worker:
 def get_salary_records_by_worker_and_month(db: Session, worker_code: str, month: str) -> List[models.VSalaryRecord]:
     """
     获取工人月度工资记录
-    
+
     Args:
         db: 数据库会话
         worker_code: 工号
         month: 月份（格式：YYYY-MM）
-        
+
     Returns:
         List[VSalaryRecord]: 工资记录列表
     """
+    # 使用DATE_FORMAT来匹配月份
     return db.query(models.VSalaryRecord).filter(
         models.VSalaryRecord.worker_code == worker_code,
-        models.VSalaryRecord.record_date == month
+        func.date_format(models.VSalaryRecord.record_date, "%Y-%m") == month
+    ).all()
+
+
+def get_all_salary_records_by_month(db: Session, month: str) -> List[models.VSalaryRecord]:
+    """
+    获取所有工人在指定月份的工资记录
+
+    Args:
+        db: 数据库会话
+        month: 月份（格式：YYYY-MM）
+
+    Returns:
+        List[VSalaryRecord]: 工资记录列表
+    """
+    # 使用DATE_FORMAT来匹配月份
+    return db.query(models.VSalaryRecord).filter(
+        func.date_format(models.VSalaryRecord.record_date, "%Y-%m") == month
     ).all()
 
 def calculate_total_amount(records: List[models.VSalaryRecord]) -> float:

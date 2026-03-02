@@ -153,9 +153,10 @@ else:
 def catch_all(path: str):
     """处理所有其他路径，返回前端HTML"""
     logger.debug(f"捕获路径: {path}")
-    # 确保API路由不被通配符路由匹配
+    
+    # 如果是API路径，不要处理，让FastAPI的API路由来处理
     if path.startswith("api/"):
-        logger.debug(f"路径 {path} 以api/开头，返回404")
+        logger.debug(f"路径 {path} 是API路径，返回404让FastAPI处理")
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
     
     # 如果前端静态文件不存在，返回错误信息
