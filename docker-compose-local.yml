@@ -16,7 +16,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ~/shared/jianglei/payroll/env_docker_local_mysql.sh
+      - ~/shared/jianglei/payroll/env_local_test.sh
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
