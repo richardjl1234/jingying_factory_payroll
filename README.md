@@ -1,3 +1,761 @@
+# Factory Quota and Piecework Wage Management System
+
+## Project Overview
+
+The Factory Quota and Piecework Wage Management System is a web application designed for factories to manage process quotas and worker piecework wages. The system supports process management, quota configuration, worker information management, salary records, and report statistics, helping factories achieve automated wage calculation and management.
+
+## Recent Updates (2026-02-26)
+
+### TypeScript Migration & Frontend Optimization (2025-12-24) - Partial Progress Update
+1. **TypeScript Migration Progress**: Frontend core infrastructure has been migrated to TypeScript
+2. **New `obsolete_date` Field**: Added obsolescence date field to quota table (`quotas`)
+   - Default value: `9999-12-31`, indicating currently effective quota
+   - Database migration script automatically adds this field to existing records
+   - Updated database schema documentation (`document/DATABASE_SCHEMA.md`)
+
+3. **Backend Business Logic Optimization**:
+   - **Quota Creation Logic (`create_quota`)**:
+     - When creating a new quota, the system automatically searches for existing quotas with the same combination (process code, section code, process category code, motor model) and obsolescence date `9999-12-31`
+     - If found, updates the existing quota's obsolescence date to one day before the new quota's effective date
+     - Ensures only one effective quota combination exists at any given time
+     - Records warning logs for tracking quota update history
+   
+   - **Work Record Validation Logic (`create_work_record`)**:
+     - When creating work records, validates whether the record date is within the quota's validity period (effective date ≤ work record date ≤ obsolescence date)
+     - If the date is earlier than the quota's effective date or later than the obsolescence date, throws a `ValueError` and prevents record creation
+     - Provides clear error messages for debugging and user feedback
+
+4. **Frontend Updates**:
+   - Updated quota management page (`frontend/src/pages/QuotaManagement.jsx`) to display the obsolescence date field
+   - Updated TypeScript type definitions (`frontend/src/types/index.ts`) to include the new field
+
+5. **Testing & Verification**:
+   - Ran complete test suite (`test/development/99_overall_test.sh`) to verify all functionality works correctly
+   - All API tests, frontend tests, and Puppeteer tests passed
+
+### TypeScript Migration & Frontend Optimization (2025-12-24)
+1. **TypeScript Migration Complete**: Frontend core infrastructure has been migrated to TypeScript
+   - Core files migrated: `App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`, `main.tsx`
+   - Removed duplicate JavaScript files: `App.jsx`, `Layout.jsx`, `Login.jsx`, `api.js`, `main.jsx`
+   - Menu structure optimized: Reordered sidebar menu items, "Process Management" now appears after "Process Category"
+
+2. **Frontend Architecture Optimization**:
+   - Unified TypeScript as entry point (`main.tsx`)
+   - Kept JavaScript page components for progressive migration
+   - Fixed TypeScript compilation warnings (unused imports, etc.)
+
+3. **Menu Structure Adjustment**:
+   - Worker Management → Model Management → Section Category Management → Process Category Management → Process Management → Quota Management → Salary Records → Report Statistics
+   - Follows business logic flow, optimizing user experience
+
+### HTTPS Deployment & Cloud Server Configuration (2025-12-05)
+1. **HTTPS Deployment Complete**: Successfully deployed HTTPS on cloud server `49.235.120.195`
+   - Generated self-signed SSL certificates
+   - Configured Nginx reverse proxy for HTTPS support
+   - Implemented automatic HTTP to HTTPS redirect
+   - Added `nginx-https-production.conf` configuration file
+
+2. **SSH Passwordless Login Configuration**: Configured SSH keys for cloud server, enabling passwordless Git operations
+   - Generated SSH key pair
+   - Configured passwordless SSH login to Gitee
+   - Supports automatic code pulling on cloud server
+
+3. **Deployment Process Optimization**:
+   - Created standardized HTTPS deployment process document (`HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md`)
+   - Optimized Docker container deployment scripts
+   - Added automated test script (`test_https_puppeteer.js`)
+
+4. **System Verification**:
+   - Verified HTTPS login functionality using Puppeteer automated testing
+   - Tested API endpoints working correctly under HTTPS environment
+   - Verified frontend resources load correctly
+
+### Password Reset & System Optimization (2025-12-04)
+1. **Password Reset**: Reset passwords for three key users to ensure system security:
+   - `root` → `root123`
+   - `test` → `test123`
+   - `stat` → `start`
+
+2. **Frontend Configuration Optimization**:
+   - Updated frontend environment variables (`frontend/.env`), changed API base URL from `http://localhost:8001/api` to relative path `/api`, enabling frontend in Docker containers to correctly access backend API.
+   - Rebuilt frontend static files and updated Docker image.
+
+3. **Docker Container Stability**:
+   - Fixed Docker container abnormal exit issues, ensuring containers run healthily.
+   - Updated Docker Compose configuration to ensure frontend and backend services work properly together.
+
+4. **Test Script Cleanup**:
+   - Removed temporary test scripts (`fix_password.py`, `reset_passwords.py`, `test_new_passwords.py`, etc.).
+   - Kept formatted test scripts in `test/` directory.
+
+5. **System Verification**:
+   - Verified all users' new password login functionality.
+   - Confirmed statistician (`stat`) can access statistics API normally.
+   - Tested Docker container running status and API health checks.
+
+### Usage Instructions Updated
+- System now accessible via HTTPS: `https://49.235.120.195`
+- HTTP requests automatically redirect to HTTPS
+- If login issues occur, try browser hard refresh (Ctrl+F5) to clear cache.
+
+## Todo List
+
+### TypeScript Migration - Phase 2 (Future Plan)
+Currently the frontend uses a hybrid architecture (TypeScript core + JavaScript page components). Here are the future migration plans:
+
+#### Completed Migrations (Phase 1 & 2)
+- ✅ **Core Infrastructure**: `App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`, `main.tsx`
+- ✅ **Menu Optimization**: Reordered sidebar menu, "Process Management" appears after "Process Category"
+- ✅ **Build Verification**: TypeScript compilation passes, only expected type warnings exist
+
+#### Pages to Migrate (9 JavaScript files)
+1. `Home.jsx` - Home/Statistics Panel
+2. `UserManagement.jsx` - User Management Page
+3. `WorkerManagement.jsx` - Worker Management Page
+4. `ProcessManagement.jsx` - Process Management Page
+5. `ProcessCat1Management.jsx` - Section Category Management
+6. `ProcessCat2Management.jsx` - Process Category Management
+7. `MotorModelManagement.jsx` - Motor Model Management
+8. `QuotaManagement.jsx` - Quota Management Page
+9. `Report.jsx` - Report Statistics Page
+
+> Note: `SalaryRecord.jsx` has been successfully migrated to TypeScript (`SalaryRecord.tsx`)
+
+#### Migration Risk Assessment
+- **Current Status**: Stable, functioning normally, hybrid architecture acceptable
+- **Risk Level**: Low to Medium (type safety gaps, but runtime functionality works)
+- **Recommendation**: Migrate gradually based on page usage frequency and complexity
+
+#### Migration Steps (Future Execution)
+1. **Preparation Phase**: Check `types/index.ts` type definition completeness
+2. **Migration Execution**: Convert pages one by one to `.tsx`, add type annotations
+3. **Testing Verification**: Manually test functionality after each page migration
+4. **Cleanup Phase**: Delete original `.jsx` files, update imports
+
+#### Priority Recommendations
+1. **High Priority**: `UserManagement.jsx`, `WorkerManagement.jsx` (frequently used)
+2. **Medium Priority**: `ProcessManagement.jsx`, `QuotaManagement.jsx` (core business)
+3. **Low Priority**: Other stable pages
+
+## Tech Stack
+
+### Backend
+- **Framework**: FastAPI
+- **Database**: MySQL (configured via environment variable `MYSQL_DB_URL`)
+- **ORM**: SQLAlchemy
+- **Authentication**: JWT
+- **Dependency Management**: pip
+
+### Frontend
+- **Framework**: React 19
+- **Build Tool**: Vite
+- **UI Component Library**: Ant Design 6
+- **Routing**: React Router 7
+- **HTTP Client**: Axios
+
+## Project Structure
+
+```
+new_payroll/
+├── backend/                 # Backend code
+│   ├── app/                # FastAPI application
+│   │   ├── api/            # API routes
+│   │   │   ├── auth.py     # Authentication APIs
+│   │   │   ├── user.py     # User management APIs
+│   │   │   ├── worker.py   # Worker management APIs
+│   │   │   ├── process.py  # Process management APIs
+│   │   │   ├── process_cat1.py  # Section category APIs
+│   │   │   ├── process_cat2.py  # Process category APIs
+│   │   │   ├── motor_model.py   # Motor model APIs
+│   │   │   ├── quota.py    # Quota management APIs
+│   │   │   ├── salary.py   # Salary record APIs
+│   │   │   ├── report.py   # Report APIs
+│   │   │   └── stats.py    # Statistics APIs
+│   │   ├── models.py       # Database models
+│   │   ├── schemas.py      # Pydantic models
+│   │   ├── database.py     # Database connection
+│   │   ├── crud.py         # CRUD operations
+│   │   └── main.py         # Application entry
+│   ├── requirements.txt     # Dependency list
+│   ├── run.py              # Run script
+│   ├── scripts/            # Utility scripts
+│   │   ├── init_db.py          # Database initialization script
+│   │   ├── generate_test_data.py # Test data generation script
+│   │   ├── check_routes.py     # Route check script
+│   │   └── query_quota_records.py # Quota record query script
+│   └── payroll.db          # Database file (using MySQL, no local file needed)
+├── frontend/               # Frontend code
+│   ├── src/               # Source code
+│   │   ├── components/    # React components (Layout.tsx)
+│   │   ├── pages/         # Page components (mixed: .jsx + .tsx)
+│   │   ├── services/      # API services (api.ts)
+│   │   ├── types/         # TypeScript type definitions
+│   │   ├── App.tsx        # Application component (TypeScript)
+│   │   └── main.tsx       # Application entry (TypeScript)
+│   ├── package.json       # Dependency configuration
+│   ├── tsconfig.json      # TypeScript configuration
+│   └── vite.config.js     # Vite configuration
+├── test/                  # Test scripts and resources
+│   ├── development/       # Development test scripts
+│   │   ├── test_api.py        # API test script
+│   │   ├── test_login.js      # Frontend login test
+│   │   ├── test_user_management.js  # User management test
+│   │   ├── test_worker_process_operations.js  # Worker process operations test
+│   │   └── test_new_tables.js  # New tables test
+│   ├── docker_puppeteer/  # Docker Puppeteer tests
+│   └── *.png              # Test screenshots
+├── Dockerfile             # Docker configuration
+├── nginx-https-production.conf # Production HTTPS Nginx configuration
+├── docker-compose-local.yml    # Local Docker Compose configuration
+├── docker-compose-tencent.yml  # Tencent Cloud Docker Compose configuration
+├── docker-compose-tencent_test.yml # Tencent Cloud test environment Docker Compose configuration
+├── HTTPS_DEPLOYMENT_GUIDE.md # HTTPS deployment guide
+├── HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md # HTTPS deployment analysis and procedure document (latest)
+├── SSH_Password_Less_Login_Guide.md # SSH passwordless login guide
+├── generate_ssl_cert.sh   # SSL certificate generation script
+├── fix_password_hash.py   # Password hash fix script
+├── test_https_puppeteer.js # HTTPS automated test script
+├── docker_local.sh        # Local Docker startup script
+├── start_services.sh      # Service startup script
+├── run_all_tests_docker.sh # Docker test script
+└── README.md              # Project documentation
+```
+
+## Feature Modules
+
+### 1. User Management
+- User registration, login, password change
+- Role permission management (admin, statistician, report viewer)
+- User information maintenance
+- New users must change password on first login (need_change_password mechanism)
+
+### 2. Worker Management
+- CRUD operations for worker information
+- Worker code management
+
+### 3. Section Category Management
+- Section classification information maintenance (e.g., precision machining, assembly painting, winding, etc.)
+- Section code and name management
+
+### 4. Process Category Management
+- Process classification information maintenance
+- Process category code and name management
+
+### 5. Motor Model Management
+- Motor model information maintenance
+- Motor model name and alias management
+
+### 6. Process Management
+- Process information maintenance
+- Process code, name, and description management
+
+### 7. Quota Management
+- Process quota configuration (linking process, section, process category, motor model)
+- Unit price and effective date management
+- Quota history
+
+### 8. Salary Records
+- Worker work record entry (quantity, date)
+- Automatic wage calculation (quantity × unit price)
+- Date-based statistics and query
+
+### 9. Report Features
+- Worker wage report generation
+- Process workload reports
+- Wage summary reports
+- Data export functionality
+
+### 10. Statistics Features
+- System data statistics (users, workers, processes, etc.)
+- Process quota statistics
+- Worker wage statistics
+- Production efficiency analysis
+
+## Security Configuration
+
+### 🔐 Database Credentials Security Best Practices
+
+The system implements secure database credential management, following these best practices:
+
+1. **System Environment Variables**: Sensitive information stored in system environment variables, not hardcoded in code
+2. **Environment Variable Files**: Use `~/shared/jianglei/payroll/env_local.sh` for centralized environment variable management
+3. **Git Ignore**: `.env` files added to `.gitignore` to prevent sensitive information leakage
+4. **Docker Security**: Docker containers support runtime environment variable injection
+
+### Environment Variable Configuration
+
+The system uses system environment variables for configuration, no longer depending on `.env` files.
+
+#### Setting Environment Variables (Required)
+Environment variables must be set before starting the application.
+
+**Local Development:**
+```bash
+source ~/shared/jianglei/payroll/env_local.sh
+```
+
+**Cloud Server Deployment:**
+```bash
+source ~/shared/jianglei/payroll/env_cloud.sh
+```
+
+**Note**: This command must be re-executed every time a new terminal window is opened.
+
+#### Required Environment Variables
+Ensure the following environment variables are set in the system:
+
+**Backend Variables:**
+- `MYSQL_DB_URL` - MySQL database connection URL
+- `SECRET_KEY` - JWT secret key
+- `ALGORITHM` - JWT algorithm (default: HS256)
+- `ACCESS_TOKEN_EXPIRE_MINUTES` - Token expiration time (default: 30)
+
+**Frontend Variables (VITE_*):**
+- `VITE_API_BASE_URL` - Frontend API base URL (development: `/api`, production: `https://49.235.120.195/api`)
+- `VITE_APP_ENV` - Application environment (development: `development`, production: `production`)
+- `VITE_ENABLE_HTTPS` - Whether to enable HTTPS (production only)
+
+#### Docker Environment Variables
+Pass environment variables when running Docker containers:
+```bash
+docker run -d -p 8000:8000 \
+  -e MYSQL_DB_URL="mysql+pymysql://username:password@host:port/database" \
+  -e SECRET_KEY="your-secret-key" \
+  payroll-system
+```
+
+### Verifying Environment Configuration
+Before running the application, ensure environment variables are correctly set:
+```bash
+echo $MYSQL_DB_URL
+echo $SECRET_KEY
+```
+If the above commands return empty values, please execute `source ~/shared/jianglei/payroll/env_local.sh` first.
+
+## Installation & Running
+
+### Backend Installation
+
+1. Navigate to backend directory
+```bash
+cd backend
+```
+
+2. Create virtual environment
+```bash
+python -m venv venv
+```
+
+3. Activate virtual environment
+```bash
+# Windows
+env\Scripts\activate
+
+# Linux/macOS
+source venv/bin/activate
+```
+
+4. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+5. Set environment variables (required)
+```bash
+source ~/shared/jianglei/payroll/env_local.sh
+```
+
+6. Initialize database
+```bash
+python scripts/init_db.py
+```
+
+7. Run backend service
+```bash
+python run.py
+```
+
+Backend service will start at http://localhost:8000
+
+### Frontend Installation
+
+1. Navigate to frontend directory
+```bash
+cd frontend
+```
+
+2. Install dependencies
+```bash
+npm install
+```
+
+3. Run in development mode
+```bash
+npm run dev
+```
+
+Frontend development service will start at http://localhost:5173
+
+4. Build production version
+```bash
+npm run build
+```
+
+Built files will be generated in the `dist` directory
+
+## API Documentation
+
+The backend provides complete API documentation at:
+
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+## Database Schema
+
+### Main Table Structures
+
+1. **users** - User table
+   - id: User ID
+   - username: Username
+   - password: Password
+   - name: Real name
+   - role: Role (admin/statistician/report)
+   - created_at: Creation time
+
+2. **workers** - Worker table
+   - worker_code: Worker code
+   - name: Name
+   - created_at: Creation time
+
+3. **processes** - Process table
+   - process_code: Process code
+   - name: Process name
+   - description: Description
+   - created_at: Creation time
+
+4. **process_cat1** - Section category table
+   - cat1_code: Section code
+   - name: Section name
+   - description: Section description
+   - created_at: Creation time
+
+5. **process_cat2** - Process category table
+   - cat2_code: Process category code
+   - name: Process category name
+   - description: Process category description
+   - created_at: Creation time
+
+6. **motor_models** - Motor model table
+   - name: Motor model name
+   - aliases: Motor model aliases
+   - description: Motor model description
+   - created_at: Creation time
+
+7. **quotas** - Quota table
+   - id: Quota ID
+   - process_code: Process code
+   - cat1_code: Section code
+   - cat2_code: Process category code
+   - model_name: Motor model name
+   - unit_price: Unit price
+   - effective_date: Effective date
+   - obsolete_date: Obsolescence date (default: 9999-12-31, indicating currently effective quota)
+   - created_by: Creator
+   - created_at: Creation time
+
+8. **work_records** - Work record table
+   - id: Record ID
+   - worker_code: Worker code
+   - quota_id: Quota ID
+   - quantity: Quantity
+   - record_date: Record date (YYYY-MM-DD)
+   - created_by: Creator
+   - created_at: Creation time
+
+9. **v_salary_records** - Salary record view
+   - id: Record ID
+   - worker_code: Worker code
+   - quota_id: Quota ID
+   - quantity: Quantity
+   - unit_price: Unit price
+   - amount: Amount (auto-calculated: quantity × unit_price)
+   - record_date: Record date
+   - created_by: Creator
+   - created_at: Creation time
+   - model_display: Motor model display
+   - cat1_display: Section category display
+   - cat2_display: Process category display
+   - process_display: Process display
+
+## Usage Instructions
+
+1. **Login to System**
+   - Access http://localhost:8000
+   - Login with admin account (initial account can be configured in code)
+   - New users will be prompted to change password on first login
+
+2. **Basic Data Maintenance**
+   - First add process information
+   - Then set quotas for each process
+   - Add worker information
+
+3. **Wage Management**
+   - Enter workers' production quantity each month
+   - System automatically calculates wages
+   - Generate wage reports
+
+4. **Report Statistics**
+   - View wage statistics reports
+   - Analyze production efficiency
+   - Export data
+
+For detailed usage instructions, refer to [用户手册.md](用户手册.md)
+
+## Development Instructions
+
+### Backend Development
+
+- Add new API routes: Create new route files in `backend/app/api/`
+- Add new data models: Define in `backend/app/models.py`
+- Add new data validation: Define in `backend/app/schemas.py`
+- Add new CRUD operations: Implement in `backend/app/crud.py`
+- **Refactoring Summary**: Refer to [`backend/BACKEND_REFACTORING_SUMMARY.md`](backend/BACKEND_REFACTORING_SUMMARY.md) for backend architecture refactoring details
+
+### Frontend Development
+
+- **TypeScript Architecture**: Core infrastructure uses TypeScript (`App.tsx`, `Layout.tsx`, `Login.tsx`, `api.ts`)
+- **Hybrid Pages**: Page components use progressive migration strategy (currently JavaScript, will migrate to TypeScript in the future)
+- **Add new pages**: Create new page components in `frontend/src/pages/` (recommend using `.tsx`)
+- **Add new components**: Create new components in `frontend/src/components/` (recommend using `.tsx`)
+- **API calls**: Call backend APIs through methods encapsulated in `frontend/src/services/api.ts`
+- **Type definitions**: Maintain TypeScript type definitions in `frontend/src/types/`
+- **Refactoring Summary**: Refer to [`frontend/TYPESCRIPT_REFACTORING_SUMMARY.md`](frontend/TYPESCRIPT_REFACTORING_SUMMARY.md) for TypeScript migration details
+
+## Deployment
+
+### Quick Deployment to Tencent Cloud
+
+Use Docker Compose configuration files for quick deployment to Tencent Cloud server.
+
+```bash
+# Deploy using Tencent Cloud production environment configuration
+docker-compose -f docker-compose-tencent.yml up -d
+
+# Or use Tencent Cloud test environment configuration
+docker-compose -f docker-compose-tencent_test.yml up -d
+```
+
+**Access Address:** https://49.235.120.195
+
+**Deployment Script Features:**
+- ✅ Use Docker Compose for multi-container deployment
+- ✅ Support local, test, production multi-environment configuration
+- ✅ Frontend build and backend service integration
+- ✅ MySQL database integration
+
+**Common Commands:**
+```bash
+# View container logs
+docker-compose -f docker-compose-tencent.yml logs -f
+
+# Stop/Restart services
+docker-compose -f docker-compose-tencent.yml stop
+docker-compose -f docker-compose-tencent.yml start
+
+# View running containers
+docker-compose -f docker-compose-tencent.yml ps
+```
+
+### Server Restart Handling
+
+Services will start automatically after server restart:
+
+| Service | Startup Method | Status |
+|---------|----------------|--------|
+| Docker containers | `--restart unless-stopped` | ✅ Auto-start |
+| nginx | `systemctl enable nginx` | ✅ Auto-start |
+
+### Development Environment Deployment
+
+1. Start backend service
+2. Start frontend development service
+3. Access http://localhost:5173
+
+### Production Environment Deployment
+
+1. Build frontend production version
+2. Start backend service (can use Gunicorn or other WSGI servers)
+3. Configure Nginx reverse proxy
+4. Access production server address
+
+## Docker Deployment
+
+### Local Docker Deployment
+1. Build Docker image
+```bash
+docker build -t payroll-system .
+```
+
+2. Run Docker container
+```bash
+docker run -d -p 8000:8000 payroll-system
+```
+
+### Cloud Server Deployment
+The system is configured to support cloud server HTTPS deployment. Please refer to the latest deployment documentation.
+
+#### Recommended Deployment Process
+Refer to the "Robust HTTPS Deployment Procedure" section in [HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](document/HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md) file, which includes complete preparation, database preparation, Docker deployment, verification, and rollback steps.
+
+#### Detailed Deployment Guides
+- **CLOUDBASE_RUN_DEPLOYMENT.md**: Tencent Cloud CloudRun deployment guide
+- **HTTPS_DEPLOYMENT_GUIDE.md**: HTTPS deployment guide (updated)
+- **HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md**: Detailed HTTPS deployment analysis and procedure document (latest)
+
+#### Key Files
+- `nginx-https-production.conf`: Production environment Nginx HTTPS configuration
+- `generate_ssl_cert.sh`: SSL certificate generation script
+- `fix_password_hash.py`: Password hash fix script (for login issues)
+- `test_https_puppeteer.js`: HTTPS automated test script (deployment verification)
+
+### Docker Deployment Architecture Description
+The system uses a dual-container architecture, running backend application and Nginx reverse proxy separately:
+
+#### 1. Backend Container (payroll-backend)
+- **Image Build**: Built using the project's root directory `Dockerfile`
+- **Base Image**: `python:3.10`
+- **Contains**:
+  - Python backend application code
+  - Frontend built static files (`frontend/dist/`)
+  - System dependencies and Python packages
+- **Run Commands**:
+  ```bash
+  docker build -t payroll-backend -f Dockerfile .
+  docker run -d --name payroll-backend -p 8000:8000 payroll-backend
+  ```
+
+#### 2. Nginx Container (payroll-nginx)
+- **Image Source**: Directly use official `nginx:alpine` image, **no custom Dockerfile needed**
+- **Configuration Method**: Mount configuration files at runtime
+- **Create Command**:
+  ```bash
+  docker run -d --name payroll-nginx \
+    -p 80:80 -p 443:443 \
+    -v /path/to/nginx-https-production.conf:/etc/nginx/conf.d/default.conf:ro \
+    -v /path/to/ssl:/app/ssl:ro \
+    -v /path/to/frontend-dist:/app/frontend/dist:ro \
+    nginx:alpine
+  ```
+
+#### Architecture Advantages
+1. **Separation of Concerns**: Backend and Nginx independent containers, easy maintenance and scaling
+2. **Flexible Configuration**: Nginx configuration can be modified anytime without rebuilding image
+3. **Lightweight**: Using Alpine image, minimal resource usage
+4. **Officially Maintained**: Nginx image maintained by Docker official, timely security updates
+
+#### Inter-Container Communication
+```
+User Request → Nginx Container (80/443) → Backend Container (8000) → Database
+          ↑                    ↑
+      SSL Termination     Reverse Proxy
+```
+
+#### Configuration File Description
+- `nginx-https-production.conf`: Production HTTPS configuration
+  - Automatic HTTP to HTTPS redirect
+  - Static file serving (`/app/frontend/dist`)
+  - API reverse proxy (`/api/` → `http://172.17.0.1:8000`)
+  - SSL certificate configuration
+
+#### Data Persistence
+- **Database**: MySQL (configured via environment variable `MYSQL_DB_URL`)
+- **Configuration Files**: Nginx configuration, SSL certificates, frontend files all mounted via volumes
+- **Advantage**: Data persists after container restart, configuration can be updated anytime
+
+## Testing
+
+The project includes test scripts located in the `test/` directory. Run tests to ensure functionality works correctly:
+
+```bash
+cd test/development
+# Run API tests
+python test_api.py
+# Run frontend tests
+node test_login.js
+```
+
+## Quick Start
+
+### Local Development
+```bash
+# Clone code
+git clone https://gitee.com/richardjl/payroll-system.git
+cd payroll-system
+
+# Set environment variables (required)
+source ~/shared/jianglei/payroll/env_local.sh
+
+# Start backend
+cd backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python run.py
+
+# Start frontend (new terminal)
+cd frontend
+npm install
+npm run dev
+```
+
+### Cloud Server Deployment
+Please refer to the complete steps in the latest HTTPS deployment document [HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md](HTTPS_DEPLOYMENT_ANALYSIS_AND_PROCEDURE.md).
+
+Brief steps:
+```bash
+# Login to cloud server
+ssh jingying@49.235.120.195
+
+# Deploy using Docker Compose
+cd /home/richard/shared/jianglei/trae/new_payroll
+docker-compose -f docker-compose-tencent.yml up -d
+
+# Or use test environment configuration
+docker-compose -f docker-compose-tencent_test.yml up -d
+```
+
+## Notes
+
+1. Initial admin account needs to be configured in code
+2. In production environment, CORS configuration needs to be modified to limit allowed domains
+3. Production environment recommends using MySQL or PostgreSQL database
+4. Regularly backup database
+
+## Project Plans
+
+Project plan documents are located in the `plans/` directory, including:
+
+- `enhancement_plan.md` - System enhancement plan
+- `add_work_record_plan.md` - Work record feature plan
+- `column_seq_implementation_plan.md` - Process sequence number implementation plan
+- `salary_management_redesign_plan.md` - Salary management redesign plan
+- `way0_quota_selection_plan.md` - Quota selection scheme plan
+- `cloud_run_deployment_plan.md` - CloudRun deployment plan
+
+Development process includes the following phases:
+
+1. Requirement analysis and system design
+2. Basic framework setup
+3. Core feature development
+4. Testing and optimization
+5. Deployment and launch
+
+## Contact
+
+If you have questions or suggestions, please feel free to contact the development team.
+
+---
+
 # 工厂定额和计件工资管理系统
 
 ## 项目简介
@@ -8,12 +766,12 @@
 
 ### TypeScript迁移与前端优化 (2025-12-24) - 部分进度更新
 1. **TypeScript迁移进展**：前端核心基础设施已迁移到TypeScript
-1. **新增 `obsolete_date` 字段**：在定额表 (`quotas`) 中新增作废日期字段
+2. **新增 `obsolete_date` 字段**：在定额表 (`quotas`) 中新增作废日期字段
    - 默认值：`9999-12-31`，表示当前有效的定额
    - 数据库迁移脚本自动为现有记录添加该字段
    - 更新数据库结构文档 (`document/DATABASE_SCHEMA.md`)
 
-2. **后端业务逻辑优化**：
+3. **后端业务逻辑优化**：
    - **定额创建逻辑 (`create_quota`)**：
      - 当创建新定额时，系统会自动查找相同组合（工序编码、工段编码、工序类别编码、电机型号）且作废日期为 `9999-12-31` 的现有定额
      - 如果找到，将现有定额的作废日期更新为新定额生效日期的前一天
@@ -25,11 +783,11 @@
      - 如果日期早于定额生效日期或晚于作废日期，抛出 `ValueError` 并阻止记录创建
      - 提供清晰的错误信息便于调试和用户反馈
 
-3. **前端更新**：
+4. **前端更新**：
    - 更新定额管理页面 (`frontend/src/pages/QuotaManagement.jsx`) 显示作废日期字段
    - 更新TypeScript类型定义 (`frontend/src/types/index.ts`) 包含新字段
 
-4. **测试验证**：
+5. **测试验证**：
    - 运行完整测试套件 (`test/development/99_overall_test.sh`) 验证所有功能正常
    - 所有API测试、前端测试和Puppeteer测试通过
 
@@ -656,8 +1414,8 @@ docker run -d -p 8000:8000 payroll-system
 #### 容器间通信
 ```
 用户请求 → Nginx容器 (80/443) → 后端容器 (8000) → 数据库
-         ↑                    ↑
-     SSL终止             反向代理
+          ↑                    ↑
+      SSL终止             反向代理
 ```
 
 #### 配置文件说明
