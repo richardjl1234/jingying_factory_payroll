@@ -408,12 +408,12 @@ const SalaryRecord = () => {
     }
   }, []);
 
-  // 预加载定额数据
-  const fetchQuotaOptions = useCallback(async () => {
+  // 预加载定额数据（带重试逻辑）
+  const fetchQuotaOptions = useCallback(async (retryCount: number = 0) => {
     try {
       setQuotaOptionsLoading(true);
       const recordDate = `${selectedMonth.slice(0, 4)}-${selectedMonth.slice(4, 6)}-01`;
-      console.log('[QuotaOptions] Fetching quota options for date:', recordDate);
+      console.log('[QuotaOptions] Fetching quota options for date:', recordDate, 'retryCount:', retryCount);
       
       // 尝试从localStorage读取预加载的数据
       const cachedData = localStorage.getItem('quota_options_data');
@@ -459,6 +459,12 @@ const SalaryRecord = () => {
         model_options_count: data?.model_options?.length || 0
       });
       
+      // 检查返回数据是否有效
+      if (!data || !data.quota_options || data.quota_options.length === 0) {
+        console.warn('[QuotaOptions] Received empty or invalid data, retrying...');
+        throw new Error('Empty quota data');
+      }
+      
       // 更新缓存
       localStorage.setItem('quota_options_data', JSON.stringify(data));
       localStorage.setItem('quota_options_timestamp', new Date().toISOString());
@@ -466,11 +472,44 @@ const SalaryRecord = () => {
       setQuotaOptionsData(data);
     } catch (error) {
       console.error('[QuotaOptions] Error fetching quota options:', error);
-      message.error('获取定额选项失败');
+      
+      // 重试逻辑：最多重试3次
+      if (retryCount < 3) {
+        const delay = (retryCount + 1) * 1000; // 1秒、2秒、3秒递增
+        console.log(`[QuotaOptions] Retrying in ${delay}ms (attempt ${retryCount + 1}/3)...`);
+        setTimeout(() => {
+          fetchQuotaOptions(retryCount + 1);
+        }, delay);
+        return;
+      }
+      
+      // 重试次数用尽，显示错误
+      message.error('获取定额选项失败，请稍后重试');
     } finally {
-      setQuotaOptionsLoading(false);
+      // 只有在不是重试调用时才设置loading为false
+      if (retryCount === 0 || retryCount >= 3) {
+        setQuotaOptionsLoading(false);
+      }
     }
   }, [selectedMonth]);
+
+  // 带重试的获取定额选项（用于onFocus等场景）
+  const fetchQuotaOptionsWithRetry = useCallback(async () => {
+    // 如果数据已经加载，直接返回
+    if (quotaOptionsData && quotaOptionsData.quota_options && quotaOptionsData.quota_options.length > 0) {
+      console.log('[QuotaOptions] Data already loaded, skipping fetch');
+      return;
+    }
+    
+    // 如果正在加载中，也直接返回
+    if (quotaOptionsLoading) {
+      console.log('[QuotaOptions] Already loading, skipping fetch');
+      return;
+    }
+    
+    // 调用带重试的fetch
+    await fetchQuotaOptions(0);
+  }, [quotaOptionsData, quotaOptionsLoading, fetchQuotaOptions]);
 
   // 获取指定工人指定月份的工作记录
   const fetchWorkerMonthRecords = useCallback(async () => {
@@ -2105,10 +2144,10 @@ const SalaryRecord = () => {
                           setShowWay0Cat1Dropdown(true);
                         } else {
                           console.log('[Way0] Cannot show dropdown - no quota data or empty options');
-                          // 尝试加载数据
+                          // 尝试加载数据（带重试逻辑）
                           if (!quotaOptionsData) {
-                            console.log('[Way0] Triggering fetchQuotaOptions...');
-                            fetchQuotaOptions();
+                            console.log('[Way0] Triggering fetchQuotaOptionsWithRetry...');
+                            fetchQuotaOptionsWithRetry();
                           }
                         }
                       }}
