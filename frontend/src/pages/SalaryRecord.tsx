@@ -320,6 +320,18 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
             {options.map((opt: any) => {
               const isSelected = selectedQuota?.id === opt.id;
               const isDefaultRange = Number(opt.min_quota) === 0.01 && Number(opt.max_quota) === 9999;
+              
+              // 拆分工序名称，每行最多8个中文字符
+              const processName = opt.process_name;
+              let line1 = '';
+              let line2 = '';
+              if (processName.length > 8) {
+                line1 = processName.substring(0, 8);
+                line2 = processName.substring(8);
+              } else {
+                line1 = processName;
+              }
+              
               return (
                 <Button
                   key={opt.id}
@@ -330,7 +342,7 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                   }}
                   style={{
                     width: 'calc(10% - 6px)',
-                    height: 70,
+                    height: 80,
                     padding: '6px 8px',
                     backgroundColor: isSelected ? '#006400' : '#fff',
                     borderColor: isSelected ? '#006400' : '#d9d9d9',
@@ -345,8 +357,9 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                   <div style={{ fontWeight: 'bold', fontSize: 13, lineHeight: 1.2 }}>
                     {opt.id}
                   </div>
-                  <div style={{ fontSize: 12, lineHeight: 1.3, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {opt.process_name}
+                  <div style={{ fontSize: 12, lineHeight: 1.3, marginTop: 4 }}>
+                    {line1}
+                    {line2 && <div style={{ lineHeight: 1.3 }}>{line2}</div>}
                   </div>
                   {!isDefaultRange && (
                     <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.2, marginTop: 2 }}>
