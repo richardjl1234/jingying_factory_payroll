@@ -229,7 +229,7 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                   <span>
                     <Text strong style={{ color: '#006400' }}>{selectedQuota.id}</Text>
                     <Text type="secondary" style={{ marginLeft: 8 }}>{selectedQuota.process_name}</Text>
-                    {selectedQuota.min_quota !== 0.01 || selectedQuota.max_quota !== 9999 ? (
+                    {!(Number(selectedQuota.min_quota) === 0.01 && Number(selectedQuota.max_quota) === 9999) ? (
                       <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
                         ({selectedQuota.min_quota} ~ {selectedQuota.max_quota})
                       </Text>
@@ -319,7 +319,7 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {options.map((opt: any) => {
               const isSelected = selectedQuota?.id === opt.id;
-              const showRange = opt.min_quota !== 0.01 || opt.max_quota !== 9999;
+              const isDefaultRange = Number(opt.min_quota) === 0.01 && Number(opt.max_quota) === 9999;
               return (
                 <Button
                   key={opt.id}
@@ -348,7 +348,7 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                   <div style={{ fontSize: 12, lineHeight: 1.3, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {opt.process_name}
                   </div>
-                  {showRange && (
+                  {!isDefaultRange && (
                     <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.2, marginTop: 2 }}>
                       ({opt.min_quota} ~ {opt.max_quota})
                     </div>
