@@ -116,7 +116,7 @@ class QuotaUpdate(BaseModel):
 class QuotaInDB(QuotaBase):
     """数据库中的定额模型"""
     id: int
-    created_by: int
+    created_by: Optional[int] = None
     created_at: datetime
 
     class Config:
@@ -187,6 +187,7 @@ class SalaryRecordInDB(SalaryRecordBase):
     cat1_display: Optional[str] = None
     cat2_display: Optional[str] = None
     process_display: Optional[str] = None
+    is_nonfixed: bool = Field(False, description="是否为无固定额记录")
 
     class Config:
         from_attributes = True
@@ -412,3 +413,86 @@ class BatchWorkRecordCreateResponse(BaseModel):
     error_count: int
     records: List[BatchWorkRecordItem]
     errors: List[dict]
+
+
+# ============================================================
+# 无固定额相关 Schema
+# ============================================================
+
+class QuotaNonfixedOption(BaseModel):
+    """无定额定额选项（用于前端下拉框）"""
+    id: str = Field(..., description="无定额ID（N001...）")
+    process_name: str = Field(..., description="工序名称")
+    min_quota: Decimal = Field(..., description="最小单价")
+    max_quota: Decimal = Field(..., description="最大单价")
+    remark: Optional[str] = Field(None, description="备注")
+
+    class Config:
+        from_attributes = True
+
+
+class QuotaNonfixedOptionsResponse(BaseModel):
+    """无定额定额选项列表响应"""
+    options: List[QuotaNonfixedOption]
+
+
+class WorkRecordNonfixedBase(BaseModel):
+    """无定额工作记录基础模型"""
+    worker_code: str = Field(..., min_length=1, max_length=20)
+    nonfixed_quota_id: str = Field(..., min_length=1, max_length=10)
+    quantity: Decimal = Field(1.0, ge=0.01, decimal_places=2)
+    unit_price: Decimal = Field(..., ge=0, decimal_places=2, description="单价（须介于min_quota~max_quota）")
+    record_date: date
+
+
+class WorkRecordNonfixedCreate(WorkRecordNonfixedBase):
+    """创建无定额工作记录模型"""
+    pass
+
+
+class WorkRecordNonfixedUpdate(BaseModel):
+    """更新无定额工作记录模型"""
+    quantity: Optional[Decimal] = Field(None, ge=0.01, decimal_places=2)
+    unit_price: Optional[Decimal] = Field(None, ge=0, decimal_places=2)
+    record_date: Optional[date] = None
+
+
+class WorkRecordNonfixedInDB(WorkRecordNonfixedBase):
+    """数据库中的无定额工作记录模型"""
+    id: str
+    unit_price: Decimal
+    created_by: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class WorkRecordNonfixed(WorkRecordNonfixedInDB):
+    """返回给客户端的无定额工作记录模型"""
+    worker: Optional[Worker] = None
+    quota: Optional["QuotaNonfixedOption"] = None
+    creator: Optional[User] = None
+
+
+class WorkRecordNonfixedWithDisplay(BaseModel):
+    """带显示信息的无定额工作记录（用于工资记录表格）"""
+    id: str = Field(..., description="记录ID（WN00001...）")
+    worker_code: str
+    quota_id: str = Field(..., description="无定额ID（N001）")
+    process_display: str = Field(..., description="工序显示")
+    quantity: Decimal = Field(1.0, description="数量")
+    unit_price: Decimal = Field(..., description="单价")
+    amount: Decimal = Field(..., description="金额（quantity * unit_price）")
+    record_date: date
+    created_by: Optional[int] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class WorkRecordNonfixedDeleteResponse(BaseModel):
+    """删除无定额工作记录响应"""
+    message: str
+    record_id: str

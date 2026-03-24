@@ -32,6 +32,7 @@ class Worker(Base):
     
     # 关系
     work_records = relationship("WorkRecord", back_populates="worker")
+    work_records_nonfixed = relationship("WorkRecordNonfixed", back_populates="worker")
 
 class Process(Base):
     """工序表"""
@@ -135,14 +136,15 @@ class MotorModel(Base):
 
 
 class VSalaryRecord(Base):
-    """工资记录视图"""
+    """工资记录视图（包含有定额 + 无定额）"""
     __tablename__ = "v_salary_records"
     
-    id = Column(Integer, primary_key=True, index=True)
+    # id 和 quota_id 使用 String，因为无定额记录的 id 是 VARCHAR(WN前缀)，quota_id 是 VARCHAR(N前缀)
+    id = Column(String(10), primary_key=True, index=True)
     worker_code = Column(String(20), nullable=False, index=True)
-    quota_id = Column(Integer, nullable=False, index=True)
-    quantity = Column(Numeric(10, 2), nullable=False, comment="数量，保留两位小数")
-    unit_price = Column(Numeric(10, 2), nullable=False, comment="单价，保留两位小数")
+    quota_id = Column(String(10), nullable=False, index=True)  # 可能是 INT(id) 或 VARCHAR(N前缀)
+    quantity = Column(Numeric(10, 2), nullable=True, comment="数量，无定额记录可为NULL")
+    unit_price = Column(Numeric(10, 2), nullable=True, comment="单价，无定额记录可为NULL")
     amount = Column(Numeric(10, 2), nullable=False, comment="金额，保留两位小数")
     record_date = Column(Date, nullable=False, comment="记录日期", index=True)
     created_by = Column(Integer, nullable=True)
@@ -151,10 +153,11 @@ class VSalaryRecord(Base):
     cat1_display = Column(String(100), nullable=True, comment="工段类别显示: 编码 (名称)")
     cat2_display = Column(String(100), nullable=True, comment="工序类别显示: 编码 (名称)")
     process_display = Column(String(150), nullable=True, comment="工序显示: 编码 (名称)")
+    is_nonfixed = Column(Boolean, nullable=False, default=False, comment="是否为无固定额记录")
     
     # 注意：视图没有外键约束，但我们可以定义关系以便查询
     worker = relationship("Worker", foreign_keys=[worker_code], primaryjoin="VSalaryRecord.worker_code == Worker.worker_code", viewonly=True)
-    quota = relationship("Quota", foreign_keys=[quota_id], primaryjoin="VSalaryRecord.quota_id == Quota.id", viewonly=True)
+    quota = relationship("Quota", foreign_keys=[quota_id], primaryjoin="VSalaryRecord.quota_id == cast(Quota.id, String)", viewonly=True)
     creator = relationship("User", foreign_keys=[created_by], primaryjoin="VSalaryRecord.created_by == User.id", viewonly=True)
 
 
@@ -173,3 +176,39 @@ class ColumnSeq(Base):
     __table_args__ = (
         UniqueConstraint('cat1_code', 'cat2_code', 'process_code', name='_cat1_cat2_process_uc'),
     )
+
+
+class QuotaNonfixed(Base):
+    """无定额工序配置表"""
+    __tablename__ = "quotas_nonfixed"
+    
+    id = Column(String(10), primary_key=True, comment="无定额ID（N+序号，如N001）")
+    process_name = Column(String(200), nullable=False, comment="工序名称")
+    min_quota = Column(Numeric(10, 2), nullable=False, default=0.01, comment="定额最小值")
+    max_quota = Column(Numeric(10, 2), nullable=False, default=9999.00, comment="定额最大值")
+    effective_date = Column(Date, nullable=False, comment="生效日期", index=True)
+    obsolete_date = Column(Date, nullable=False, default='2999-12-31', comment="作废日期")
+    remark = Column(String(500), nullable=True, comment="备注")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 关系
+    work_records = relationship("WorkRecordNonfixed", back_populates="quota")
+
+
+class WorkRecordNonfixed(Base):
+    """无定额工资记录表"""
+    __tablename__ = "work_records_nonfixed"
+    
+    id = Column(String(10), primary_key=True, comment="无定额工资记录ID（WN+序号，如WN00001）")
+    worker_code = Column(String(20), ForeignKey("workers.worker_code"), nullable=False, index=True)
+    nonfixed_quota_id = Column(String(10), ForeignKey("quotas_nonfixed.id"), nullable=False, index=True)
+    quantity = Column(Numeric(10, 2), nullable=False, default=1.00, comment="数量")
+    unit_price = Column(Numeric(10, 2), nullable=False, comment="单价（须介于quotas_nonfixed.min_quota和max_quota之间）")
+    record_date = Column(Date, nullable=False, comment="记录日期", index=True)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 关系
+    worker = relationship("Worker", back_populates="work_records_nonfixed")
+    quota = relationship("QuotaNonfixed", back_populates="work_records")
+    creator = relationship("User")

@@ -8,7 +8,9 @@ import {
   ProductOutlined,
   AppstoreOutlined,
   DollarOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  UnorderedListOutlined,
+  SnippetsOutlined
 } from '@ant-design/icons';
 import { statsAPI } from '../services/api';
 
@@ -23,7 +25,9 @@ const Home = () => {
     model_count: 0,
     process_count: 0,
     quota_count: 0,
+    quota_nonfixed_count: 0,
     salary_record_count: 0,
+    work_record_nonfixed_count: 0,
     report_count: 0
   });
   const [loading, setLoading] = useState(true);
@@ -130,12 +134,34 @@ const Home = () => {
           <Col span={8}>
             <Card hoverable>
               <Statistic
-                title="工作记录"
+                title="无定额工序"
+                value={statistics.quota_nonfixed_count}
+                prefix={<UnorderedListOutlined />}
+                valueStyle={{ color: '#52c41a' }}
+              />
+              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理无固定额工序</p>
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card hoverable>
+              <Statistic
+                title="有定额工作记录"
                 value={statistics.salary_record_count}
                 prefix={<FileTextOutlined />}
                 valueStyle={{ color: '#2f54eb' }}
               />
-              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理工人工作记录</p>
+              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理有定额工人工作记录</p>
+            </Card>
+          </Col>
+          <Col span={8}>
+            <Card hoverable>
+              <Statistic
+                title="无固定额工作记录"
+                value={statistics.work_record_nonfixed_count}
+                prefix={<SnippetsOutlined />}
+                valueStyle={{ color: '#722ed1' }}
+              />
+              <p style={{ marginTop: 16, minHeight: '48px', display: 'flex', alignItems: 'center' }}>管理无固定额工作记录</p>
             </Card>
           </Col>
           <Col span={8}>

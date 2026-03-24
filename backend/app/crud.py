@@ -464,6 +464,195 @@ def delete_work_record(db: Session, record_id: int) -> Optional[dict]:
     logger.info(f"工作记录删除成功: record_id={record_id}")
     return record_info
 
+
+# ============================================================
+# 无固定额工作记录 CRUD
+# ============================================================
+
+def get_work_record_nonfixed_by_id(db: Session, record_id: str) -> Optional[models.WorkRecordNonfixed]:
+    """根据ID获取无定额工作记录"""
+    logger.debug(f"根据ID获取无定额工作记录: record_id={record_id}")
+    return db.query(models.WorkRecordNonfixed).filter(models.WorkRecordNonfixed.id == record_id).first()
+
+
+def get_work_records_nonfixed_by_worker_and_date_range(
+    db: Session,
+    worker_code: str,
+    start_date: date,
+    end_date: date
+) -> List[models.WorkRecordNonfixed]:
+    """根据工人编码和日期范围获取无定额工作记录"""
+    logger.debug(f"获取无定额工作记录: worker_code={worker_code}, start={start_date}, end={end_date}")
+    query = db.query(models.WorkRecordNonfixed).filter(
+        models.WorkRecordNonfixed.worker_code == worker_code,
+        models.WorkRecordNonfixed.record_date >= start_date,
+        models.WorkRecordNonfixed.record_date <= end_date
+    )
+    result = query.order_by(models.WorkRecordNonfixed.record_date).all()
+    logger.debug(f"查询到 {len(result)} 条无定额工作记录")
+    return result
+
+
+def get_quota_nonfixed_by_id(db: Session, quota_id: str) -> Optional[models.QuotaNonfixed]:
+    """根据ID获取无定额定额配置"""
+    logger.debug(f"根据ID获取无定额定额: quota_id={quota_id}")
+    return db.query(models.QuotaNonfixed).filter(models.QuotaNonfixed.id == quota_id).first()
+
+
+def get_quota_nonfixed_options(db: Session) -> List[dict]:
+    """获取所有无定额定额选项（用于前端下拉）"""
+    logger.debug("获取无定额定额选项列表")
+    today = date.today()
+    records = db.query(models.QuotaNonfixed).filter(
+        models.QuotaNonfixed.effective_date <= today,
+        models.QuotaNonfixed.obsolete_date >= today
+    ).order_by(models.QuotaNonfixed.id).all()
+    
+    return [
+        {
+            "id": r.id,
+            "process_name": r.process_name,
+            "min_quota": float(r.min_quota),
+            "max_quota": float(r.max_quota),
+            "remark": r.remark or ""
+        }
+        for r in records
+    ]
+
+
+def generate_nonfixed_record_id(db: Session) -> str:
+    """生成新的无定额记录ID（WN+序号，格式：WN+5位序号，共7字符）"""
+    logger.debug("生成新的无定额记录ID")
+    prefix = "WN"
+    
+    # 查找最大编号（格式：WN00001）
+    latest = db.query(models.WorkRecordNonfixed.id).filter(
+        models.WorkRecordNonfixed.id.like(f"{prefix}%")
+    ).order_by(desc(models.WorkRecordNonfixed.id)).first()
+    
+    if latest:
+        # 提取序号并+1
+        seq_str = latest[0][len(prefix):]
+        try:
+            next_seq = int(seq_str) + 1
+        except ValueError:
+            next_seq = 1
+    else:
+        next_seq = 1
+    
+    # 生成新的ID（WN + 5位序号，如 WN00001）
+    new_id = f"{prefix}{next_seq:05d}"
+    return new_id
+
+
+def create_work_record_nonfixed(
+    db: Session,
+    record: schemas.WorkRecordNonfixedCreate,
+    created_by: int
+) -> models.WorkRecordNonfixed:
+    """创建无定额工作记录（含金额范围校验）"""
+    logger.debug(f"创建无定额工作记录: worker_code={record.worker_code}, nonfixed_quota_id={record.nonfixed_quota_id}, quantity={record.quantity}, record_date={record.record_date}")
+    
+    # 1. 检查工人是否存在
+    worker = get_worker_by_code(db, record.worker_code)
+    if not worker:
+        raise ValueError(f"工人不存在: {record.worker_code}")
+    
+    # 2. 获取无定额定额配置，验证金额范围
+    quota = get_quota_nonfixed_by_id(db, record.nonfixed_quota_id)
+    if not quota:
+        raise ValueError(f"无定额定额不存在: {record.nonfixed_quota_id}")
+    
+    min_total = float(quota.min_quota)
+    max_total = float(quota.max_quota)
+    
+    if record.unit_price < quota.min_quota or record.unit_price > quota.max_quota:
+        raise ValueError(f"单价 ¥{record.unit_price} 超出允许范围 ¥{min_total:.2f} ~ ¥{max_total:.2f}")
+    
+    logger.debug(f"单价验证通过: ¥{float(record.unit_price):.2f} 在 ¥{min_total:.2f} ~ ¥{max_total:.2f} 范围内")
+    
+    # 3. 生成ID
+    new_id = generate_nonfixed_record_id(db)
+    logger.debug(f"新记录ID: {new_id}")
+    
+    # 4. 创建记录
+    db_record = models.WorkRecordNonfixed(
+        id=new_id,
+        worker_code=record.worker_code,
+        nonfixed_quota_id=record.nonfixed_quota_id,
+        quantity=record.quantity,
+        unit_price=record.unit_price,
+        record_date=record.record_date,
+        created_by=created_by
+    )
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    logger.info(f"无定额工作记录创建成功: id={new_id}, worker={record.worker_code}")
+    return db_record
+
+
+def update_work_record_nonfixed(
+    db: Session,
+    record_id: str,
+    record_update: schemas.WorkRecordNonfixedUpdate
+) -> Optional[models.WorkRecordNonfixed]:
+    """更新无定额工作记录（含金额范围校验）"""
+    logger.debug(f"更新无定额工作记录: record_id={record_id}, update={record_update.model_dump(exclude_unset=True)}")
+    db_record = get_work_record_nonfixed_by_id(db, record_id)
+    if not db_record:
+        logger.warning(f"无定额工作记录不存在: record_id={record_id}")
+        return None
+    
+    update_data = record_update.model_dump(exclude_unset=True)
+    
+    # 如果更新了单价，需要重新校验范围
+    new_unit_price = update_data.get("unit_price", db_record.unit_price)
+    new_quantity = update_data.get("quantity", db_record.quantity)
+    
+    # 获取无定额定额配置
+    quota = get_quota_nonfixed_by_id(db, db_record.nonfixed_quota_id)
+    if not quota:
+        raise ValueError(f"无定额定额不存在: {db_record.nonfixed_quota_id}")
+    
+    min_total = float(quota.min_quota)
+    max_total = float(quota.max_quota)
+    
+    if new_unit_price < quota.min_quota or new_unit_price > quota.max_quota:
+        raise ValueError(f"单价 ¥{float(new_unit_price):.2f} 超出允许范围 ¥{min_total:.2f} ~ ¥{max_total:.2f}")
+    
+    for field, value in update_data.items():
+        setattr(db_record, field, value)
+    
+    db.commit()
+    db.refresh(db_record)
+    logger.info(f"无定额工作记录更新成功: record_id={record_id}")
+    return db_record
+
+
+def delete_work_record_nonfixed(db: Session, record_id: str) -> Optional[dict]:
+    """删除无定额工作记录"""
+    logger.debug(f"删除无定额工作记录: record_id={record_id}")
+    db_record = get_work_record_nonfixed_by_id(db, record_id)
+    if not db_record:
+        logger.warning(f"无定额工作记录不存在: record_id={record_id}")
+        return None
+    
+    record_info = {
+        "id": db_record.id,
+        "worker_code": db_record.worker_code,
+        "nonfixed_quota_id": db_record.nonfixed_quota_id,
+        "quantity": str(db_record.quantity),
+        "unit_price": str(db_record.unit_price),
+        "record_date": str(db_record.record_date)
+    }
+    
+    db.delete(db_record)
+    db.commit()
+    logger.info(f"无定额工作记录删除成功: record_id={record_id}")
+    return record_info
+
+
 # 工资记录视图相关CRUD
 
 def get_salary_record_by_id(db: Session, record_id: int) -> Optional[models.VSalaryRecord]:

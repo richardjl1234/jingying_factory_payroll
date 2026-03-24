@@ -466,7 +466,18 @@ const Report = () => {
                 </Card>
                 <Table
                   columns={workerSalaryColumns}
-                  dataSource={workerSalaryReport.details}
+                  dataSource={workerSalaryReport.details.sort((a, b) => {
+                    // 先按工人ID排序，再按日期排序
+                    const workerCodeA = a.worker_code || a.worker_name || '';
+                    const workerCodeB = b.worker_code || b.worker_name || '';
+                    if (workerCodeA !== workerCodeB) {
+                      return workerCodeA.localeCompare(workerCodeB);
+                    }
+                    // 相同工人按日期排序
+                    const dateA = a.record_date ? new Date(a.record_date) : new Date(0);
+                    const dateB = b.record_date ? new Date(b.record_date) : new Date(0);
+                    return dateA - dateB;
+                  })}
                   rowKey={(record) => `${record.quota_id}-${record.record_date}-${record.worker_name}`}
                   pagination={{ pageSize: 20 }}
                 />

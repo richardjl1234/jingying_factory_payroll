@@ -91,6 +91,7 @@ def get_worker_salary_report(
         
         details.append({
             "worker_name": worker_name_detail,       # 职工姓名
+            "worker_code": record.worker_code,        # 工人编号（用于排序）
             "quota_id": record.quota_id,             # 定额编号
             "model_name": model_name,                # 型号
             "process_category": cat2_name,           # 工序类别

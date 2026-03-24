@@ -632,3 +632,150 @@ def get_quota_options(
     except Exception as e:
         logger.error(f"[QuotaOptions] Error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"获取定额选项失败: {str(e)}")
+
+
+# ============================================================
+# 无固定额工资记录相关端点
+# ============================================================
+
+@router.get("/quotas-nonfixed/options", response_model=schemas.QuotaNonfixedOptionsResponse)
+def get_quota_nonfixed_options(
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """获取无定额定额选项列表（用于前端下拉框）"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[QuotaNonfixedOptions] User {current_user.username} requesting nonfixed quota options")
+    
+    try:
+        options = crud.get_quota_nonfixed_options(db)
+        logger.info(f"[QuotaNonfixedOptions] Returning {len(options)} options")
+        return {"options": options}
+    except Exception as e:
+        logger.error(f"[QuotaNonfixedOptions] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取无定额定额选项失败: {str(e)}")
+
+
+@router.get("/salary-records-nonfixed", response_model=list[schemas.WorkRecordNonfixedWithDisplay])
+def get_salary_records_nonfixed(
+    worker_code: str = Query(..., description="工人编码"),
+    start_date: date = Query(..., description="起始日期 YYYY-MM-DD"),
+    end_date: date = Query(..., description="结束日期 YYYY-MM-DD"),
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """获取指定工人指定日期范围的无固定额工资记录（用于工资记录表格展示）"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[SalaryRecordsNonfixed] User {current_user.username} requesting nonfixed records: worker={worker_code}, {start_date}~{end_date}")
+    
+    try:
+        records = crud.get_work_records_nonfixed_by_worker_and_date_range(
+            db,
+            worker_code=worker_code,
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        # 构建展示数据
+        result = []
+        for r in records:
+            quota = crud.get_quota_nonfixed_by_id(db, r.nonfixed_quota_id)
+            amount = float(r.quantity) * float(r.unit_price)
+            result.append({
+                "id": r.id,
+                "worker_code": r.worker_code,
+                "quota_id": r.nonfixed_quota_id,
+                "process_display": f"{r.nonfixed_quota_id} ({quota.process_name if quota else r.nonfixed_quota_id})",
+                "quantity": float(r.quantity),
+                "unit_price": float(r.unit_price),
+                "amount": round(amount, 2),
+                "record_date": r.record_date,
+                "created_by": r.created_by,
+                "created_at": r.created_at
+            })
+        
+        logger.info(f"[SalaryRecordsNonfixed] Returning {len(result)} records")
+        return result
+    except Exception as e:
+        logger.error(f"[SalaryRecordsNonfixed] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"获取无固定额工资记录失败: {str(e)}")
+
+
+@router.post("/salary-records-nonfixed", response_model=schemas.WorkRecordNonfixed, status_code=status.HTTP_201_CREATED)
+def create_salary_record_nonfixed(
+    record: schemas.WorkRecordNonfixedCreate,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """创建无固定额工作记录"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[CreateNonFixed] User {current_user.username} creating: worker={record.worker_code}, quota={record.nonfixed_quota_id}, qty={record.quantity}, price={record.unit_price}, date={record.record_date}")
+    
+    try:
+        new_record = crud.create_work_record_nonfixed(
+            db=db,
+            record=record,
+            created_by=current_user.id
+        )
+        logger.info(f"[CreateNonFixed] Success: id={new_record.id}")
+        return new_record
+    except ValueError as e:
+        logger.warning(f"[CreateNonFixed] Validation error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[CreateNonFixed] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"创建失败: {str(e)}")
+
+
+@router.put("/salary-records-nonfixed/{record_id}", response_model=schemas.WorkRecordNonfixed)
+def update_salary_record_nonfixed(
+    record_id: str,
+    record_update: schemas.WorkRecordNonfixedUpdate,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """更新无固定额工作记录"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[UpdateNonFixed] User {current_user.username} updating id={record_id}: {record_update.model_dump(exclude_unset=True)}")
+    
+    try:
+        updated = crud.update_work_record_nonfixed(
+            db=db,
+            record_id=record_id,
+            record_update=record_update
+        )
+        if not updated:
+            raise HTTPException(status_code=404, detail="记录不存在")
+        logger.info(f"[UpdateNonFixed] Success: id={record_id}")
+        return updated
+    except HTTPException:
+        raise
+    except ValueError as e:
+        logger.warning(f"[UpdateNonFixed] Validation error: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"[UpdateNonFixed] Error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
+
+
+@router.delete("/salary-records-nonfixed/{record_id}", response_model=schemas.WorkRecordNonfixedDeleteResponse)
+def delete_salary_record_nonfixed(
+    record_id: str,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user)
+):
+    """删除无固定额工作记录"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"[DeleteNonFixed] User {current_user.username} deleting id={record_id}")
+    
+    result = crud.delete_work_record_nonfixed(db, record_id=record_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="记录不存在")
+    
+    logger.info(f"[DeleteNonFixed] Success: id={record_id}")
+    return {"message": "无固定额工作记录删除成功", "record_id": record_id}

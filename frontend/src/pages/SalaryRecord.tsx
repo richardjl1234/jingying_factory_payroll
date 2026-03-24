@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col, Card, Tag, Divider } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, DatePicker, message, Typography, Space, Row, Col, Card, Tag, Divider, InputNumber } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { salaryAPI, workerAPI, columnSeqAPI } from '../services/api';
@@ -7,6 +7,316 @@ import { QuotaOptionsResponse, QuotaOptionItem, CascadeOption } from '../types';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// ============================================================
+// 无固定额对话框组件
+// ============================================================
+interface NonFixedModalProps {
+  open: boolean;
+  onCancel: () => void;
+  editMode: boolean;
+  editRecord: any;
+  workerCode: string;
+  workerName: string;
+  month: string;
+  onSuccess?: () => void;
+}
+
+const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
+  open, onCancel, editMode, editRecord, workerCode, workerName, month, onSuccess
+}) => {
+  const [form] = Form.useForm();
+  const [options, setOptions] = useState<any[]>([]);
+  const [selectedQuota, setSelectedQuota] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchOptions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await salaryAPI.getQuotaNonfixedOptions();
+      setOptions(data.options || []);
+    } catch {
+      message.error('获取无定额定额选项失败');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) fetchOptions();
+  }, [open, fetchOptions]);
+
+  // 编辑模式：填充表单
+  useEffect(() => {
+    if (editMode && editRecord && options.length > 0) {
+      // 从 record_date 提取 day
+      const day = parseInt(editRecord.record_date.split('-')[2]);
+      form.setFieldsValue({
+        nonfixed_quota_id: editRecord.quota_id,
+        quantity: editRecord.quantity,
+        unit_price: editRecord.unit_price,
+        day: day
+      });
+      const found = options.find((o: any) => o.id === editRecord.quota_id);
+      setSelectedQuota(found || null);
+    } else if (!editMode) {
+      form.resetFields();
+      form.setFieldValue('quantity', 1);
+      // 默认日期为当月1号
+      form.setFieldValue('day', '01');
+      setSelectedQuota(null);
+    }
+  }, [editMode, editRecord, open, form, options]);
+
+  // 日期增加
+  const handleDayIncrement = () => {
+    const currentDay = parseInt(form.getFieldValue('day') || '0') || 0;
+    const maxDay = dayjs(month.slice(0, 4) + '-' + month.slice(4, 6) + '-01').endOf('month').date();
+    const newDay = currentDay >= maxDay ? 1 : currentDay + 1;
+    form.setFieldValue('day', String(newDay).padStart(2, '0'));
+  };
+
+  // 日期减少
+  const handleDayDecrement = () => {
+    const currentDay = parseInt(form.getFieldValue('day') || '0') || 0;
+    const maxDay = dayjs(month.slice(0, 4) + '-' + month.slice(4, 6) + '-01').endOf('month').date();
+    const newDay = currentDay <= 1 ? maxDay : currentDay - 1;
+    form.setFieldValue('day', String(newDay).padStart(2, '0'));
+  };
+
+  const handleQuotaChange = (quotaId: string) => {
+    const found = options.find((o: any) => o.id === quotaId);
+    setSelectedQuota(found || null);
+    if (found) form.setFieldValue('unit_price', found.min_quota);
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      setSubmitting(true);
+      // 将 day 转换为 record_date
+      const recordDate = month.slice(0, 4) + '-' + month.slice(4, 6) + '-' + String(values.day).padStart(2, '0');
+      const qty = parseFloat(values.quantity) || 1;
+      const price = parseFloat(values.unit_price) || 0;
+      
+      if (editMode && editRecord) {
+        await salaryAPI.updateNonFixedRecord(editRecord.id, {
+          quantity: qty,
+          unit_price: price,
+          record_date: recordDate
+        });
+        message.success('更新成功');
+      } else {
+        await salaryAPI.createNonFixedRecord({
+          worker_code: workerCode,
+          nonfixed_quota_id: values.nonfixed_quota_id,
+          quantity: qty,
+          unit_price: price,
+          record_date: recordDate
+        });
+        message.success('添加成功');
+      }
+      onCancel();
+      onSuccess?.();
+    } catch (e: any) {
+      if (e.response?.data?.detail) {
+        message.error(e.response.data.detail);
+      } else {
+        message.error(editMode ? '更新失败' : '添加失败');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={editMode ? '编辑工作记录（无固定额）' : '添加工作记录（无固定额）'}
+      open={open}
+      onCancel={onCancel}
+      footer={null}
+      width={700}
+      style={{ top: 20 }}
+    >
+      <Form form={form} layout="vertical">
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item label="工人">
+              <Input value={`${workerName} (${workerCode})`} disabled />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item label="月份">
+              <Input value={month.slice(0, 4) + '-' + month.slice(4, 6)} disabled />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="day"
+              label="日期"
+              rules={[
+                { required: true, message: '请输入日期!' },
+                { 
+                  transform: (value) => parseInt(value),
+                  type: 'number',
+                  min: 1,
+                  max: 31,
+                  message: '日期必须是1-31之间的数字!'
+                }
+              ]}
+            >
+              <Input 
+                placeholder="日期" 
+                maxLength={2}
+                prefix={
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    onClick={handleDayDecrement}
+                    style={{ padding: '0 4px' }}
+                  >
+                    -
+                  </Button>
+                }
+                suffix={
+                  <Button 
+                    type="text" 
+                    size="small" 
+                    onClick={handleDayIncrement}
+                    style={{ padding: '0 4px' }}
+                  >
+                    +
+                  </Button>
+                }
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16} align="bottom">
+          <Col span={6}>
+            <Form.Item
+              name="quota_id_input"
+              label="直接输入定额ID（非必填）"
+            >
+              <Input 
+                placeholder="如: N001" 
+                maxLength={10}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  if (/^N\d+$/.test(val)) {
+                    form.setFieldValue('nonfixed_quota_id', val);
+                    handleQuotaChange(val);
+                  }
+                }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="nonfixed_quota_id"
+              label="选择无定额定额"
+              rules={[{ required: true, message: '请选择定额' }]}
+            >
+              <Select
+                placeholder="搜索无定额定额..."
+                showSearch
+                optionFilterProp="label"
+                onChange={handleQuotaChange}
+                disabled={editMode}
+                loading={loading}
+              >
+                {options.map((opt: any) => (
+                  <Option
+                    key={opt.id}
+                    value={opt.id}
+                    label={`${opt.process_name} (${opt.id})`}
+                  >
+                    <Space direction="vertical" size={0}>
+                      <Text strong>{opt.process_name}</Text>
+                      <Text type="secondary" style={{ fontSize: 11 }}>
+                        {opt.id} | 单价范围 ¥{opt.min_quota} ~ ¥{opt.max_quota}
+                        {opt.remark ? ` | ${opt.remark}` : ''}
+                      </Text>
+                    </Space>
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col span={5}>
+            <Form.Item
+              name="unit_price"
+              label="单价"
+              rules={[{ required: true, message: '请输入单价' }]}
+            >
+              <InputNumber min={0} step={0.01} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={5}>
+            <Form.Item
+              name="quantity"
+              label="数量"
+              rules={[{ required: true, message: '请输入数量' }]}
+            >
+              <InputNumber min={0.01} step={0.01} style={{ width: '100%' }} />
+            </Form.Item>
+          </Col>
+          <Col span={4} style={{ paddingBottom: 4 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              金额预览：
+            </Text>
+            <Form.Item noStyle shouldUpdate>
+              {() => {
+                const qty = parseFloat(form.getFieldValue('quantity') || '1');
+                const price = parseFloat(form.getFieldValue('unit_price') || '0');
+                const total = qty * price;
+                return (
+                  <Text strong style={{ display: 'block', fontSize: 16, color: '#1890ff' }}>
+                    ¥{total.toFixed(2)}
+                  </Text>
+                );
+              }}
+            </Form.Item>
+          </Col>
+        </Row>
+
+        {selectedQuota && (
+          <div style={{
+            padding: '8px 12px',
+            backgroundColor: '#f6ffed',
+            border: '1px solid #b7eb8f',
+            borderRadius: 4,
+            marginBottom: 16
+          }}>
+            <Space>
+              <Text type="secondary">允许单价范围：</Text>
+              <Text strong style={{ color: '#006400' }}>
+                ¥{selectedQuota.min_quota} ~ ¥{selectedQuota.max_quota}
+              </Text>
+              <Text type="secondary">（单价）</Text>
+            </Space>
+          </div>
+        )}
+
+        <Form.Item style={{ textAlign: 'right', marginBottom: 0 }}>
+          <Space>
+            <Button onClick={onCancel}>取消</Button>
+            <Button type="primary" onClick={handleSubmit} loading={submitting} style={{ backgroundColor: '#006400', borderColor: '#006400' }}>
+              {editMode ? '更新' : '添加'}
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+};
+
+// ============================================================
+// 工具函数
+// ============================================================
+const isNonFixedRecord = (record: any) => record?.id?.toString().startsWith('WN');
 
 // 类型定义
 interface Worker {
@@ -44,9 +354,9 @@ interface QuotaSearchResult {
 }
 
 interface SalaryRecord {
-  id: number;
+  id: number | string;
   worker_code: string;
-  quota_id: number;
+  quota_id: number | string;
   quantity: number;
   unit_price: number;
   amount: number;
@@ -57,6 +367,18 @@ interface SalaryRecord {
   cat1_display?: string;
   cat2_display?: string;
   process_display?: string;
+  is_nonfixed: boolean;
+}
+
+/**
+ * 无定额定额选项
+ */
+interface QuotaNonfixedOption {
+  id: string;
+  process_name: string;
+  min_quota: number;
+  max_quota: number;
+  remark?: string;
 }
 
 interface Summary {
@@ -77,7 +399,16 @@ const SalaryRecord = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentRecord, setCurrentRecord] = useState<SalaryRecord | null>(null);
   const [form] = Form.useForm();
-  
+
+  // 无固定额相关状态
+  // 无固定额相关状态
+  const [isNonFixedModalVisible, setIsNonFixedModalVisible] = useState(false);
+  const [isNonFixedEditMode, setIsNonFixedEditMode] = useState(false);
+  const [currentNonFixedRecord, setCurrentNonFixedRecord] = useState<SalaryRecord | null>(null);
+  const [nonFixedQuotaOptions, setNonFixedQuotaOptions] = useState<QuotaNonfixedOption[]>([]);
+  const [nonFixedForm] = Form.useForm();
+  const [nonFixedLoading, setNonFixedLoading] = useState(false);
+
   // 预加载的定额数据
   const [quotaOptionsData, setQuotaOptionsData] = useState<QuotaOptionsResponse | null>(null);
   const [quotaOptionsLoading, setQuotaOptionsLoading] = useState(false);
@@ -94,6 +425,9 @@ const SalaryRecord = () => {
   // 排序状态
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   
+  // 无固定额选项数据
+  const [selectedNonFixedQuota, setSelectedNonFixedQuota] = useState<QuotaNonfixedOption | null>(null);
+
   // 排序后的记录
   const sortedRecords = useMemo(() => {
     const sorted = [...records].sort((a, b) => {
@@ -545,6 +879,21 @@ const SalaryRecord = () => {
   useEffect(() => {
     fetchWorkerMonthRecords();
   }, [fetchWorkerMonthRecords]);
+
+  // 加载无定额定额选项
+  const fetchNonFixedQuotaOptions = useCallback(async () => {
+    try {
+      const data = await salaryAPI.getQuotaNonfixedOptions();
+      setNonFixedQuotaOptions(data.options || []);
+    } catch (error) {
+      console.error('获取无定额定额选项失败:', error);
+    }
+  }, []);
+
+  // 组件挂载时加载无定额定额选项
+  useEffect(() => {
+    fetchNonFixedQuotaOptions();
+  }, [fetchNonFixedQuotaOptions]);
 
   // 月份增加
   const handleMonthIncrement = () => {
@@ -1625,9 +1974,10 @@ const SalaryRecord = () => {
   };
 
   // 删除记录
-  const handleDelete = async (recordId: number) => {
+  const handleDelete = async (recordId: string | number) => {
+    const isNF = String(recordId).startsWith('WN');
     Modal.confirm({
-      title: '确认删除工作记录',
+      title: isNF ? '确认删除工作记录（无固定额）' : '确认删除工作记录',
       content: (
         <div>
           <p>确定要删除这条工作记录吗？</p>
@@ -1641,11 +1991,16 @@ const SalaryRecord = () => {
       cancelText: '取消',
       onOk: async () => {
         try {
-          await salaryAPI.deleteSalaryRecord(recordId);
-          message.success('工作记录删除成功');
+          if (isNF) {
+            await salaryAPI.deleteNonFixedRecord(String(recordId));
+            message.success('无固定额工作记录删除成功');
+          } else {
+            await salaryAPI.deleteSalaryRecord(Number(recordId));
+            message.success('工作记录删除成功');
+          }
           fetchWorkerMonthRecords();
-        } catch (error) {
-          message.error('工作记录删除失败');
+        } catch {
+          message.error('删除失败');
         }
       },
     });
@@ -1785,18 +2140,36 @@ const SalaryRecord = () => {
       fixed: 'right' as const,
       render: (_: any, record: SalaryRecord) => (
         <Space size="small">
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            onClick={() => showEditModal(record)} 
-            size="small"
-          >
-            编辑
-          </Button>
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
-            onClick={() => handleDelete(record.id)} 
+          {isNonFixedRecord(record) ? (
+            <Button
+              style={{ borderColor: '#006400', color: '#006400' }}
+              icon={<EditOutlined />}
+              onClick={() => {
+                setIsNonFixedEditMode(true);
+                setCurrentNonFixedRecord(record);
+                nonFixedForm.setFieldsValue({
+                  record_date: dayjs(record.record_date)
+                });
+                setIsNonFixedModalVisible(true);
+              }}
+              size="small"
+            >
+              编辑
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => showEditModal(record)}
+              size="small"
+            >
+              编辑
+            </Button>
+          )}
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id)}
             size="small"
           >
             删除
@@ -1961,6 +2334,26 @@ const SalaryRecord = () => {
           >
             添加工作记录
           </Button>
+          <Button
+            style={{ backgroundColor: '#006400', borderColor: '#006400', color: '#fff', marginLeft: 8 }}
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setIsNonFixedEditMode(false);
+              setCurrentNonFixedRecord(null);
+              nonFixedForm.resetFields();
+              nonFixedForm.setFieldValue('quantity', 1);
+              // 默认日期 = 当月1号
+              const year = parseInt(selectedMonth.slice(0, 4));
+              const month = parseInt(selectedMonth.slice(4, 6));
+              nonFixedForm.setFieldValue('record_date', dayjs(year + '-' + String(month).padStart(2, '0') + '-01'));
+              setSelectedNonFixedQuota(null);
+              setIsNonFixedModalVisible(true);
+              fetchNonFixedQuotaOptions();
+            }}
+            disabled={!selectedWorker || !selectedMonth}
+          >
+            添加工作记录（无固定额）
+          </Button>
         </Col>
       </Row>
       
@@ -2027,7 +2420,7 @@ const SalaryRecord = () => {
             <Col span={8}>
               <Form.Item label="工人">
                 <Input 
-                  value={selectedWorker ? `${selectedWorkerName} (${selectedWorker})` : ''} 
+                  value={selectedWorker ? selectedWorkerName + ' (' + selectedWorker + ')' : ''} 
                   disabled 
                   style={{ backgroundColor: '#f5f5f5' }}
                 />
@@ -2802,9 +3195,7 @@ const SalaryRecord = () => {
 
       {/* ========== Way 0 定额矩阵选择对话框 ========== */}
       <Modal
-        title={`定额选择 - ${way0SelectedCat1 ? 
-          (quotaOptionsData?.cat1_options.find(o => o.value === way0SelectedCat1)?.label || way0SelectedCat1) 
-          : ''}`}
+        title="定额选择"
         open={way0QuotaDialogVisible}
         onCancel={() => setWay0QuotaDialogVisible(false)}
         footer={[
@@ -2910,6 +3301,18 @@ const SalaryRecord = () => {
         </div>
       </Modal>
       {/* ========================================== */}
+
+      {/* ====== 无固定额工作记录对话框 ====== */}
+      <NonFixedRecordModal
+        open={isNonFixedModalVisible}
+        onCancel={() => setIsNonFixedModalVisible(false)}
+        editMode={isNonFixedEditMode}
+        editRecord={currentNonFixedRecord}
+        workerCode={selectedWorker || ''}
+        workerName={selectedWorkerName}
+        month={selectedMonth}
+        onSuccess={fetchWorkerMonthRecords}
+      />
     </div>
   );
 };

@@ -27,7 +27,9 @@ def get_statistics(
     model_count = db.query(func.count(models.MotorModel.model_code)).scalar()
     process_count = db.query(func.count(models.Process.process_code)).scalar()
     quota_count = db.query(func.count(models.Quota.id)).scalar()
+    quota_nonfixed_count = db.query(func.count(models.QuotaNonfixed.id)).scalar()
     salary_record_count = db.query(func.count(models.WorkRecord.id)).scalar()
+    work_record_nonfixed_count = db.query(func.count(models.WorkRecordNonfixed.id)).scalar()
     
     return {
         "user_count": user_count,
@@ -37,5 +39,7 @@ def get_statistics(
         "model_count": model_count,
         "process_count": process_count,
         "quota_count": quota_count,
-        "salary_record_count": salary_record_count
+        "quota_nonfixed_count": quota_nonfixed_count,
+        "salary_record_count": salary_record_count,
+        "work_record_nonfixed_count": work_record_nonfixed_count
     }

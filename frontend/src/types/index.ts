@@ -70,9 +70,9 @@ export interface WorkRecord {
  * 工资记录类型定义（从视图读取）
  */
 export interface SalaryRecord {
-  id: number;
+  id: number | string;  // 数字（有定额）或字符串如 WN00001（无定额）
   worker_code: string;
-  quota_id: number;
+  quota_id: number | string;  // 数字（有定额）或字符串如 N001（无定额）
   quantity: number;
   unit_price: number;
   amount: number;
@@ -83,6 +83,29 @@ export interface SalaryRecord {
   cat1_display?: string;
   cat2_display?: string;
   process_display?: string;
+  is_nonfixed: boolean;  // 是否为无固定额记录
+}
+
+/**
+ * 无定额定额选项
+ */
+export interface QuotaNonfixedOption {
+  id: string;
+  process_name: string;
+  min_quota: number;
+  max_quota: number;
+  remark?: string;
+}
+
+/**
+ * 无定额工作记录创建
+ */
+export interface WorkRecordNonfixedCreate {
+  worker_code: string;
+  nonfixed_quota_id: string;
+  quantity: number;
+  unit_price: number;
+  record_date: string;
 }
 
 /**

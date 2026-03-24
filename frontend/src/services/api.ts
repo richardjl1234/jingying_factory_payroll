@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse, WorkerMonthRecordsResponse, Dictionaries, QuotaSearchResult, QuotaOptionsResponse } from '../types';
+import { User, Worker, Process, Quota, SalaryRecord, WorkRecord, LoginResponse, PaginatedResponse, QuotaFilterCombination, QuotaMatrixResponse, WorkerMonthRecordsResponse, Dictionaries, QuotaSearchResult, QuotaOptionsResponse, QuotaNonfixedOption, WorkRecordNonfixedCreate } from '../types';
 
 // 创建axios实例
 // 注意：在Docker构建时通过 --build-arg VITE_API_BASE_URL 设置
@@ -180,6 +180,31 @@ export const salaryAPI = {
   // 预加载定额数据（用于前端级联筛选）
   getQuotaOptions: (params: { record_date?: string }): Promise<QuotaOptionsResponse> =>
     api.get('/salary-records/quota-options/', { params }),
+
+  // ========== 无固定额相关 ==========
+  // 获取无定额定额选项
+  getQuotaNonfixedOptions: (): Promise<{ options: QuotaNonfixedOption[] }> =>
+    api.get('/salary-records/quotas-nonfixed/options'),
+  // 获取无固定额记录（按工人+日期范围）
+  getNonFixedRecords: (params: {
+    worker_code: string;
+    start_date: string;
+    end_date: string;
+  }): Promise<SalaryRecord[]> =>
+    api.get('/salary-records/salary-records-nonfixed', { params }),
+  // 创建无固定额记录
+  createNonFixedRecord: (data: WorkRecordNonfixedCreate): Promise<any> =>
+    api.post('/salary-records/salary-records-nonfixed', data),
+  // 更新无固定额记录
+  updateNonFixedRecord: (id: string, data: {
+    quantity?: number;
+    unit_price?: number;
+    record_date?: string;
+  }): Promise<any> =>
+    api.put(`/salary-records/salary-records-nonfixed/${id}`, data),
+  // 删除无固定额记录
+  deleteNonFixedRecord: (id: string): Promise<void> =>
+    api.delete(`/salary-records/salary-records-nonfixed/${id}`),
 };
 
 // 报表API
@@ -202,7 +227,9 @@ export const statsAPI = {
     model_count: number;
     process_count: number;
     quota_count: number;
+    quota_nonfixed_count: number;
     salary_record_count: number;
+    work_record_nonfixed_count: number;
   }> => api.get('/stats/')
 };
 
