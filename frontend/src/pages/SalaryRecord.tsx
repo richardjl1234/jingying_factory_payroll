@@ -229,9 +229,11 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                   <span>
                     <Text strong style={{ color: '#006400' }}>{selectedQuota.id}</Text>
                     <Text type="secondary" style={{ marginLeft: 8 }}>{selectedQuota.process_name}</Text>
-                    <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
-                      ({selectedQuota.min_quota} ~ {selectedQuota.max_quota})
-                    </Text>
+                    {!(selectedQuota.min_quota === 0.01 && selectedQuota.max_quota === 9999) && (
+                      <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                        ({selectedQuota.min_quota} ~ {selectedQuota.max_quota})
+                      </Text>
+                    )}
                   </span>
                 ) : (
                   <Text type="secondary">点击选择无定额工序...</Text>
@@ -310,15 +312,16 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
         open={quotaSelectModalVisible}
         onCancel={() => setQuotaSelectModalVisible(false)}
         footer={null}
-        width={900}
+        width={1000}
         style={{ top: 20 }}
       >
         <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-          <Row gutter={[8, 8]}>
+          <Row gutter={[6, 6]}>
             {options.map((opt: any) => {
               const isSelected = selectedQuota?.id === opt.id;
+              const showRange = !(opt.min_quota === 0.01 && opt.max_quota === 9999);
               return (
-                <Col span={4} key={opt.id}>
+                <Col span={3} key={opt.id}>
                   <Button
                     block
                     onClick={() => {
@@ -327,8 +330,8 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                       setQuotaSelectModalVisible(false);
                     }}
                     style={{
-                      height: 60,
-                      padding: '4px 8px',
+                      height: 80,
+                      padding: '6px 8px',
                       backgroundColor: isSelected ? '#006400' : '#fff',
                       borderColor: isSelected ? '#006400' : '#d9d9d9',
                       color: isSelected ? '#fff' : '#333',
@@ -342,12 +345,14 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                     <div style={{ fontWeight: 'bold', fontSize: 13, lineHeight: 1.2 }}>
                       {opt.id}
                     </div>
-                    <div style={{ fontSize: 11, lineHeight: 1.2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 12, lineHeight: 1.3, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {opt.process_name}
                     </div>
-                    <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.2 }}>
-                      ({opt.min_quota} ~ {opt.max_quota})
-                    </div>
+                    {showRange && (
+                      <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.2, marginTop: 2 }}>
+                        ({opt.min_quota} ~ {opt.max_quota})
+                      </div>
+                    )}
                   </Button>
                 </Col>
               );
