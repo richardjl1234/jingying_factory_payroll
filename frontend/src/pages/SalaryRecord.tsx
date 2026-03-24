@@ -30,6 +30,7 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
   const [selectedQuota, setSelectedQuota] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [quotaSelectModalVisible, setQuotaSelectModalVisible] = useState(false);
 
   const fetchOptions = useCallback(async () => {
     setLoading(true);
@@ -216,33 +217,26 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
           <Col span={8}>
             <Form.Item
               name="nonfixed_quota_id"
-              label="选择无定额定额"
+              label="选择无定额工序"
               rules={[{ required: true, message: '请选择定额' }]}
             >
-              <Select
-                placeholder="搜索无定额定额..."
-                showSearch
-                optionFilterProp="label"
-                onChange={handleQuotaChange}
+              <Button
+                onClick={() => setQuotaSelectModalVisible(true)}
                 disabled={editMode}
-                loading={loading}
+                style={{ width: '100%', height: 32, textAlign: 'left' }}
               >
-                {options.map((opt: any) => (
-                  <Option
-                    key={opt.id}
-                    value={opt.id}
-                    label={`${opt.process_name} (${opt.id})`}
-                  >
-                    <Space direction="vertical" size={0}>
-                      <Text strong>{opt.process_name}</Text>
-                      <Text type="secondary" style={{ fontSize: 11 }}>
-                        {opt.id} | 单价范围 ¥{opt.min_quota} ~ ¥{opt.max_quota}
-                        {opt.remark ? ` | ${opt.remark}` : ''}
-                      </Text>
-                    </Space>
-                  </Option>
-                ))}
-              </Select>
+                {selectedQuota ? (
+                  <span>
+                    <Text strong style={{ color: '#006400' }}>{selectedQuota.id}</Text>
+                    <Text type="secondary" style={{ marginLeft: 8 }}>{selectedQuota.process_name}</Text>
+                    <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                      ({selectedQuota.min_quota} ~ {selectedQuota.max_quota})
+                    </Text>
+                  </span>
+                ) : (
+                  <Text type="secondary">点击选择无定额工序...</Text>
+                )}
+              </Button>
             </Form.Item>
           </Col>
           <Col span={5}>
@@ -309,6 +303,58 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
           </Space>
         </Form.Item>
       </Form>
+
+      {/* 无定额工序选择弹窗 */}
+      <Modal
+        title="选择无定额工序"
+        open={quotaSelectModalVisible}
+        onCancel={() => setQuotaSelectModalVisible(false)}
+        footer={null}
+        width={900}
+        style={{ top: 20 }}
+      >
+        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <Row gutter={[8, 8]}>
+            {options.map((opt: any) => {
+              const isSelected = selectedQuota?.id === opt.id;
+              return (
+                <Col span={4} key={opt.id}>
+                  <Button
+                    block
+                    onClick={() => {
+                      form.setFieldValue('nonfixed_quota_id', opt.id);
+                      handleQuotaChange(opt.id);
+                      setQuotaSelectModalVisible(false);
+                    }}
+                    style={{
+                      height: 60,
+                      padding: '4px 8px',
+                      backgroundColor: isSelected ? '#006400' : '#fff',
+                      borderColor: isSelected ? '#006400' : '#d9d9d9',
+                      color: isSelected ? '#fff' : '#333',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    <div style={{ fontWeight: 'bold', fontSize: 13, lineHeight: 1.2 }}>
+                      {opt.id}
+                    </div>
+                    <div style={{ fontSize: 11, lineHeight: 1.2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {opt.process_name}
+                    </div>
+                    <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.2 }}>
+                      ({opt.min_quota} ~ {opt.max_quota})
+                    </div>
+                  </Button>
+                </Col>
+              );
+            })}
+          </Row>
+        </div>
+      </Modal>
     </Modal>
   );
 };
