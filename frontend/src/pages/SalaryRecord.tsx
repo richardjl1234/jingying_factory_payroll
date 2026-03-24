@@ -229,11 +229,11 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
                   <span>
                     <Text strong style={{ color: '#006400' }}>{selectedQuota.id}</Text>
                     <Text type="secondary" style={{ marginLeft: 8 }}>{selectedQuota.process_name}</Text>
-                    {!(selectedQuota.min_quota === 0.01 && selectedQuota.max_quota === 9999) && (
+                    {selectedQuota.min_quota !== 0.01 || selectedQuota.max_quota !== 9999 ? (
                       <Text type="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
                         ({selectedQuota.min_quota} ~ {selectedQuota.max_quota})
                       </Text>
-                    )}
+                    ) : null}
                   </span>
                 ) : (
                   <Text type="secondary">点击选择无定额工序...</Text>
@@ -312,52 +312,51 @@ const NonFixedRecordModal: React.FC<NonFixedModalProps> = ({
         open={quotaSelectModalVisible}
         onCancel={() => setQuotaSelectModalVisible(false)}
         footer={null}
-        width={1000}
+        width={1350}
         style={{ top: 20 }}
       >
         <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-          <Row gutter={[6, 6]}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {options.map((opt: any) => {
               const isSelected = selectedQuota?.id === opt.id;
-              const showRange = !(opt.min_quota === 0.01 && opt.max_quota === 9999);
+              const showRange = opt.min_quota !== 0.01 || opt.max_quota !== 9999;
               return (
-                <Col span={3} key={opt.id}>
-                  <Button
-                    block
-                    onClick={() => {
-                      form.setFieldValue('nonfixed_quota_id', opt.id);
-                      handleQuotaChange(opt.id);
-                      setQuotaSelectModalVisible(false);
-                    }}
-                    style={{
-                      height: 80,
-                      padding: '6px 8px',
-                      backgroundColor: isSelected ? '#006400' : '#fff',
-                      borderColor: isSelected ? '#006400' : '#d9d9d9',
-                      color: isSelected ? '#fff' : '#333',
-                      textAlign: 'left',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <div style={{ fontWeight: 'bold', fontSize: 13, lineHeight: 1.2 }}>
-                      {opt.id}
+                <Button
+                  key={opt.id}
+                  onClick={() => {
+                    form.setFieldValue('nonfixed_quota_id', opt.id);
+                    handleQuotaChange(opt.id);
+                    setQuotaSelectModalVisible(false);
+                  }}
+                  style={{
+                    width: 'calc(10% - 6px)',
+                    height: 70,
+                    padding: '6px 8px',
+                    backgroundColor: isSelected ? '#006400' : '#fff',
+                    borderColor: isSelected ? '#006400' : '#d9d9d9',
+                    color: isSelected ? '#fff' : '#333',
+                    textAlign: 'left',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', fontSize: 13, lineHeight: 1.2 }}>
+                    {opt.id}
+                  </div>
+                  <div style={{ fontSize: 12, lineHeight: 1.3, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {opt.process_name}
+                  </div>
+                  {showRange && (
+                    <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.2, marginTop: 2 }}>
+                      ({opt.min_quota} ~ {opt.max_quota})
                     </div>
-                    <div style={{ fontSize: 12, lineHeight: 1.3, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {opt.process_name}
-                    </div>
-                    {showRange && (
-                      <div style={{ fontSize: 10, opacity: 0.8, lineHeight: 1.2, marginTop: 2 }}>
-                        ({opt.min_quota} ~ {opt.max_quota})
-                      </div>
-                    )}
-                  </Button>
-                </Col>
+                  )}
+                </Button>
               );
             })}
-          </Row>
+          </div>
         </div>
       </Modal>
     </Modal>
