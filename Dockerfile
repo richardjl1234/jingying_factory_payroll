@@ -27,7 +27,10 @@ RUN pip install --no-cache-dir --upgrade pip -i https://mirrors.aliyun.com/pypi/
 # ============================================================
 # Stage 2: Frontend Builder - Build frontend inside container
 # ============================================================
-FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/node:18-slim AS frontend-builder
+FROM swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/library/node:20-slim AS frontend-builder
+# Build arg: specifies environment (development/test/production). Defaults to production.
+# Note: "local" is NOT used as mode name because Vite conflicts with .local env suffix.
+ARG VITE_APP_MODE=production
 
 WORKDIR /build/frontend
 
@@ -39,8 +42,12 @@ RUN npm config set registry https://registry.npmmirror.com && \
     npm install
 
 # Copy frontend source code and build
+# VITE_APP_MODE controls which .env file is used (VITE 禁止使用 "local" 作为模式名):
+#   production -> .env.prod  (VITE_APP_ENV=prod)
+#   test       -> .env.test  (VITE_APP_ENV=test)
+#   development -> .env.local (VITE_APP_ENV=local)
 COPY frontend/ ./
-RUN npm run build
+RUN npm run build -- --mode $VITE_APP_MODE
 
 # ============================================================
 # Stage 3: Runtime - Final production image

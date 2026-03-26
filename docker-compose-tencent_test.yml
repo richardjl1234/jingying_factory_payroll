@@ -1,9 +1,20 @@
+# =============================================================================
+# Docker Compose - Tencent Test Environment
+# =============================================================================
+# Usage:
+#   docker-compose -f docker-compose-tencent_test.yml up -d    # Start
+#   docker-compose -f docker-compose-tencent_test.yml logs -f  # View logs
+#   docker-compose -f docker-compose-tencent_test.yml down      # Stop
+# =============================================================================
+
 services:
   payroll-test:
     container_name: payroll-test
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_APP_MODE=test
     ports:
       - "8001:8000"
     env_file:
@@ -17,6 +28,7 @@ services:
       - BACKEND_PORT=8000
       - FRONTEND_PATH=/app/frontend/dist
       - API_ENDPOINT=http://127.0.0.1:8000
+      - ENV=test
     volumes:
       - ./logs:/app/logs:rw
     extra_hosts:

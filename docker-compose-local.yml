@@ -1,5 +1,5 @@
 # =============================================================================
-# Docker Compose - Local Development Testing
+# Docker Compose - Local Environment
 # =============================================================================
 # Usage:
 #   docker-compose -f docker-compose-local.yml up -d    # Start
@@ -13,10 +13,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_APP_MODE=development
     ports:
       - "8000:8000"
     env_file:
-      - ~/shared/jianglei/payroll/env_local_test.sh
+      - ~/shared/jianglei/payroll/env_local_local.sh
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
@@ -26,6 +28,7 @@ services:
       - BACKEND_PORT=8000
       - FRONTEND_PATH=/app/frontend/dist
       - API_ENDPOINT=http://127.0.0.1:8000
+      - ENV=local
     volumes:
       - ./logs:/app/logs:rw
     extra_hosts:

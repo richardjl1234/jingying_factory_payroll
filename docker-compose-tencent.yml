@@ -1,10 +1,10 @@
 # =============================================================================
-# Docker Compose - Local Development Testing
+# Docker Compose - Tencent Production Environment
 # =============================================================================
 # Usage:
-#   docker-compose -f docker-compose-local.yml up -d    # Start
-#   docker-compose -f docker-compose-local.yml logs -f  # View logs
-#   docker-compose -f docker-compose-local.yml down      # Stop
+#   docker-compose -f docker-compose-tencent.yml up -d    # Start
+#   docker-compose -f docker-compose-tencent.yml logs -f  # View logs
+#   docker-compose -f docker-compose-tencent.yml down      # Stop
 # =============================================================================
 
 services:
@@ -13,6 +13,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_APP_MODE=production
     ports:
       - "8000:8000"
     env_file:
@@ -26,6 +28,7 @@ services:
       - BACKEND_PORT=8000
       - FRONTEND_PATH=/app/frontend/dist
       - API_ENDPOINT=http://127.0.0.1:8000
+      - ENV=prod
     volumes:
       - ./logs:/app/logs:rw
     extra_hosts:
