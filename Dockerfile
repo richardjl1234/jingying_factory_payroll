@@ -37,9 +37,9 @@ WORKDIR /build/frontend
 # Copy package files first (for better caching)
 COPY frontend/package.json frontend/package-lock.json* ./
 
-# Install dependencies
+# Install dependencies (npm ci is faster and uses package-lock.json exactly)
 RUN npm config set registry https://registry.npmmirror.com && \
-    npm install
+    npm ci
 
 # Copy frontend source code and build
 # VITE_APP_MODE controls which .env file is used (VITE 禁止使用 "local" 作为模式名):

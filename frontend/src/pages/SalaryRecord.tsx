@@ -3290,6 +3290,10 @@ const SalaryRecord = () => {
           }}
           tabIndex={0}
         >
+          {/* 键盘导航说明 */}
+          <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+            💡 按 Enter 确认选择 | 按 Esc 关闭对话框
+          </Text>
           {way0MatrixData.map((cat2Section) => (
             <div key={cat2Section.cat2_code} style={{ marginBottom: 24 }}>
               <Divider>
@@ -3351,7 +3355,7 @@ const SalaryRecord = () => {
                 ]}
                 dataSource={cat2Section.rows}
                 rowKey="model_name"
-                scroll={{ x: cat2Section.columns.length * 65 + 100 }}
+                scroll={{ x: cat2Section.columns.length * 65 + 100, y: 320 }}
               />
             </div>
           ))}
